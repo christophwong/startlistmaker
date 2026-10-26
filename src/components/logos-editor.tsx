@@ -79,12 +79,9 @@ export function LogosEditor({ logos, dispatch }: { logos: Logo[]; dispatch(a: Ac
 
   return (
     <div className="space-y-3">
-      <div>
-        <h3 className="text-base font-medium">Logos</h3>
-        <p className="text-sm text-muted">
-          Competition and AIDA logos go beside the title. Sponsor logos go after the list, on the last page.
-        </p>
-      </div>
+      <p className="text-sm text-muted">
+        Competition and AIDA logos go beside the title. Sponsor logos go after the list, on the last page.
+      </p>
       <div className="flex flex-wrap items-center gap-2">
         <AddButton label="+ Header logo" multiple onFiles={(f) => void add(f, headerPlace)} />
         <AddButton label="+ Sponsor logos" multiple onFiles={(f) => void add(f, () => "SPONSORS")} />

@@ -3,7 +3,7 @@ import { DayBadge } from "~/components/day-tabs";
 import { ArrowIcon } from "~/components/icons";
 import { LogosEditor } from "~/components/logos-editor";
 import { PrintSheet } from "~/components/start-list/print-sheet";
-import { Alert, Button, Card } from "~/components/ui";
+import { Alert, Button, SideCard } from "~/components/ui";
 import { downloadBlob, downloadText, toXlsx, type SheetTitle } from "~/lib/export/files";
 import { fileBase, toCsv } from "~/lib/export/table";
 import { useStartList } from "~/state/derived";
@@ -12,8 +12,8 @@ import type { Action, AppState, PrintOptions } from "~/state/store";
 
 function Toggle({ label, checked, onChange }: { label: string; checked: boolean; onChange(v: boolean): void }) {
   return (
-    <label className="flex items-center gap-2 text-sm">
-      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="accent-accent" />
+    <label className="flex min-h-10 items-center gap-2 text-sm">
+      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="size-4 accent-accent" />
       {label}
     </label>
   );
@@ -44,15 +44,23 @@ export function FinalStep({ state, dispatch }: { state: AppState; dispatch(a: Ac
     }
   };
 
+  const starts = table.rows.filter((r) => r.kind === "START").length;
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="no-print space-y-4">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h2 className="flex items-center gap-2 text-xl">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div className="min-w-0 flex-1 basis-80">
+            <h2 className="flex items-center gap-2 text-2xl font-bold tracking-tight sm:text-[28px]">
               Print & export {state.twoDay && <DayBadge day={state.day} />}
             </h2>
-            <p className="text-sm text-muted">Check the sheet, then print it or download it.</p>
+            <p className="mt-1 text-muted">
+              Check the sheet, then print it or download it.{" "}
+              <span className="tabular-nums">
+                {starts} start{starts === 1 ? "" : "s"}
+              </span>
+              .
+            </p>
           </div>
           <Button variant="secondary" onClick={() => dispatch({ type: "step", step: "list" })}>
             <ArrowIcon dir="left" /> Back to start list
@@ -66,47 +74,64 @@ export function FinalStep({ state, dispatch }: { state: AppState; dispatch(a: Ac
           </Alert>
         )}
         {error && <Alert tone="error">{error}</Alert>}
-
-        <Card className="space-y-4 !p-4">
-          <div className="flex flex-wrap gap-2">
-            <Button onClick={() => window.print()}>Print / Save as PDF</Button>
-            <Button variant="secondary" onClick={() => downloadText(`${base}.csv`, toCsv(table), "text/csv;charset=utf-8")}>
-              Download CSV
-            </Button>
-            <Button
-              variant="secondary"
-              disabled={!!busy}
-              onClick={() => run("Excel file", async () => downloadBlob(`${base}.xlsx`, await toXlsx(table, title)))}
-            >
-              {busy === "Excel file" ? "Creating Excel file…" : "Download Excel"}
-            </Button>
-            <Button
-              variant="ghost"
-              title="Everything (athletes, settings, order, logos) to reopen later"
-              onClick={() => downloadText(`${base}.startlist.json`, toProjectJson(state), "application/json")}
-            >
-              Save project
-            </Button>
-          </div>
-          <div className="flex flex-wrap gap-x-6 gap-y-2">
-            <Toggle label="Warm-up (WT) column" checked={print.showWarmup} onChange={(v) => setPrint({ showWarmup: v })} />
-            <Toggle label="Check-in column" checked={print.showCheckIn} onChange={(v) => setPrint({ showCheckIn: v })} />
-            <Toggle label="Start numbers" checked={print.showStartNumber} onChange={(v) => setPrint({ showStartNumber: v })} />
-            <Toggle label="New page after each break" checked={print.pageBreakAtBreaks} onChange={(v) => setPrint({ pageBreakAtBreaks: v })} />
-          </div>
-          <p className="text-xs text-muted">
-            Files are made in this browser. For a PDF, choose Save as PDF as the printer in the print dialog.
-          </p>
-        </Card>
-
-        <Card className="!p-4">
-          <LogosEditor logos={state.logos} dispatch={dispatch} />
-        </Card>
       </div>
 
-      {/* The preview is also what gets printed. */}
-      <div className="print-area rounded-xl bg-white p-4 shadow-sm ring-1 ring-line sm:p-8 print:rounded-none print:p-0 print:shadow-none print:ring-0">
-        <PrintSheet {...event} type={settings.type} table={table} pageBreakAtBreaks={print.pageBreakAtBreaks} logos={state.logos} />
+      <div className="grid items-start gap-6 lg:grid-cols-[300px_minmax(0,1fr)] print:block">
+        {/* Two columns of cards between md and lg, so the sheet isn't pushed far down. */}
+        <aside
+          aria-label="Export and sheet options"
+          className="no-print space-y-4 md:grid md:grid-cols-2 md:items-start md:gap-4 md:space-y-0 lg:block lg:space-y-4"
+        >
+          <SideCard title="Print or download">
+            <div className="grid grid-cols-2 gap-2">
+              <Button className="col-span-2" onClick={() => window.print()}>
+                Print / Save as PDF
+              </Button>
+              <Button variant="secondary" className="px-2 whitespace-nowrap" onClick={() => downloadText(`${base}.csv`, toCsv(table), "text/csv;charset=utf-8")}>
+                Download CSV
+              </Button>
+              <Button
+                variant="secondary"
+                className="px-2 whitespace-nowrap"
+                disabled={!!busy}
+                onClick={() => run("Excel file", async () => downloadBlob(`${base}.xlsx`, await toXlsx(table, title)))}
+              >
+                {busy === "Excel file" ? "Creating…" : "Download Excel"}
+              </Button>
+            </div>
+            <p className="mt-3 text-xs text-muted">
+              Files are made in this browser. For a PDF, choose Save as PDF as the printer in the print dialog.
+            </p>
+            <div className="mt-3 border-t border-line-soft pt-3">
+              <Button
+                variant="ghost"
+                className="w-full"
+                title="Everything (athletes, settings, order, logos) to reopen later"
+                onClick={() => downloadText(`${base}.startlist.json`, toProjectJson(state), "application/json")}
+              >
+                Save project
+              </Button>
+            </div>
+          </SideCard>
+          <SideCard title="On the sheet">
+            <div className="space-y-1">
+              <Toggle label="Warm-up (WT) column" checked={print.showWarmup} onChange={(v) => setPrint({ showWarmup: v })} />
+              <Toggle label="Check-in column" checked={print.showCheckIn} onChange={(v) => setPrint({ showCheckIn: v })} />
+              <Toggle label="Start numbers" checked={print.showStartNumber} onChange={(v) => setPrint({ showStartNumber: v })} />
+              <Toggle label="New page after each break" checked={print.pageBreakAtBreaks} onChange={(v) => setPrint({ pageBreakAtBreaks: v })} />
+            </div>
+          </SideCard>
+          <SideCard title="Logos" className="md:col-span-2">
+            <LogosEditor logos={state.logos} dispatch={dispatch} />
+          </SideCard>
+        </aside>
+
+        {/* The preview is also what gets printed: a white page in both themes. */}
+        <div className="min-w-0 overflow-x-auto rounded-xl bg-sunken p-1.5 ring-1 ring-line sm:p-6 print:overflow-visible print:rounded-none print:bg-transparent print:p-0 print:ring-0">
+          <div className="print-area mx-auto rounded-lg bg-white p-3 shadow-md sm:rounded-none sm:p-8 print:p-0 print:shadow-none">
+            <PrintSheet {...event} type={settings.type} table={table} pageBreakAtBreaks={print.pageBreakAtBreaks} logos={state.logos} />
+          </div>
+        </div>
       </div>
     </div>
   );
