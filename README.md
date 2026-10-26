@@ -1,4 +1,4 @@
-# Start List Maker
+# [Start List Maker](https://www.startlistmaker.online)
 
 **Freediving start lists in minutes, straight from your Google Forms export.**
 

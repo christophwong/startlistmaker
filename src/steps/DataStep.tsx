@@ -220,7 +220,8 @@ export function DataStep({ state, dispatch }: { state: AppState; dispatch(a: Act
       <Card className="space-y-3 !p-4">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
           <span>
-            <strong className="tabular-nums">{included.length}</strong> athletes · <strong className="tabular-nums">{startCount}</strong> starts
+            <strong className="tabular-nums">{included.length}</strong> athlete{included.length === 1 ? "" : "s"} ·{" "}
+            <strong className="tabular-nums">{startCount}</strong> start{startCount === 1 ? "" : "s"}
           </span>
           {withErrors.length > 0 && <Badge tone="red">{withErrors.length} with errors</Badge>}
           {withWarnings.length > 0 && <Badge tone="amber">{withWarnings.length} with warnings</Badge>}
