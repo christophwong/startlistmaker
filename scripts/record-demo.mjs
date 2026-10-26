@@ -55,7 +55,7 @@ async function record() {
   await page.goto(BASE);
   await pause(1800);
   await shot("1-input");
-  await page.getByLabel("Form responses file").setInputFiles("src/samples/depth-2day.csv");
+  await page.getByLabel("Sign-up sheet file").setInputFiles("src/samples/depth-2day.csv");
 
   // 2. Columns.
   await page.getByRole("heading", { name: "Match the columns" }).waitFor();

@@ -1,6 +1,6 @@
 # Start List Maker
 
-Build freediving competition start lists (OT / WT / check-in, lanes and zones, breaks) from Google Form responses. It runs entirely in the browser, so athlete data never leaves the device.
+Build freediving competition start lists (OT / WT / check-in, lanes and zones, breaks) from a Google Forms sign-up sheet. It runs entirely in the browser, so athlete data never leaves the device.
 
 **https://ctophw.xyz/startlistmaker/** · try the demo: https://ctophw.xyz/startlistmaker/#demo (the custom domain `startlistmaker.online` comes later)
 

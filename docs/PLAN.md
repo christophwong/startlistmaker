@@ -1,6 +1,6 @@
 # Start List Maker: plan and TODO
 
-A light, client-only version of the pnwapnea start-list generator, hosted on GitHub Pages at **startlistmaker.online**. Organizers upload Google Form responses, fix the data, choose timing, lanes, breaks and order, then print or download the start list. See [DESIGN.md](./DESIGN.md).
+A light, client-only version of the pnwapnea start-list generator, hosted on GitHub Pages at **startlistmaker.online**. Organizers upload their Google Forms sign-up sheet, fix the data, choose timing, lanes, breaks and order, then print or download the start list. See [DESIGN.md](./DESIGN.md).
 
 ## Decisions (agreed)
 

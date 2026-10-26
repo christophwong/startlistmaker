@@ -21,7 +21,7 @@ export function HelpDialog({ open, onClose }: { open: boolean; onClose(): void }
       <Section title="How it works">
         <ol className="list-decimal space-y-1 pl-5">
           <li>
-            <strong>Input:</strong> choose or drop your form responses, paste them from Google Sheets, or enter athletes by
+            <strong>Input:</strong> choose or drop your sign-up sheet, paste it from Google Sheets, or enter athletes by
             hand.
           </li>
           <li>

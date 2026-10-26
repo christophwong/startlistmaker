@@ -66,7 +66,7 @@ export function DemoPicker({
   return (
     <Modal open={open} onClose={onClose} title="Try a demo" className="w-[min(34rem,calc(100vw-2rem))]">
       <p className="text-sm text-slate-600 dark:text-slate-400">
-        Opens a finished start list built from made-up athletes, in the same format as real form responses. Change anything
+        Opens a finished start list built from made-up athletes, in the same format as a real sign-up sheet. Change anything
         you like.
       </p>
       <Choice<SampleKind>

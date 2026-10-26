@@ -4,7 +4,7 @@
 
 An organizer goes through five steps, and can jump back to any step they've reached:
 
-1. **Input**: upload a CSV/XLSX of Google Form responses, paste cells from Google Sheets, open a saved project (`.json`), enter athletes by hand, or open a demo.
+1. **Input**: upload a sign-up sheet (CSV/XLSX from Google Forms), paste cells from Google Sheets, open a saved project (`.json`), enter athletes by hand, or open a demo.
 2. **Columns**: confirm the header → field mapping (auto-mapped, editable), pool vs depth (auto-detected), which day of a two-day form, and which sheet of a workbook.
 3. **Athletes**: an editable table of registrations. Red cells keep a start off the list (name, discipline, AP), and amber cells are warnings. Rows can be added, deleted, or left off the list.
 4. **Start list**: event details, settings, then the generated list. Starts can be reordered with ↑↓, by dragging, or by typing a position. Column headers sort it. Breaks can be inserted, edited, or removed. Issues (recovery time, same OT) are listed.

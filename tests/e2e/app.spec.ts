@@ -75,7 +75,7 @@ test("#demo-pool link opens the pool sample with lanes", async ({ page }) => {
 
 test("upload → fix a row → generate; reorder and sort", async ({ page }) => {
   await page.goto("/");
-  await page.getByLabel("Form responses file").setInputFiles("tests/fixtures/ecac-depth-day1.csv");
+  await page.getByLabel("Sign-up sheet file").setInputFiles("tests/fixtures/ecac-depth-day1.csv");
   await expect(page.getByRole("heading", { name: "Match the columns" })).toBeVisible();
   await page.getByRole("button", { name: "Continue to athletes" }).click();
   await expect(page.getByRole("heading", { name: "Athletes" })).toBeVisible();
@@ -138,7 +138,7 @@ test("Excel export, and a saved project reopens where it left off", async ({ pag
 
   page.once("dialog", (d) => d.accept());
   await page.getByRole("button", { name: "Clear all data" }).click();
-  await page.getByLabel("Form responses file").setInputFiles({
+  await page.getByLabel("Sign-up sheet file").setInputFiles({
     name: "event.startlist.json",
     mimeType: "application/json",
     buffer: fs.readFileSync(projectPath),
@@ -207,7 +207,7 @@ test("logos: header and sponsors on the sheet, in the PDF and in a saved project
   const projectPath = await (await json).path();
   page.once("dialog", (d) => d.accept());
   await page.getByRole("button", { name: "Clear all data" }).click();
-  await page.getByLabel("Form responses file").setInputFiles({
+  await page.getByLabel("Sign-up sheet file").setInputFiles({
     name: "event.startlist.json",
     mimeType: "application/json",
     buffer: fs.readFileSync(projectPath),
