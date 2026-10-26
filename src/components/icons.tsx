@@ -134,6 +134,13 @@ export const SortIcon = (p: IconProps) => (
   </Svg>
 );
 
+/** A page with an up arrow: the drop zone. */
+export const FileUploadIcon = (p: IconProps) => (
+  <Svg strokeWidth={1.6} {...p}>
+    <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8zM14 3v5h5M12 17v-6M9 13.5 12 11l3 2.5" />
+  </Svg>
+);
+
 export const UploadIcon = (p: IconProps) => (
   <Svg {...p}>
     <path d="M12 15V4M7 9l5-5 5 5M4 15v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4" />

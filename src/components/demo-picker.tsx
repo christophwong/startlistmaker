@@ -52,14 +52,17 @@ function Choice<T extends string | number>({
 
 export function DemoPicker({
   open,
+  initialKind = "depth",
   onClose,
   onOpen,
 }: {
   open: boolean;
+  /** Preselected by the Depth demo / Pool demo button that opened it. */
+  initialKind?: SampleKind;
   onClose(): void;
   onOpen(kind: SampleKind, starts: SampleStarts): void;
 }) {
-  const [kind, setKind] = useState<SampleKind>("depth");
+  const [kind, setKind] = useState<SampleKind>(initialKind);
   const [starts, setStarts] = useState<SampleStarts>(2);
   const depth = kind === "depth";
 

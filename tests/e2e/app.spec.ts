@@ -60,7 +60,7 @@ test("has a strict CSP and no inline scripts", async ({ page }) => {
 
 test("demo: sample depth list → finalize → CSV download; PDF is through Print", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: /Try a demo/ }).click();
+  await page.getByRole("button", { name: "Depth demo" }).click();
   // Defaults: depth, 2 days.
   await page.getByRole("dialog", { name: "Try a demo" }).getByRole("button", { name: "Open the demo" }).click();
   await expect(page.getByRole("heading", { name: "Start list" })).toBeVisible();
@@ -205,7 +205,7 @@ test("revisiting Columns keeps athlete edits; a changed import asks before repla
 
 test("paste from Google Sheets", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: "Paste from Google Sheets" }).click();
+  await page.getByRole("button", { name: "Paste from Sheets" }).click();
   await page.getByLabel("Pasted cells").fill(
     "Name\tGender\tDiscipline\tAnnounced Performance (AP)\tDive Time\nAna Lima\tFemale\tCWT\t30\t1:10\nBo Chen\tMale\tFIM\t40\t1:30\n",
   );
@@ -301,7 +301,8 @@ test("logos: header and sponsors on the sheet and in a saved project", async ({ 
   await page.getByRole("button", { name: "Save project" }).click();
   const projectPath = await (await json).path();
   await clearAllData(page);
-  await page.getByLabel("Google Forms export file").setInputFiles({
+  // This time through "Open a project" (the upload box takes projects too, above).
+  await page.getByLabel("Project file (.json)").setInputFiles({
     name: "event.startlist.json",
     mimeType: "application/json",
     buffer: fs.readFileSync(projectPath),
@@ -329,16 +330,17 @@ test("work survives a reload in the same tab, and Clear all data removes it", as
   await page.reload();
   await expect(page.getByRole("heading", { name: "Start list" })).toBeVisible();
   await clearAllData(page);
-  await expect(page.getByRole("heading", { name: /Freediving start lists/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /From Google Form to official start list/ })).toBeVisible();
   const stored = await page.evaluate(() => [sessionStorage.length, localStorage.length]);
   expect(stored).toEqual([0, 0]);
 });
 
 test("demo picker: pool with one start per athlete", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: /Try a demo/ }).click();
+  await page.getByRole("button", { name: "Pool demo" }).click();
   const picker = page.getByRole("dialog", { name: "Try a demo" });
-  await picker.getByText("Pool", { exact: true }).click();
+  // Opened from Pool demo: pool is already chosen.
+  await expect(picker.getByLabel("Pool")).toBeChecked();
   await expect(picker.getByText("Starts per athlete")).toBeVisible();
   await picker.getByText("1 start", { exact: true }).click();
   await picker.getByRole("button", { name: "Open the demo" }).click();
