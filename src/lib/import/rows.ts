@@ -218,15 +218,18 @@ const nameWords = (d: Identity) =>
     .split(/[^\p{L}]+/u)
     .filter(Boolean);
 
+const emailOf = (d: Identity) => d.email?.trim().toLowerCase() ?? "";
+
 /**
- * Same name (case-insensitive), or the same email with a compatible name:
+ * Same name (case-insensitive) unless both rows give different emails (two
+ * athletes who share a name), or the same email with a compatible name:
  * `Teodorvaskel` / `Teodor vaskel`, `Brannick` / `Rolf Brannick`. The name check keeps
  * two siblings registered with a parent's email apart.
  */
 export function sameAthlete(a: Identity, b: Identity): boolean {
-  if (athleteKey(a) === athleteKey(b)) return true;
-  const email = a.email?.trim().toLowerCase();
-  if (!email || email !== b.email?.trim().toLowerCase()) return false;
+  const email = emailOf(a);
+  if (athleteKey(a) === athleteKey(b)) return !email || !emailOf(b) || email === emailOf(b);
+  if (!email || email !== emailOf(b)) return false;
   const x = nameWords(a);
   const y = nameWords(b);
   if (!x.length || !y.length) return false;
@@ -255,7 +258,8 @@ function mergeDrafts(prev: RegistrationDraft, next: RegistrationDraft): Registra
 /**
  * Parses all data rows. Blank rows are skipped. When an athlete appears
  * twice, a later full row replaces the earlier one (a resubmitted form), and
- * a later row with only start 2 updates just that start.
+ * a later row with only start 2 updates just that start. Rows with the same
+ * name but different emails are both kept and flagged as possible duplicates.
  */
 export function parseRows(rows: string[][], mapping: Mapping, ctx: ImportContext): ParsedRow[] {
   const parsed = rows
@@ -291,6 +295,11 @@ export function parseRows(rows: string[][], mapping: Mapping, ctx: ImportContext
     const p = parsed[i];
     if (p.partial && !p.draft!.starts.some((s) => s.startNumber === 1)) {
       p.warnings.push("Start 1 is empty, so this athlete has only start 2.");
+    }
+    const twins = holders.filter((j) => j !== i && athleteKey(parsed[j].draft!) === athleteKey(p.draft!));
+    if (twins.length) {
+      const rows = twins.map((j) => parsed[j].rowNumber).join(", ");
+      p.warnings.push(`Possible duplicate of row ${rows}: same name, different email. Both are kept.`);
     }
   }
   return parsed;

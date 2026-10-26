@@ -1,7 +1,7 @@
 import { useMemo, useState, type ComponentProps, type ReactNode } from "react";
 import { Alert, Badge, Button, Card, cx } from "~/components/ui";
 import { disciplinesFor, isTimedDiscipline, normalizeDiscipline, type CompetitionType } from "~/lib/disciplines";
-import { checkRow, type CellKey, type RegRow, type RegStart, type RowCheck } from "~/lib/registrations";
+import { checkRows, type CellKey, type RegRow, type RegStart, type RowCheck } from "~/lib/registrations";
 import type { Action, AppState } from "~/state/store";
 
 /**
@@ -168,10 +168,7 @@ export function DataStep({ state, dispatch }: { state: AppState; dispatch(a: Act
   const { registrations: rows, maxStarts } = state;
   const type = state.settings.type;
   const [filter, setFilter] = useState<"all" | "problems">("all");
-  const checks = useMemo(
-    () => new Map(rows.map((r, i) => [r.id, checkRow(r, type, maxStarts, i)])),
-    [rows, type, maxStarts],
-  );
+  const checks = useMemo(() => checkRows(rows, type, maxStarts), [rows, type, maxStarts]);
   const included = rows.filter((r) => !r.excluded);
   const withErrors = included.filter((r) => Object.keys(checks.get(r.id)!.errors).length);
   const withWarnings = included.filter((r) => Object.keys(checks.get(r.id)!.warnings).length);

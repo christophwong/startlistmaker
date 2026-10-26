@@ -267,7 +267,36 @@ describe("sameAthlete", () => {
     [a("Meihua", "Wu", "m@x.com"), a("Meihua (May)", "Wu", "M@X.com"), true],
     [a("Anna", "Ostrand", "mom@x.com"), a("Ben", "Ostrand", "mom@x.com"), false],
     [a("Brannick", ""), a("Rolf", "Brannick"), false],
+    [a("Ana", "Ruiz", "ana@x.com"), a("Ana", "Ruiz", "ANA@x.com "), true],
+    [a("Ana", "Ruiz", "ana@x.com"), a("Ana", "Ruiz"), true],
+    [a("Ana", "Ruiz", "ana@x.com"), a("Ana", "Ruiz", "mum@x.com"), false],
   ])("%o ~ %o → %s", (x, y, expected) => expect(sameAthlete(x, y)).toBe(expected));
+});
+
+describe("same name, different email", () => {
+  const mapping = autoMap(["First name", "Last name", "Email", "Discipline", "AP"]);
+  const parse = (rows: string[][]) => parseRows(rows, mapping, { type: "DEPTH", maxStarts: 1 });
+
+  it("keeps both rows and flags each as a possible duplicate of the other", () => {
+    const [a, b] = parse([
+      ["Ana", "Ruiz", "ana@x.com", "CWT", "30"],
+      ["Ana", "Ruiz", "mum@x.com", "FIM", "20"],
+    ]);
+    expect(a.draft!.starts[0]).toMatchObject({ discipline: "CWT" });
+    expect(b.draft!.starts[0]).toMatchObject({ discipline: "FIM" });
+    expect(a.warnings).toContain("Possible duplicate of row 3: same name, different email. Both are kept.");
+    expect(b.warnings).toContain("Possible duplicate of row 2: same name, different email. Both are kept.");
+  });
+
+  it("still treats the same email, or a missing one, as a resubmission", () => {
+    const [a, b] = parse([
+      ["Ana", "Ruiz", "ana@x.com", "CWT", "30"],
+      ["Ana", "Ruiz", "", "FIM", "20"],
+    ]);
+    expect(a.draft).toBeNull();
+    expect(a.warnings).toContain("Replaced by row 3 (same athlete).");
+    expect(b.warnings.some((w) => w.startsWith("Possible duplicate"))).toBe(false);
+  });
 });
 
 describe("workbooks", () => {

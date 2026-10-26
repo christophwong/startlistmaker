@@ -7,7 +7,7 @@ import {
   type CompetitionType,
 } from "./disciplines";
 import type { FieldKey, Mapping } from "./import/columns";
-import { parseGender, type ParsedRow } from "./import/rows";
+import { athleteKey, parseGender, type ParsedRow } from "./import/rows";
 import type { EngineStartWithAthlete } from "./startlist/types";
 import { formatDuration, parseDuration } from "./time";
 
@@ -128,6 +128,30 @@ export function checkRow(row: RegRow, type: CompetitionType, maxStarts: 1 | 2, o
     });
   }
   return { errors, warnings, starts };
+}
+
+/**
+ * `checkRow` for every row, plus a name warning on included rows that share a
+ * name: two athletes, or one athlete twice. Resubmissions were merged at import,
+ * so a pair left here is for the organizer to decide.
+ */
+export function checkRows(rows: RegRow[], type: CompetitionType, maxStarts: 1 | 2): Map<string, RowCheck> {
+  const checks = new Map(rows.map((r, i) => [r.id, checkRow(r, type, maxStarts, i)]));
+  const byName = new Map<string, RegRow[]>();
+  for (const r of rows) {
+    const key = athleteKey(r);
+    if (r.excluded || !key) continue;
+    byName.set(key, [...(byName.get(key) ?? []), r]);
+  }
+  for (const same of byName.values()) {
+    for (const r of same) {
+      const others = same.filter((o) => o !== r).map((o) => (o.rowNumber ? `row ${o.rowNumber}` : "an added athlete"));
+      if (!others.length) continue;
+      checks.get(r.id)!.warnings.name ??=
+        `Possible duplicate of ${others.join(", ")} (same name). If it's the same athlete, delete one or untick "On list".`;
+    }
+  }
+  return checks;
 }
 
 /** Engine starts of every included row, in registration order. */

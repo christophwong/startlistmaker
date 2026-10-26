@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { autoMap } from "./import/columns";
 import { parseCsv } from "./import/file";
 import { parseRows } from "./import/rows";
-import { checkRow, emptyRow, rowsFromImport, rowsToStarts, type RegRow } from "./registrations";
+import { checkRow, checkRows, emptyRow, rowsFromImport, rowsToStarts, type RegRow } from "./registrations";
 
 const row = (patch: Partial<RegRow> = {}, s1: Partial<RegRow["starts"][0]> = {}): RegRow => {
   const r = emptyRow("x");
@@ -54,6 +54,28 @@ describe("checkRow", () => {
 
   it("excluded rows are left off", () => {
     expect(rowsToStarts([row({ excluded: true }), row({ id: "y" })], "DEPTH", 1).map((s) => s.athleteId)).toEqual(["y"]);
+  });
+});
+
+describe("checkRows", () => {
+  it("warns on the name of included rows that share one", () => {
+    const rows = [
+      row({ id: "a", rowNumber: 5 }),
+      row({ id: "b", rowNumber: 9, firstName: "ana", lastName: "LIMA " }),
+      row({ id: "c", rowNumber: null }),
+      row({ id: "d", rowNumber: 12, firstName: "Mia" }),
+    ];
+    const checks = checkRows(rows, "DEPTH", 1);
+    expect(checks.get("a")!.warnings.name).toMatch(/^Possible duplicate of row 9, an added athlete \(same name\)/);
+    expect(checks.get("c")!.warnings.name).toMatch(/^Possible duplicate of row 5, row 9 /);
+    expect(checks.get("d")!.warnings.name).toBeUndefined();
+    // Still scheduled: it's only a warning
+    expect(checks.get("a")!.starts).toHaveLength(1);
+  });
+
+  it("drops the warning once one of the pair is off the list", () => {
+    const checks = checkRows([row({ id: "a" }), row({ id: "b", excluded: true })], "DEPTH", 1);
+    expect(checks.get("a")!.warnings.name).toBeUndefined();
   });
 });
 
