@@ -41,4 +41,4 @@ Key points that span files:
 
 - `src/**/*.test.ts` are unit tests. `tests/fixtures/ecac.ts` reproduces the real ECAC start sheets, and engine changes must keep those passing.
 - `tests/unit/anonymize.test.ts` runs the anonymizer script.
-- `tests/e2e/app.spec.ts` covers the CSP, demo, upload → fix → generate, sort, drag and drop, paste, exports, project save/open, and storage clearing.
+- `tests/e2e/app.spec.ts` covers the CSP, demo, upload → fix → generate, sort, drag and drop, paste, exports, logos, project save/open, and storage clearing. Test images are drawn on a canvas in the page, so there are no binary fixtures.

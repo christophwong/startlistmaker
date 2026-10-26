@@ -36,7 +36,8 @@ export function HelpDialog({ open, onClose }: { open: boolean; onClose(): void }
             order. Drag rows or sort by a column.
           </li>
           <li>
-            <strong>Finalize:</strong> print, save as PDF, or download PDF, CSV or Excel.
+            <strong>Finalize:</strong> add logos if you like (competition and AIDA beside the title, sponsors after the list),
+            then print, save as PDF, or download PDF, CSV or Excel.
           </li>
         </ol>
       </Section>
@@ -85,8 +86,8 @@ export function HelpDialog({ open, onClose }: { open: boolean; onClose(): void }
 
       <Section title="Saving your work">
         <p>
-          <strong>Save project</strong> on the Finalize step downloads a .json file with everything: athletes, settings and
-          the order. To carry on later, choose that file on the Input step.
+          <strong>Save project</strong> on the Finalize step downloads a .json file with everything: athletes, settings,
+          the order and logos. To carry on later, choose that file on the Input step.
         </p>
         <p>
           Your work is kept in this tab until you close it. Tick “Remember on this device” to keep it after the tab closes, and

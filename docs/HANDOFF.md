@@ -1,6 +1,6 @@
 # Handoff
 
-Last updated: 2026-10-26 (custom domain live)
+Last updated: 2026-10-26 (logos branch)
 
 ## State
 
@@ -82,17 +82,25 @@ The importer skips blank rows, which the organizer used as break markers. The se
 
 The remaining differences are presentation only: no logos or sponsor strip; the date is on one line ("Sun, Sep 6, 2026 · Seacrest Cove 1"); gender shows as M/F, not Male/Female; Discipline comes before AP (headed DISP on the sheet); and breaks are a black bar with the length and resume time, not a red "BREAK".
 
-Possible follow-ups, none agreed yet: a tie-break option (registration order vs name), and normalizing common country spellings (United States → USA).
+Follow-ups considered and declined for now (user, 2026-10-26; in PLAN decisions): a tie-break option (registration order vs name) and normalizing country spellings. Organizers reorder by hand when needed.
+
+## Logos branch (2026-10-26)
+
+`feature/sponsor-strip` (not merged, not pushed) adds header logos and a sponsor strip, as on the ECAC Day 2 sheet: competition logo left of the title, AIDA right, sponsors wrapped in centred rows after the list. One mechanism for both: add images on the Finalize step's Logos card, then choose place, size (S/M/L) and order. Details in DESIGN.md §2, §5, §6 and §7.
+
+- **Commits:** state + editor (`a0e1180`), print sheet (`e782238`), Download PDF (`56d023b`), then the e2e test and docs.
+- **Checks:** typecheck clean, 183 unit tests, e2e 23 passed + 1 skipped.
+- **Checked by eye** with stand-in logos (coloured shapes, not the real files): print to PDF via Chromium, Download PDF for the depth demo (1 page) and pool demo (sponsors on page 2), preview at 1280 and 390 px. PDFs are about 100–150 KB with Flate compression (2.5 MB without).
+- **Known:** Chrome gives an SVG with no width/height a default 300×150, so the "has no size" message doesn't show there. With header logos, a long title wraps to the middle half. The PDF title sits a few points lower than before, even without logos.
+- **Not done:** trying it with the real ECAC/AIDA/sponsor files.
 
 ## Next up
 
-1. **Form data:**
+1. **Logos:** try `feature/sponsor-strip` with the real logo files, adjust sizes if needed, then merge to `main` and push (that deploys).
+2. **Form data:**
    - Ask the organizer to fix `Dicipline` → `Discipline` in the Google Form.
    - If there's a real **pool** export, anonymize it and replace `src/samples/pool.csv`, which currently comes from pnwapnea's synthetic fixture.
-2. **Ask the user** about the follow-ups from the Day 2 comparison: the AP tie-break option and country normalization. The user wants to keep the sheet design as it is (PLAN decision).
-3. **New backlog items, each on its own feature branch** (details in PLAN.md):
-   - `feature/sponsor-strip`: logos and a sponsor strip on the last page.
-   - `feature/monitoring`: counting site visits. This reverses the no-analytics rule, so the CSP, CLAUDE.md, the e2e check and the Help dialog's privacy claims all change with it.
+3. **`feature/monitoring`** (details in PLAN.md): counting site visits. This reverses the no-analytics rule, so the CSP, CLAUDE.md, the e2e check and the Help dialog's privacy claims all change with it. My suggestion to the user was GoatCounter with the script served from our own origin; not decided yet.
 4. **Backlog (PLAN.md):** a page per discipline block, a Unicode font for the jsPDF download, undo, and keyboard drag.
 
 ## Notes

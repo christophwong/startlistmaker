@@ -147,6 +147,78 @@ test("Excel export, and a saved project reopens where it left off", async ({ pag
   await expect(page.getByText("41/41 starts scheduled")).toBeVisible();
 });
 
+/** A PNG drawn in the page, so no binary fixtures are needed. */
+async function png(page: Page, width: number, height: number, color: string) {
+  const b64 = await page.evaluate(
+    ([w, h, c]) => {
+      const canvas = Object.assign(document.createElement("canvas"), { width: w, height: h });
+      const ctx = canvas.getContext("2d")!;
+      ctx.fillStyle = c as string;
+      ctx.fillRect(0, 0, w as number, h as number);
+      return canvas.toDataURL("image/png").split(",")[1];
+    },
+    [width, height, color] as const,
+  );
+  return Buffer.from(b64, "base64");
+}
+
+test("logos: header and sponsors on the sheet, in the PDF and in a saved project", async ({ page }) => {
+  await page.goto("/#demo");
+  await page.getByRole("button", { name: "Finalize →" }).click();
+
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="300" height="100"><rect width="300" height="100" fill="#1e40af"/></svg>';
+  await page.locator("label", { hasText: "+ Header logo" }).locator("input").setInputFiles([
+    { name: "competition.png", mimeType: "image/png", buffer: await png(page, 400, 400, "#15803d") },
+    { name: "aida.svg", mimeType: "image/svg+xml", buffer: Buffer.from(svg) },
+  ]);
+  await page.locator("label", { hasText: "+ Sponsor logos" }).locator("input").setInputFiles([
+    { name: "sponsor-a.png", mimeType: "image/png", buffer: await png(page, 500, 200, "#0e7490") },
+    { name: "sponsor-b.png", mimeType: "image/png", buffer: await png(page, 200, 200, "#7c3aed") },
+    { name: "notes.txt", mimeType: "text/plain", buffer: Buffer.from("not an image") },
+  ]);
+  await expect(page.getByRole("alert")).toContainText("notes.txt: use a PNG, JPEG, WebP, GIF or SVG image.");
+  await expect(page.getByLabel("Place of competition.png")).toHaveValue("HEADER_LEFT");
+  await expect(page.getByLabel("Place of aida.svg")).toHaveValue("HEADER_RIGHT");
+
+  // The preview (also what prints): both header logos beside the title, sponsors after the list.
+  const sheet = page.locator(".print-area");
+  await expect(sheet.locator("header img")).toHaveCount(2);
+  const sponsors = sheet.getByLabel("Sponsors").locator("img");
+  await expect(sponsors).toHaveCount(2);
+  await expect(sheet.locator("header img").nth(1)).toHaveAttribute("src", /^data:image\/png;base64,/);
+
+  // Reorder and resize: sponsor-b goes first and grows.
+  const widthOf = async (i: number) => Number(await sponsors.nth(i).getAttribute("width"));
+  const before = await widthOf(1);
+  await page.getByRole("button", { name: "Move sponsor-b.png left" }).click();
+  await page.getByLabel("Size of sponsor-b.png").selectOption("L");
+  expect(await widthOf(0)).toBeGreaterThan(before);
+
+  // The PDF embeds all four images.
+  const pdf = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Download PDF" }).click();
+  const bytes = fs.readFileSync(await (await pdf).path()).toString("latin1");
+  expect(bytes.startsWith("%PDF-")).toBe(true);
+  expect(bytes.match(/\/Subtype \/Image/g)).toHaveLength(4);
+
+  // A saved project brings the logos back, in order.
+  const json = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Save project" }).click();
+  const projectPath = await (await json).path();
+  page.once("dialog", (d) => d.accept());
+  await page.getByRole("button", { name: "Clear all data" }).click();
+  await page.getByLabel("Form responses file").setInputFiles({
+    name: "event.startlist.json",
+    mimeType: "application/json",
+    buffer: fs.readFileSync(projectPath),
+  });
+  await page.getByRole("button", { name: "Finalize →" }).click();
+  await expect(page.getByLabel("Size of sponsor-b.png")).toHaveValue("L");
+  await expect(page.getByRole("button", { name: "Move sponsor-b.png left" })).toBeDisabled();
+  await expect(sheet.locator("header img")).toHaveCount(2);
+  await expect(sponsors).toHaveCount(2);
+});
+
 test("drag a start onto another row to move it", async ({ page }) => {
   test.skip(isMobile(page), "drag and drop is the desktop table; mobile uses ↑ ↓ and position numbers");
   await page.goto("/#demo");
