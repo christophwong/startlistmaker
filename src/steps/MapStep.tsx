@@ -13,7 +13,16 @@ import type { CompetitionType } from "~/lib/disciplines";
 import { missingRequired } from "~/lib/import/columns";
 import { detectMaxStarts } from "~/lib/import/detect";
 import { commonWarnings } from "~/lib/import/rows";
-import { dayImport, parsedRows, type Action, type AppState } from "~/state/store";
+import { dayImport, importKey, parsedRows, type Action, type AppState } from "~/state/store";
+
+/** Continue re-reads the file only if the import changed; ask first when that replaces edited athletes. */
+function continueToAthletes(state: AppState, dispatch: (a: Action) => void) {
+  const n = state.editedRows.length;
+  const rereads = importKey(state) !== state.importedKey;
+  const athletes = `${n} athlete${n === 1 ? "" : "s"}`;
+  if (rereads && n && !confirm(`Re-read the file? Your changes to ${athletes} will be replaced.`)) return;
+  dispatch({ type: "confirmMapping" });
+}
 
 export function MapStep({ state, dispatch }: { state: AppState; dispatch(a: Action): void }) {
   const source = state.source!;
@@ -40,7 +49,7 @@ export function MapStep({ state, dispatch }: { state: AppState; dispatch(a: Acti
             {source.filename} · {rows.length} row{rows.length === 1 ? "" : "s"}
           </p>
         </div>
-        <Button onClick={() => dispatch({ type: "confirmMapping" })} disabled={rows.length === 0}>
+        <Button onClick={() => continueToAthletes(state, dispatch)} disabled={rows.length === 0}>
           Continue to athletes
         </Button>
       </div>

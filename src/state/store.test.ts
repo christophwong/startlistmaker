@@ -97,6 +97,21 @@ describe("editing", () => {
     expect(s.settings).toMatchObject({ type: "POOL", startTime: 600, lanes: 3, sortDir: "ASC" });
   });
 
+  it("Continue on Columns keeps edits unless the import changed (QA F1)", () => {
+    const r = base.registrations[0];
+    const fixed = run([{ type: "updateRow", id: r.id, patch: { firstName: "Fixed" } }, { type: "addRow" }], base);
+    expect(fixed.editedRows).toEqual([r.id, fixed.registrations.at(-1)!.id]);
+
+    const back = run([{ type: "step", step: "map" }, { type: "confirmMapping" }], fixed);
+    expect(back.step).toBe("data");
+    expect(back.registrations).toBe(fixed.registrations);
+
+    const reread = run([{ type: "use", use: 2 }, { type: "confirmMapping" }], fixed);
+    expect(reread.registrations.some((x) => x.firstName === "Fixed")).toBe(false);
+    expect(reread).toMatchObject({ editedRows: [], use: 2 });
+    expect(reread.importedKey).not.toBe(fixed.importedKey);
+  });
+
   it("blank start: enter athletes by hand", () => {
     const s = run([{ type: "blank" }]);
     expect(s.step).toBe("data");
@@ -130,6 +145,10 @@ describe("project files and stored state", () => {
     delete old.logos;
     delete old.settings.halftimeBreakMin;
     expect(parseState(old)).toMatchObject({ print: initialState.print, logos: [], settings: { halftimeBreakMin: 0 } });
+    // Saved before imports were tracked: the athletes count as read with the current columns.
+    delete old.importedKey;
+    delete old.editedRows;
+    expect(parseState(old)).toMatchObject({ importedKey: s.importedKey, editedRows: [] });
   });
 
   it("keeps logos in the project file and rejects anything but PNG/JPEG data URLs", () => {

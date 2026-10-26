@@ -3,7 +3,7 @@ import { DEPTH_DISCIPLINES, POOL_DISCIPLINES } from "~/lib/disciplines";
 import { LOGO_SRC, MAX_LOGO_PX, MAX_LOGO_SRC, MAX_LOGOS, MAX_LOGOS_TOTAL } from "~/lib/export/logos";
 import { MAX_ROWS } from "~/lib/import/file";
 import { THEME_KEY } from "~/theme";
-import { initialState, type AppState } from "./store";
+import { importKey, initialState, type AppState } from "./store";
 
 /**
  * Session persistence and project files. Everything stays in this browser:
@@ -68,6 +68,8 @@ const stateSchema = z.object({
     }),
     MAX_ROWS,
   ),
+  importedKey: z.nullable(str(20000)),
+  editedRows: list(str(40), MAX_ROWS * 2),
   event: z.object({ name: str(), date: str(20), location: str(), notes: str(2000) }),
   settings: z.object({
     type: z.enum(["POOL", "DEPTH"]),
@@ -125,6 +127,8 @@ export function parseState(value: unknown): AppState | null {
     settings: { ...initialState.settings, ...v.settings },
     print: { ...initialState.print, ...v.print },
   };
+  // Saved before imports were tracked: treat the athletes as read with the current columns, so Continue keeps them.
+  if (v.importedKey === undefined && merged.registrations.length) merged.importedKey = importKey(merged);
   const result = stateSchema.safeParse(merged);
   return result.success ? (result.data as AppState) : null;
 }

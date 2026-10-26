@@ -61,6 +61,10 @@ export interface AppState {
   use: 1 | 2;
   maxStarts: 1 | 2;
   registrations: RegRow[];
+  /** importKey() of the file read that built `registrations`, so Continue on Columns re-reads only when it changed. */
+  importedKey: string | null;
+  /** Rows changed, added or deleted on Athletes since that read. */
+  editedRows: string[];
   event: EventInfo;
   settings: Settings;
   entries: Entry[];
@@ -80,6 +84,8 @@ export const initialState: AppState = {
   use: 1,
   maxStarts: 1,
   registrations: [],
+  importedKey: null,
+  editedRows: [],
   event: { name: "", date: "", location: "", notes: "" },
   settings: { ...defaultSettings("POOL"), timeFormat: DEFAULT_TIME_FORMAT },
   entries: [],
@@ -141,6 +147,16 @@ export function parsedRows(state: Pick<AppState, "source" | "mapping" | "use" | 
   });
 }
 
+/** What a re-read of the file depends on: sheet, columns, day and competition type. */
+export function importKey(state: Pick<AppState, "source" | "mapping" | "use" | "settings">): string | null {
+  if (!state.source) return null;
+  const { filename, sheet } = state.source;
+  return JSON.stringify([filename, sheet ?? null, state.mapping, state.use, state.settings.type]);
+}
+
+const edited = (state: AppState, id: string) =>
+  state.editedRows.includes(id) ? state.editedRows : [...state.editedRows, id];
+
 export const startsOf = (state: Pick<AppState, "registrations" | "settings" | "maxStarts">) =>
   rowsToStarts(state.registrations, state.settings.type, state.maxStarts);
 
@@ -170,11 +186,14 @@ function loadSource(state: AppState, source: Source): AppState {
   };
 }
 
+/** Re-reads the file only if the import changed, so edits on Athletes survive a look at Columns. */
 function confirmMapping(state: AppState): AppState {
+  const key = importKey(state);
+  if (key === state.importedKey && state.registrations.length) return { ...state, step: "data" };
   const { mapping } = dayImport(state);
   const maxStarts = detectMaxStarts(mapping);
   const registrations = rowsFromImport(parsedRows(state), state.source?.table.rows ?? [], mapping, maxStarts);
-  return { ...state, step: "data", maxStarts, registrations };
+  return { ...state, step: "data", maxStarts, registrations, importedKey: key, editedRows: [] };
 }
 
 function generate(state: AppState): AppState {
@@ -215,11 +234,13 @@ export function reducer(state: AppState, action: Action): AppState {
       return {
         ...state,
         registrations: state.registrations.map((r) => (r.id === action.id ? { ...r, ...action.patch } : r)),
+        editedRows: edited(state, action.id),
       };
     case "addRow":
       return {
         ...state,
         registrations: [...state.registrations, emptyRow(`n${state.nextId}`)],
+        editedRows: edited(state, `n${state.nextId}`),
         nextId: state.nextId + 1,
       };
     case "blank":
@@ -236,7 +257,11 @@ export function reducer(state: AppState, action: Action): AppState {
         nextId: 2,
       };
     case "deleteRow":
-      return { ...state, registrations: state.registrations.filter((r) => r.id !== action.id) };
+      return {
+        ...state,
+        registrations: state.registrations.filter((r) => r.id !== action.id),
+        editedRows: edited(state, action.id),
+      };
     case "maxStarts":
       return { ...state, maxStarts: action.maxStarts };
     case "generate":

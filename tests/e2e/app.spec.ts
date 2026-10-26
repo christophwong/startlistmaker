@@ -111,6 +111,39 @@ test("upload → fix a row → generate; reorder and sort", async ({ page }) => 
   }
 });
 
+test("revisiting Columns keeps athlete edits; a changed import asks before replacing them", async ({ page }) => {
+  await page.goto("/");
+  await page.getByLabel("Google Forms export file").setInputFiles("tests/fixtures/ecac-depth-day1.csv");
+  await page.getByRole("button", { name: "Continue to athletes" }).click();
+  await page.getByRole("button", { name: "+ Add athlete" }).click();
+  const added = page.getByLabel("First name").filter({ visible: true }).last();
+  await added.fill("Kept");
+  const kept = () => page.locator('input[aria-label="First name"]:visible[value="Kept"]');
+  await expect(kept()).toHaveCount(1);
+
+  // Same columns: Continue goes straight back, edits intact, no question.
+  const columns = page.getByRole("navigation", { name: "Steps" }).getByRole("button", { name: "2. Columns" });
+  await columns.click();
+  await page.getByRole("button", { name: "Continue to athletes" }).click();
+  await expect(page.getByRole("heading", { name: "Athletes" })).toBeVisible();
+  await expect(kept()).toHaveCount(1);
+
+  // Changed columns: asks first; cancelling stays on Columns.
+  await columns.click();
+  await page.getByText("Column mapping").click();
+  await page.locator('select[name="m.country"]').selectOption("");
+  const messages: string[] = [];
+  page.once("dialog", (d) => (messages.push(d.message()), d.dismiss()));
+  await page.getByRole("button", { name: "Continue to athletes" }).click();
+  expect(messages).toEqual(["Re-read the file? Your changes to 1 athlete will be replaced."]);
+  await expect(page.getByRole("heading", { name: "Match the columns" })).toBeVisible();
+
+  page.once("dialog", (d) => d.accept());
+  await page.getByRole("button", { name: "Continue to athletes" }).click();
+  await expect(page.getByRole("heading", { name: "Athletes" })).toBeVisible();
+  await expect(kept()).toHaveCount(0);
+});
+
 test("paste from Google Sheets", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "Paste from Google Sheets" }).click();
