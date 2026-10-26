@@ -33,7 +33,7 @@ export function Modal({
       // A click on the backdrop (the dialog element itself, outside its panel) closes it.
       onClick={(e) => e.target === e.currentTarget && onClose()}
       className={cx(
-        "m-auto max-h-[90vh] w-[min(42rem,calc(100vw-2rem))] rounded-xl text-left bg-white p-0 text-slate-900 shadow-xl ring-1 ring-slate-200 backdrop:bg-slate-900/40 dark:bg-slate-900 dark:text-slate-100 dark:ring-slate-700",
+        "m-auto max-h-[90vh] w-[min(42rem,calc(100vw-2rem))] rounded-xl text-left bg-surface p-0 text-ink shadow-xl ring-1 ring-line backdrop:bg-black/40",
         className,
       )}
     >

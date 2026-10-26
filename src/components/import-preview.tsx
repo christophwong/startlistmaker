@@ -57,7 +57,7 @@ export function DayPicker({
         name="use"
         value={value}
         onChange={(e) => onChange(e.target.value === "2" ? 2 : 1)}
-        className="min-h-10 rounded-lg border-0 bg-white px-2 ring-1 ring-slate-300 dark:bg-slate-900 dark:ring-slate-700"
+        className="min-h-10 rounded-lg border-0 bg-field px-2 ring-1 ring-line-strong"
       >
         <option value={1}>{labels[0]}</option>
         <option value={2}>{labels[1]}</option>
@@ -90,17 +90,17 @@ export function ErrorSummary({ rows, common }: { rows: ParsedRow[]; common: stri
   return (
     <div className="space-y-1 text-sm">
       {groups.map((g) => (
-        <p key={g.message} className="text-red-600">
+        <p key={g.message} className="text-err-fg">
           <strong className="tabular-nums">{g.count}</strong> row{g.count === 1 ? "" : "s"}: {g.message}
         </p>
       ))}
       {common.map((w) => (
-        <p key={w} className="text-amber-700 dark:text-amber-300">
+        <p key={w} className="text-warn-fg">
           All <strong className="tabular-nums">{ready}</strong> athletes: {w}
         </p>
       ))}
       {warned > 0 && (
-        <p className="text-amber-700 dark:text-amber-300">
+        <p className="text-warn-fg">
           <strong className="tabular-nums">{warned}</strong> row{warned === 1 ? " has" : "s have"} warnings (shown below).
           Warnings don't keep anyone off the list.
         </p>
@@ -130,7 +130,7 @@ export function MappingSelects({
             name={`m.${f.key}`}
             defaultValue={mapping[f.key] ?? ""}
             onChange={(e) => onChange(f.key, e.target.value === "" ? undefined : Number(e.target.value))}
-            className="block min-h-10 w-full rounded-lg border-0 bg-white px-2 ring-1 ring-slate-300 dark:bg-slate-900 dark:ring-slate-700"
+            className="block min-h-10 w-full rounded-lg border-0 bg-field px-2 ring-1 ring-line-strong"
           >
             <option value="">— not in file —</option>
             {headers.map((h, i) => (
@@ -151,21 +151,21 @@ export function ImportRowList({ rows, common = [] }: { rows: (ParsedRow & { stat
       {rows.map((row) => ({ ...row, warnings: row.warnings.filter((w) => !common.includes(w)) })).map((r) => (
         <li
           key={r.rowNumber}
-          className="rounded-xl bg-white p-3 text-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800"
+          className="rounded-xl bg-surface p-3 text-sm ring-1 ring-line"
         >
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs text-slate-500 tabular-nums">Row {r.rowNumber}</span>
+            <span className="text-xs text-muted tabular-nums">Row {r.rowNumber}</span>
             {statusBadge[r.status]}
             {r.draft && (
               <span className="font-medium">
                 {r.draft.firstName} {r.draft.lastName}{" "}
-                <span className="font-normal text-slate-500">
+                <span className="font-normal text-muted">
                   {[r.draft.gender, r.draft.country].filter(Boolean).join(" · ")}
                 </span>
               </span>
             )}
             {r.draft?.starts.map((s) => (
-              <span key={s.startNumber} className="text-slate-600 dark:text-slate-400">
+              <span key={s.startNumber} className="text-ink-2">
                 <Badge tone="brand">{s.discipline}</Badge> {formatPerformance(s.discipline, s.ap)}
               </span>
             ))}
@@ -173,12 +173,12 @@ export function ImportRowList({ rows, common = [] }: { rows: (ParsedRow & { stat
           {(r.errors.length > 0 || r.warnings.length > 0) && (
             <ul className="mt-1 space-y-0.5">
               {r.errors.map((e) => (
-                <li key={e} className="text-red-600">
+                <li key={e} className="text-err-fg">
                   {e}
                 </li>
               ))}
               {r.warnings.map((w) => (
-                <li key={w} className="text-amber-700 dark:text-amber-300">
+                <li key={w} className="text-warn-fg">
                   {w}
                 </li>
               ))}

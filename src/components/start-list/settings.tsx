@@ -36,12 +36,12 @@ function BlockOrder({
   return (
     <fieldset>
       <legend className="mb-1 text-sm font-medium">Discipline order</legend>
-      <ol className="max-w-sm divide-y divide-slate-200 rounded-lg ring-1 ring-slate-300 dark:divide-slate-700 dark:ring-slate-700">
+      <ol className="max-w-sm divide-y divide-line rounded-lg ring-1 ring-line-strong">
         {visible.map((d, i) => (
           <li key={d} className="flex items-center gap-2 px-3 py-1.5 text-sm">
-            <span className="w-5 text-slate-400 tabular-nums">{i + 1}.</span>
+            <span className="w-5 text-muted tabular-nums">{i + 1}.</span>
             <span className="flex-1">
-              <strong>{d}</strong> <span className="text-slate-500">{DISCIPLINE_NAMES[d]}</span>
+              <strong>{d}</strong> <span className="text-muted">{DISCIPLINE_NAMES[d]}</span>
             </span>
             <Button type="button" variant="ghost" size="sm" aria-label={`Move ${d} earlier`} disabled={i === 0} onClick={() => move(i, i - 1)}>
               ↑
@@ -79,7 +79,7 @@ function SettingsForm({ values, maxStarts, errors, onSubmit }: Props) {
     <form onSubmit={submit} className="space-y-6">
       <section>
         <h3 className="mb-1 font-medium">Timing</h3>
-        <p className="mb-3 text-xs text-slate-500">Times are recalculated from the current order; the order itself doesn't change.</p>
+        <p className="mb-3 text-xs text-muted">Times are recalculated from the current order; the order itself doesn't change.</p>
         <div className="space-y-4">
           <RadioGroup
             label="Time between OTs"
@@ -176,7 +176,7 @@ function SettingsForm({ values, maxStarts, errors, onSubmit }: Props) {
 
       <section>
         <h3 className="mb-1 font-medium">Order and breaks</h3>
-        <p className="mb-3 text-xs text-slate-500">Used when the start list is (re)generated. Manual changes are replaced.</p>
+        <p className="mb-3 text-xs text-muted">Used when the start list is (re)generated. Manual changes are replaced.</p>
         <div className="space-y-4">
           {maxStarts > 1 ? (
             <>
@@ -280,19 +280,19 @@ export function SettingsPanel(props: Props & { open: boolean }) {
     values.spacingMode === "DIVE_TIME" ? `dive time + ${values.bufferMin} min` : `every ${values.intervalMin} min`;
   return (
     <details
-      className={cx("rounded-xl bg-white ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800")}
+      className={cx("rounded-xl bg-surface ring-1 ring-line")}
       open={open}
     >
       <summary className="cursor-pointer p-4 font-medium">
         Settings{" "}
-        <span className="text-sm font-normal text-slate-500">
+        <span className="text-sm font-normal text-muted">
           · first OT {formatClock(values.startTime, values.timeFormat)} · {spacing} · {values.lanes}{" "}
           {values.type === "POOL" ? "lane" : "zone"}
           {values.lanes > 1 ? "s" : ""}
           {maxStarts > 1 && ` · ${values.scheduleMode === "ROUNDS" ? "two rounds" : "single list"}`}
         </span>
       </summary>
-      <div className="border-t border-slate-200 p-4 dark:border-slate-800">
+      <div className="border-t border-line p-4">
         <SettingsForm {...props} />
       </div>
     </details>

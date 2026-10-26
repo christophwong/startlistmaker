@@ -45,7 +45,7 @@ export function MapStep({ state, dispatch }: { state: AppState; dispatch(a: Acti
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h2 className="text-xl">Match the columns</h2>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-muted">
             {source.filename} · {rows.length} row{rows.length === 1 ? "" : "s"}
           </p>
         </div>
@@ -61,7 +61,7 @@ export function MapStep({ state, dispatch }: { state: AppState; dispatch(a: Acti
             <select
               value={source.sheet}
               onChange={(e) => dispatch({ type: "sheet", name: e.target.value })}
-              className="min-h-10 rounded-lg border-0 bg-white px-2 ring-1 ring-slate-300 dark:bg-slate-900 dark:ring-slate-700"
+              className="min-h-10 rounded-lg border-0 bg-field px-2 ring-1 ring-line-strong"
             >
               {source.sheets.map((s) => (
                 <option key={s.name} value={s.name}>
@@ -82,7 +82,7 @@ export function MapStep({ state, dispatch }: { state: AppState; dispatch(a: Acti
             { value: "DEPTH", label: "Depth", description: "CWT, CWTB, CNF, FIM" },
           ]}
         />
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-muted">
           Detected from the disciplines in the file.{" "}
           {days
             ? "The form has one section per day; each day is its own start list."
@@ -95,12 +95,12 @@ export function MapStep({ state, dispatch }: { state: AppState; dispatch(a: Acti
 
       <MissingColumns labels={missing} />
 
-      <details className="rounded-xl bg-white ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800" open={valid.length === 0 || missing.length > 0}>
+      <details className="rounded-xl bg-surface ring-1 ring-line" open={valid.length === 0 || missing.length > 0}>
         <summary className="cursor-pointer p-4 font-medium">
           Column mapping{" "}
-          <span className="text-sm font-normal text-slate-500">({Object.keys(state.mapping).length} columns matched)</span>
+          <span className="text-sm font-normal text-muted">({Object.keys(state.mapping).length} columns matched)</span>
         </summary>
-        <div className="border-t border-slate-200 p-4 dark:border-slate-800">
+        <div className="border-t border-line p-4">
           <MappingSelects
             headers={source.table.headers}
             mapping={state.mapping}
@@ -122,7 +122,7 @@ export function MapStep({ state, dispatch }: { state: AppState; dispatch(a: Acti
           {errors.length > 0 && (
             <>
               {" "}
-              <strong className="text-red-600">{errors.length}</strong> row{errors.length === 1 ? " needs" : "s need"} fixing,
+              <strong className="text-err-fg">{errors.length}</strong> row{errors.length === 1 ? " needs" : "s need"} fixing,
               which you can do on the next step.
             </>
           )}

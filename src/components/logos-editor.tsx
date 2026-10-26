@@ -16,11 +16,11 @@ import { Alert, Button, buttonClass, cx } from "./ui";
 const PLACES = Object.keys(PLACE_LABELS) as LogoPlace[];
 
 const selectClass =
-  "min-h-9 cursor-pointer rounded-md border-0 bg-white px-1.5 text-sm ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-brand-600 dark:bg-slate-900 dark:ring-slate-700";
+  "min-h-9 cursor-pointer rounded-md border-0 bg-field px-1.5 text-sm ring-1 ring-inset ring-line-strong focus:ring-2 focus:ring-accent";
 
 function AddButton({ label, multiple, onFiles }: { label: string; multiple?: boolean; onFiles(files: File[]): void }) {
   return (
-    <label className={cx(buttonClass("secondary", "sm"), "cursor-pointer has-focus-visible:outline-2 has-focus-visible:outline-brand-700")}>
+    <label className={cx(buttonClass("secondary", "sm"), "cursor-pointer has-focus-visible:outline-2 has-focus-visible:outline-accent")}>
       {label}
       <input
         type="file"
@@ -80,14 +80,14 @@ export function LogosEditor({ logos, dispatch }: { logos: Logo[]; dispatch(a: Ac
     <div className="space-y-3">
       <div>
         <h3 className="text-base font-medium">Logos</h3>
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-muted">
           Competition and AIDA logos go beside the title. Sponsor logos go after the list, on the last page.
         </p>
       </div>
       <div className="flex flex-wrap items-center gap-2">
         <AddButton label="+ Header logo" multiple onFiles={(f) => void add(f, headerPlace)} />
         <AddButton label="+ Sponsor logos" multiple onFiles={(f) => void add(f, () => "SPONSORS")} />
-        {busy && <span className="text-sm text-slate-500">Adding…</span>}
+        {busy && <span className="text-sm text-muted">Adding…</span>}
       </div>
       {errors.length > 0 && (
         <Alert tone="error">
@@ -97,13 +97,13 @@ export function LogosEditor({ logos, dispatch }: { logos: Logo[]; dispatch(a: Ac
         </Alert>
       )}
       {logos.length > 0 && (
-        <ul className="divide-y divide-slate-200 rounded-lg ring-1 ring-slate-200 dark:divide-slate-800 dark:ring-slate-800">
+        <ul className="divide-y divide-line rounded-lg ring-1 ring-line">
           {PLACES.flatMap((p) => logosAt(logos, p)).map((l) => {
             const same = logosAt(logos, l.place);
             const i = same.indexOf(l);
             return (
               <li key={l.id} className="flex flex-wrap items-center gap-2 p-2">
-                <img src={l.src} alt="" className="h-10 w-16 shrink-0 rounded bg-white object-contain ring-1 ring-slate-200" />
+                <img src={l.src} alt="" className="h-10 w-16 shrink-0 rounded bg-white object-contain ring-1 ring-line" />
                 <span className="min-w-0 flex-1 basis-32 truncate text-sm" title={l.name}>
                   {l.name}
                 </span>

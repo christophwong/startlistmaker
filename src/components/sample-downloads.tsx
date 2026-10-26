@@ -10,7 +10,7 @@ export function SampleDownloads() {
           {i > 0 && " · "}
           <button
             type="button"
-            className="text-brand-700 underline dark:text-sky-300"
+            className="text-accent underline"
             onClick={async () => {
               const sample = await loadSample(s.kind);
               downloadText(sample.filename, sample.csv, "text/csv;charset=utf-8");

@@ -11,7 +11,7 @@ import type { Action, AppState, PrintOptions } from "~/state/store";
 function Toggle({ label, checked, onChange }: { label: string; checked: boolean; onChange(v: boolean): void }) {
   return (
     <label className="flex items-center gap-2 text-sm">
-      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="accent-brand-700" />
+      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="accent-accent" />
       {label}
     </label>
   );
@@ -45,7 +45,7 @@ export function FinalStep({ state, dispatch }: { state: AppState; dispatch(a: Ac
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h2 className="text-xl">Print & export</h2>
-            <p className="text-sm text-slate-500">Check the sheet, then print it or download it.</p>
+            <p className="text-sm text-muted">Check the sheet, then print it or download it.</p>
           </div>
           <Button variant="secondary" onClick={() => dispatch({ type: "step", step: "list" })}>
             ← Back to start list
@@ -87,7 +87,7 @@ export function FinalStep({ state, dispatch }: { state: AppState; dispatch(a: Ac
             <Toggle label="Start numbers" checked={print.showStartNumber} onChange={(v) => setPrint({ showStartNumber: v })} />
             <Toggle label="New page after each break" checked={print.pageBreakAtBreaks} onChange={(v) => setPrint({ pageBreakAtBreaks: v })} />
           </div>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-muted">
             Files are made in this browser. For a PDF, choose Save as PDF as the printer in the print dialog.
           </p>
         </Card>
@@ -98,7 +98,7 @@ export function FinalStep({ state, dispatch }: { state: AppState; dispatch(a: Ac
       </div>
 
       {/* The preview is also what gets printed. */}
-      <div className="print-area rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200 sm:p-8 print:rounded-none print:p-0 print:shadow-none print:ring-0">
+      <div className="print-area rounded-xl bg-white p-4 shadow-sm ring-1 ring-line sm:p-8 print:rounded-none print:p-0 print:shadow-none print:ring-0">
         <PrintSheet {...event} type={settings.type} table={table} pageBreakAtBreaks={print.pageBreakAtBreaks} logos={state.logos} />
       </div>
     </div>

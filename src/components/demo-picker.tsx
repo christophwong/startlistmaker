@@ -28,8 +28,8 @@ function Choice<T extends string | number>({
             className={cx(
               "flex cursor-pointer gap-3 rounded-lg p-3 ring-1",
               o.value === value
-                ? "bg-brand-50 ring-2 ring-brand-600 dark:bg-slate-800"
-                : "bg-white ring-slate-300 hover:bg-slate-50 dark:bg-slate-900 dark:ring-slate-700 dark:hover:bg-slate-800",
+                ? "bg-accent-soft ring-2 ring-accent"
+                : "bg-surface ring-line-strong hover:bg-sunken",
             )}
           >
             <input
@@ -37,11 +37,11 @@ function Choice<T extends string | number>({
               name={name}
               checked={o.value === value}
               onChange={() => onChange(o.value)}
-              className="mt-0.5 accent-brand-700"
+              className="mt-0.5 accent-accent"
             />
             <span>
               <span className="block text-sm font-medium">{o.label}</span>
-              <span className="block text-xs text-slate-500">{o.description}</span>
+              <span className="block text-xs text-muted">{o.description}</span>
             </span>
           </label>
         ))}
@@ -65,7 +65,7 @@ export function DemoPicker({
 
   return (
     <Modal open={open} onClose={onClose} title="Try a demo" className="w-[min(34rem,calc(100vw-2rem))]">
-      <p className="text-sm text-slate-600 dark:text-slate-400">
+      <p className="text-sm text-ink-2">
         Opens a finished start list built from made-up athletes, in the same format as a real Google Forms export. Change anything
         you like.
       </p>

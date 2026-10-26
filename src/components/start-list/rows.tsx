@@ -59,7 +59,7 @@ function SortHeader({ column, label, sort, className }: { column: ColumnKey; lab
       <button
         type="button"
         onClick={() => sort.onSort(column)}
-        className="inline-flex items-center gap-0.5 uppercase hover:text-slate-900 dark:hover:text-white"
+        className="inline-flex items-center gap-0.5 uppercase hover:text-ink"
         title={`Sort by ${label.toLowerCase()} (within each section between breaks)`}
       >
         {label}
@@ -87,7 +87,7 @@ function PositionInput({
       <button
         type="button"
         onClick={() => setEditing(true)}
-        className="min-w-7 rounded px-1 text-slate-400 tabular-nums hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800"
+        className="min-w-7 rounded px-1 text-muted tabular-nums hover:bg-sunken hover:text-ink"
         title="Move to position…"
         aria-label={`Position ${n}, move to…`}
       >
@@ -108,7 +108,7 @@ function PositionInput({
       defaultValue={n}
       autoFocus
       aria-label="Move to position"
-      className="h-8 w-14 rounded-md border-0 px-1 text-sm ring-1 ring-brand-600 dark:bg-slate-900"
+      className="h-8 w-14 rounded-md border-0 bg-field px-1 text-sm ring-1 ring-accent"
       onBlur={(e) => commit(e.target.value)}
       onKeyDown={(e) => {
         if (e.key === "Enter") commit(e.currentTarget.value);
@@ -177,11 +177,11 @@ function BreakEditor({
     actions.saveBreak(row.entryId, new FormData(e.currentTarget));
   };
   return (
-    <div className="flex flex-col gap-2 rounded-lg bg-slate-800 px-3 py-2 text-white sm:flex-row sm:items-center sm:justify-between dark:bg-slate-700">
+    <div className="flex flex-col gap-2 rounded-lg bg-break-bg px-3 py-2 text-break-fg sm:flex-row sm:items-center sm:justify-between">
       <div className="flex items-center gap-3">
         <MoveButtons row={row} first={first} last={last} actions={actions} busy={busy} />
         <span className="font-semibold tracking-widest">BREAK</span>
-        <span className="text-sm text-slate-300">
+        <span className="text-sm opacity-80">
           next OT {formatClock(row.nextOt, timeFormat)}
         </span>
       </div>
@@ -193,7 +193,7 @@ function BreakEditor({
             min={0}
             max={600}
             defaultValue={row.breakMin ?? ""}
-            className="h-9 w-16 rounded-md border-0 bg-white/10 px-2 text-white ring-1 ring-white/30"
+            className="h-9 w-16 rounded-md border-0 bg-break-fg/10 px-2 text-break-fg ring-1 ring-break-fg/30"
             aria-label="Break length in minutes"
           />
           min
@@ -204,23 +204,27 @@ function BreakEditor({
             name="resumeAt"
             type="time"
             defaultValue={toTimeInput(row.resumeAt)}
-            className="h-9 rounded-md border-0 bg-white/10 px-2 text-white ring-1 ring-white/30"
+            className="h-9 rounded-md border-0 bg-break-fg/10 px-2 text-break-fg ring-1 ring-break-fg/30"
             aria-label="Resume at (fixed OT)"
           />
         </label>
-        <Button size="sm" type="submit" disabled={busy} className="bg-white/15 hover:bg-white/25">
+        <button
+          type="submit"
+          disabled={busy}
+          className="min-h-9 rounded-lg bg-break-fg/15 px-2.5 text-sm font-medium hover:bg-break-fg/25 sm:min-h-8"
+        >
           Save
-        </Button>
+        </button>
         <button
           type="button"
           disabled={busy}
           onClick={() => actions.removeBreak(row.entryId)}
-          className="min-h-9 rounded-lg px-2.5 text-sm font-medium text-red-200 ring-1 ring-red-300/40 hover:bg-red-500/20 hover:text-white sm:min-h-8"
+          className="min-h-9 rounded-lg px-2.5 text-sm font-medium text-break-err ring-1 ring-break-err/40 hover:bg-break-err/15 sm:min-h-8"
         >
           Remove
         </button>
         {(errors?.breakMin || errors?.resumeAt) && (
-          <span className="text-red-300">{errors.breakMin ?? errors.resumeAt}</span>
+          <span className="text-break-err">{errors.breakMin ?? errors.resumeAt}</span>
         )}
       </form>
     </div>
@@ -293,7 +297,7 @@ export function StartListRows({
     },
   });
   const dropTint = (r: EditorRow) =>
-    overId === r.entryId && dragId !== r.entryId && "outline-2 -outline-offset-2 outline-brand-600";
+    overId === r.entryId && dragId !== r.entryId && "outline-2 -outline-offset-2 outline-accent";
 
   // Consecutive starts sharing an OT form one group (one card on mobile).
   type Segment =
@@ -310,7 +314,7 @@ export function StartListRows({
     const r = rows[i], prev = rows[i - 1];
     return r.kind === "START" && prev?.kind === "START" && prev.group !== r.group;
   };
-  const groupTint = (r: StartRow) => (r.group % 2 ? "" : "bg-slate-50 dark:bg-slate-800/40");
+  const groupTint = (r: StartRow) => (r.group % 2 ? "" : "bg-page");
 
   return (
     <>
@@ -331,19 +335,19 @@ export function StartListRows({
           ) : (
             <li
               key={seg.items[0].r.entryId}
-              className="rounded-xl bg-white ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800"
+              className="rounded-xl bg-surface ring-1 ring-line"
             >
-              <div className="flex items-baseline justify-between gap-2 border-b border-slate-100 px-3 py-2 dark:border-slate-800">
+              <div className="flex items-baseline justify-between gap-2 border-b border-line-soft px-3 py-2">
                 <span className="text-lg font-semibold tabular-nums">OT {fmt(seg.items[0].r.ot)}</span>
-                <span className="text-xs text-slate-500 tabular-nums">
+                <span className="text-xs text-muted tabular-nums">
                   WT {fmt(seg.items[0].r.wt)} · Check-in {fmt(seg.items[0].r.checkIn)}
                 </span>
               </div>
-              <ul className="divide-y divide-slate-100 dark:divide-slate-800">
+              <ul className="divide-y divide-line-soft">
                 {seg.items.map(({ r, i }) => (
                   <li
                     key={r.entryId}
-                    className={cx("flex items-center gap-2 px-3 py-2", flagged.has(r.start.id) && "bg-amber-50 dark:bg-amber-950/40")}
+                    className={cx("flex items-center gap-2 px-3 py-2", flagged.has(r.start.id) && "bg-warn-tint")}
                   >
                     <PositionInput
                       n={startIds.indexOf(r.entryId) + 1}
@@ -351,14 +355,14 @@ export function StartListRows({
                       onMove={(p) => moveToPosition(r.entryId, p)}
                     />
                     {showLane && (
-                      <span className="w-6 shrink-0 text-center text-xs font-semibold text-slate-400 tabular-nums" title={laneName}>
+                      <span className="w-6 shrink-0 text-center text-xs font-semibold text-muted tabular-nums" title={laneName}>
                         {laneName[0]}{r.lane}
                       </span>
                     )}
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-medium">
                         {r.start.firstName} {r.start.lastName}{" "}
-                        <span className="text-sm font-normal text-slate-500">
+                        <span className="text-sm font-normal text-muted">
                           {[r.start.gender, r.start.country].filter(Boolean).join(" · ")}
                         </span>
                       </p>
@@ -372,7 +376,7 @@ export function StartListRows({
                   </li>
                 ))}
               </ul>
-              <div className="border-t border-slate-100 px-1 py-1 dark:border-slate-800">
+              <div className="border-t border-line-soft px-1 py-1">
                 <AddBreakButton row={seg.items[seg.items.length - 1].r} {...shared} />
               </div>
             </li>
@@ -381,9 +385,9 @@ export function StartListRows({
       </ol>
 
       {/* Desktop: table */}
-      <div className="hidden overflow-x-auto rounded-xl bg-white ring-1 ring-slate-200 md:block dark:bg-slate-900 dark:ring-slate-800">
+      <div className="hidden overflow-x-auto rounded-xl bg-surface ring-1 ring-line md:block">
         <table className="w-full text-left text-sm">
-          <thead className="bg-slate-50 text-xs text-slate-500 uppercase dark:bg-slate-800/50">
+          <thead className="bg-sunken text-xs text-muted uppercase">
             <tr>
               <th className="px-2 py-2">#</th>
               <SortHeader column="name" label="Athlete" sort={sort} />
@@ -425,21 +429,21 @@ export function StartListRows({
                     className={cx(
                       "cursor-grab active:cursor-grabbing",
                       groupTint(r),
-                      isGroupStart(i) && "border-t border-slate-200 dark:border-slate-700",
-                      flagged.has(r.start.id) && "bg-amber-50 dark:bg-amber-950/40",
+                      isGroupStart(i) && "border-t border-line",
+                      flagged.has(r.start.id) && "bg-warn-tint",
                       dragId === r.entryId && "opacity-40",
                       dropTint(r),
                     )}
                   >
                     <td className="px-2 py-1.5 whitespace-nowrap">
-                      <span aria-hidden className="mr-1 text-slate-300 select-none" title="Drag to move">
+                      <span aria-hidden className="mr-1 text-muted/60 select-none" title="Drag to move">
                         ⠿
                       </span>
                       <PositionInput n={++n} count={startIds.length} onMove={(p) => moveToPosition(r.entryId, p)} />
                     </td>
                     <td className="px-2 py-1.5 font-medium">
                       {r.start.firstName} {r.start.lastName}
-                      {r.start.startNumber === 2 && <span className="ml-1 text-xs text-slate-400">(2nd)</span>}
+                      {r.start.startNumber === 2 && <span className="ml-1 text-xs text-muted">(2nd)</span>}
                     </td>
                     <td className="px-2 py-1.5">{r.start.gender}</td>
                     <td className="px-2 py-1.5">{r.start.country}</td>

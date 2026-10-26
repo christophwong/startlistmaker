@@ -9,7 +9,7 @@ import type { Action, AppState } from "~/state/store";
 
 const MAX_PROJECT_BYTES = 20 * 1024 * 1024;
 
-const link = "font-medium text-brand-700 underline-offset-4 hover:underline dark:text-sky-300";
+const link = "font-medium text-accent underline-offset-4 hover:underline";
 
 /** The first rows of src/samples/depth-2day.csv, cut to the columns that matter. */
 const EXAMPLE_HEADERS = ["Name", "Gender", "Country", "Discipline | Day 1", "DAY 1 Announcement Depth (M)"];
@@ -73,13 +73,13 @@ export function StartStep({ dispatch, onHelp }: { dispatch(a: Action): void; onH
     <div className="mx-auto max-w-2xl space-y-6 py-6 text-center sm:py-12">
       <section className="space-y-3">
         <h1 className="text-3xl sm:text-4xl">Freediving start lists in minutes</h1>
-        <p className="text-slate-600 dark:text-slate-400">Turn your Google Forms export into a printable start list.</p>
+        <p className="text-ink-2">Turn your Google Forms export into a printable start list.</p>
       </section>
 
-      <div className="flex flex-col items-center justify-center gap-3 rounded-2xl bg-brand-50 px-4 py-5 ring-1 ring-brand-100 sm:flex-row sm:gap-5 dark:bg-slate-800 dark:ring-slate-700">
+      <div className="flex flex-col items-center justify-center gap-3 rounded-2xl bg-accent-soft px-4 py-5 ring-1 ring-line sm:flex-row sm:gap-5">
         <div className="sm:text-left">
           <p className="font-semibold">New here?</p>
-          <p className="text-sm text-slate-600 dark:text-slate-400">See a finished start list with sample athletes. No file needed.</p>
+          <p className="text-sm text-ink-2">See a finished start list with sample athletes. No file needed.</p>
         </div>
         <Button onClick={() => setPicking(true)} aria-haspopup="dialog" className="min-h-12 px-6 text-base">
           ▶ Try a demo
@@ -98,13 +98,13 @@ export function StartStep({ dispatch, onHelp }: { dispatch(a: Action): void; onH
         onDrop={onDrop}
         className={cx(
           "flex cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed px-4 py-12",
-          dragging ? "border-brand-600 bg-brand-50 dark:bg-slate-800" : "border-slate-300 hover:border-brand-600 dark:border-slate-700",
+          dragging ? "border-accent bg-accent-soft" : "border-line-strong bg-surface hover:border-accent",
         )}
       >
-        <span className="inline-flex min-h-11 items-center rounded-lg bg-brand-700 px-5 font-medium text-white">
+        <span className="inline-flex min-h-11 items-center rounded-lg bg-accent px-5 font-medium text-on-accent">
           Upload your Google Forms export
         </span>
-        <span className="text-sm text-slate-500">
+        <span className="text-sm text-muted">
           In Google Forms: Responses → ⋮ → Download responses (.csv).
           <br />
           Or drop the file here · CSV or Excel
@@ -141,7 +141,7 @@ export function StartStep({ dispatch, onHelp }: { dispatch(a: Action): void; onH
             rows={5}
             autoFocus
             aria-label="Pasted cells"
-            className="block w-full rounded-lg border-0 bg-white p-2 font-mono text-xs ring-1 ring-slate-300 dark:bg-slate-900 dark:ring-slate-700"
+            className="block w-full rounded-lg border-0 bg-field p-2 font-mono text-xs ring-1 ring-line-strong"
             placeholder={"In Google Sheets, press Ctrl/⌘ + A, copy, and paste here. Include the header row."}
           />
           <Button size="sm" onClick={readPaste} disabled={!paste.trim()}>
@@ -150,16 +150,16 @@ export function StartStep({ dispatch, onHelp }: { dispatch(a: Action): void; onH
         </div>
       )}
 
-      <section className="space-y-3 text-left text-sm text-slate-700 dark:text-slate-300">
+      <section className="space-y-3 text-left text-sm text-ink-2">
         <h2 className="text-lg">What your file needs</h2>
         <p>
           One row per athlete, with the form's questions as the header row. Each start needs a <strong>name</strong>,{" "}
           <strong>discipline</strong> and <strong>announced performance (AP)</strong>. Gender, country, PB and dive time are
           used when they're there. Column titles don't have to match exactly: you check them on the next step.
         </p>
-        <div className="overflow-x-auto rounded-lg ring-1 ring-slate-200 dark:ring-slate-700">
+        <div className="overflow-x-auto rounded-lg bg-surface ring-1 ring-line">
           <table className="w-full text-xs whitespace-nowrap" aria-describedby="example-note">
-            <thead className="bg-slate-100 dark:bg-slate-800">
+            <thead className="bg-sunken">
               <tr>
                 {EXAMPLE_HEADERS.map((h) => (
                   <th key={h} scope="col" className="px-2 py-1.5 text-left font-semibold">
@@ -170,7 +170,7 @@ export function StartStep({ dispatch, onHelp }: { dispatch(a: Action): void; onH
             </thead>
             <tbody>
               {EXAMPLE_ROWS.map((row) => (
-                <tr key={row[0]} className="border-t border-slate-200 dark:border-slate-700">
+                <tr key={row[0]} className="border-t border-line">
                   {row.map((cell, i) => (
                     <td key={i} className="px-2 py-1.5">
                       {cell}
@@ -181,7 +181,7 @@ export function StartStep({ dispatch, onHelp }: { dispatch(a: Action): void; onH
             </tbody>
           </table>
         </div>
-        <p id="example-note" className="text-xs text-slate-500">
+        <p id="example-note" className="text-xs text-muted">
           The first columns of sample-depth-2day.csv. The athletes are made up.
         </p>
         <p>

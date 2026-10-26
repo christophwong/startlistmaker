@@ -6,12 +6,11 @@ type Variant = "primary" | "secondary" | "danger" | "ghost";
 
 const variants: Record<Variant, string> = {
   primary:
-    "bg-brand-700 text-white hover:bg-brand-800 focus-visible:outline-brand-700 disabled:bg-slate-400",
+    "bg-accent text-on-accent hover:bg-accent-hover focus-visible:outline-accent disabled:bg-muted",
   secondary:
-    "bg-white text-slate-800 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-100 dark:ring-slate-700 dark:hover:bg-slate-800",
-  danger: "bg-red-600 text-white hover:bg-red-700 focus-visible:outline-red-600",
-  ghost:
-    "text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800",
+    "bg-surface text-ink ring-1 ring-inset ring-line-strong hover:bg-sunken",
+  danger: "bg-err-fg text-surface hover:opacity-90 focus-visible:outline-err-fg",
+  ghost: "text-ink-2 hover:bg-sunken",
 };
 
 const buttonBase =
@@ -39,7 +38,7 @@ export function ButtonLink({
 }
 
 const inputClass =
-  "block w-full min-h-11 rounded-lg border-0 bg-white px-3 py-2 text-base ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-brand-600 sm:min-h-10 sm:text-sm dark:bg-slate-900 dark:ring-slate-700";
+  "block w-full min-h-11 rounded-lg border-0 bg-field px-3 py-2 text-base ring-1 ring-inset ring-line-strong placeholder:text-muted focus:ring-2 focus:ring-accent sm:min-h-10 sm:text-sm";
 
 interface FieldProps {
   label: string;
@@ -65,12 +64,12 @@ export function Field({
         id={id}
         aria-invalid={error ? true : undefined}
         aria-describedby={error ? `${id}-error` : undefined}
-        className={cx(inputClass, error && "ring-red-500")}
+        className={cx(inputClass, error && "ring-err-fg")}
         {...input}
       />
-      {hint && !error && <p className="mt-1 text-xs text-slate-500">{hint}</p>}
+      {hint && !error && <p className="mt-1 text-xs text-muted">{hint}</p>}
       {error && (
-        <p id={`${id}-error`} className="mt-1 text-sm text-red-600">
+        <p id={`${id}-error`} className="mt-1 text-sm text-err-fg">
           {error}
         </p>
       )}
@@ -92,11 +91,11 @@ export function SelectField({
       <label htmlFor={id} className="mb-1 block text-sm font-medium">
         {label}
       </label>
-      <select id={id} className={cx(inputClass, error && "ring-red-500")} {...select}>
+      <select id={id} className={cx(inputClass, error && "ring-err-fg")} {...select}>
         {children}
       </select>
-      {hint && !error && <p className="mt-1 text-xs text-slate-500">{hint}</p>}
-      {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
+      {hint && !error && <p className="mt-1 text-xs text-muted">{hint}</p>}
+      {error && <p className="mt-1 text-sm text-err-fg">{error}</p>}
     </div>
   );
 }
@@ -123,7 +122,7 @@ export function RadioGroup({
         {options.map((o) => (
           <label
             key={o.value}
-            className="flex cursor-pointer gap-3 rounded-lg bg-white p-3 ring-1 ring-slate-300 has-checked:ring-2 has-checked:ring-brand-600 dark:bg-slate-900 dark:ring-slate-700"
+            className="flex cursor-pointer gap-3 rounded-lg bg-surface p-3 ring-1 ring-line-strong has-checked:ring-2 has-checked:ring-accent"
           >
             <input
               type="radio"
@@ -131,18 +130,18 @@ export function RadioGroup({
               value={o.value}
               defaultChecked={defaultValue === o.value}
               onChange={onChange && ((e) => onChange(e.target.value))}
-              className="mt-0.5 accent-brand-700"
+              className="mt-0.5 accent-accent"
             />
             <span>
               <span className="block text-sm font-medium">{o.label}</span>
               {o.description && (
-                <span className="block text-xs text-slate-500">{o.description}</span>
+                <span className="block text-xs text-muted">{o.description}</span>
               )}
             </span>
           </label>
         ))}
       </div>
-      {hint && <p className="mt-1 text-xs text-slate-500">{hint}</p>}
+      {hint && <p className="mt-1 text-xs text-muted">{hint}</p>}
     </fieldset>
   );
 }
@@ -151,7 +150,7 @@ export function Card({ className, ...props }: ComponentProps<"div">) {
   return (
     <div
       className={cx(
-        "rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200 sm:p-6 dark:bg-slate-900 dark:ring-slate-800",
+        "rounded-xl bg-surface p-4 shadow-sm ring-1 ring-line sm:p-6",
         className,
       )}
       {...props}
@@ -172,7 +171,7 @@ export function PageHeader({
     <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
       <div>
         <h1 className="text-2xl">{title}</h1>
-        {description && <p className="mt-1 text-sm text-slate-500">{description}</p>}
+        {description && <p className="mt-1 text-sm text-muted">{description}</p>}
       </div>
       {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
     </div>
@@ -180,12 +179,10 @@ export function PageHeader({
 }
 
 const alertTones = {
-  error: "bg-red-50 text-red-800 ring-red-200 dark:bg-red-950 dark:text-red-200 dark:ring-red-900",
-  warning:
-    "bg-amber-50 text-amber-900 ring-amber-200 dark:bg-amber-950 dark:text-amber-200 dark:ring-amber-900",
-  info: "bg-brand-50 text-brand-800 ring-brand-100 dark:bg-slate-900 dark:text-sky-200 dark:ring-slate-700",
-  success:
-    "bg-emerald-50 text-emerald-800 ring-emerald-200 dark:bg-emerald-950 dark:text-emerald-200 dark:ring-emerald-900",
+  error: "bg-err-bg text-err-fg ring-err-line",
+  warning: "bg-warn-bg text-warn-fg ring-warn-line",
+  info: "bg-accent-soft text-ink ring-line",
+  success: "bg-ok-bg text-ok-fg ring-ok-line",
 };
 
 export function Alert({
@@ -208,11 +205,11 @@ export function Badge({
   ...props
 }: ComponentProps<"span"> & { tone?: "slate" | "brand" | "amber" | "red" | "emerald" }) {
   const tones = {
-    slate: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",
-    brand: "bg-brand-100 text-brand-800 dark:bg-sky-950 dark:text-sky-200",
-    amber: "bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200",
-    red: "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-200",
-    emerald: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200",
+    slate: "bg-sunken text-ink-2",
+    brand: "bg-accent-soft text-accent",
+    amber: "bg-warn-bg text-warn-fg",
+    red: "bg-err-bg text-err-fg",
+    emerald: "bg-ok-bg text-ok-fg",
   };
   return (
     <span

@@ -19,19 +19,19 @@ export function EventPanel({ state, dispatch }: { state: AppState; dispatch(a: A
   return (
     <details
       open={initiallyOpen}
-      className="rounded-xl bg-white ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800"
+      className="rounded-xl bg-surface ring-1 ring-line"
     >
       <summary className="cursor-pointer p-4 font-medium">
-        Event <span className="text-sm font-normal text-slate-500">{summary ? `· ${summary}` : "· name, date, location"}</span>
+        Event <span className="text-sm font-normal text-muted">{summary ? `· ${summary}` : "· name, date, location"}</span>
       </summary>
-      <div className="space-y-3 border-t border-slate-200 p-4 dark:border-slate-800">
+      <div className="space-y-3 border-t border-line p-4">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <Field label="Name" name="eventName" value={event.name} maxLength={120} placeholder="e.g. Emerald City Challenge · Day 1" onChange={(e) => set({ name: e.target.value })} />
           <Field label="Date" name="eventDate" type="date" value={event.date} onChange={(e) => set({ date: e.target.value })} />
           <Field label="Location" name="eventLocation" value={event.location} maxLength={120} onChange={(e) => set({ location: e.target.value })} />
           <Field label="Note on the sheet" name="eventNotes" value={event.notes} maxLength={300} placeholder="optional" onChange={(e) => set({ notes: e.target.value })} />
         </div>
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-muted">
           {state.settings.type === "POOL" ? "Pool" : "Depth"} competition · the first OT is under Settings.
         </p>
       </div>
@@ -88,7 +88,7 @@ export function ListStep({ state, dispatch }: { state: AppState; dispatch(a: Act
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h2 className="text-xl">Start list</h2>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-muted">
             Drag rows, use ↑ ↓, or click a number to move a start. Click a column title to sort. Times update as you go.
           </p>
         </div>
@@ -136,7 +136,7 @@ export function ListStep({ state, dispatch }: { state: AppState; dispatch(a: Act
           <select
             value={sorted.column ?? ""}
             onChange={(e) => e.target.value && sortBy(e.target.value as ColumnKey, "ASC")}
-            className="min-h-10 rounded-lg border-0 bg-white px-2 ring-1 ring-slate-300 dark:bg-slate-900 dark:ring-slate-700"
+            className="min-h-10 rounded-lg border-0 bg-field px-2 ring-1 ring-line-strong"
           >
             <option value="">—</option>
             {SORT_COLUMNS.map((c) => (
@@ -146,7 +146,7 @@ export function ListStep({ state, dispatch }: { state: AppState; dispatch(a: Act
             ))}
           </select>
         </label>
-        <span className="ml-auto text-sm text-slate-500 tabular-nums">
+        <span className="ml-auto text-sm text-muted tabular-nums">
           {startCount} of {starts.length} starts on the list
         </span>
       </div>
@@ -163,7 +163,7 @@ export function ListStep({ state, dispatch }: { state: AppState; dispatch(a: Act
         breakErrors={breakErrors}
         actions={actions}
       />
-      {rows.length === 0 && <p className="text-sm text-slate-500">No starts yet. Fix the athletes' data, then regenerate.</p>}
+      {rows.length === 0 && <p className="text-sm text-muted">No starts yet. Fix the athletes' data, then regenerate.</p>}
     </div>
   );
 }

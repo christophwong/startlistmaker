@@ -14,22 +14,22 @@ import type { Action, AppState } from "~/state/store";
  */
 
 // Separate borders (right/bottom per cell) so the sticky header and columns keep their grid lines.
-const grid = "border-r border-b border-slate-200 dark:border-slate-700";
-const headCell = cx(grid, "bg-slate-100 px-2 py-1.5 text-left text-xs font-medium whitespace-nowrap text-slate-600 dark:bg-slate-800 dark:text-slate-300");
-const plain = "bg-white dark:bg-slate-900";
+const grid = "border-r border-b border-line";
+const headCell = cx(grid, "bg-sunken px-2 py-1.5 text-left text-xs font-medium whitespace-nowrap text-ink-2");
+const plain = "bg-surface";
 const inputClass =
-  "block h-8 w-full min-w-0 border-0 bg-transparent px-2 text-sm text-inherit outline-none placeholder:text-slate-300 focus:bg-white focus:ring-2 focus:ring-brand-600 focus:ring-inset dark:placeholder:text-slate-600 dark:focus:bg-slate-950";
+  "block h-8 w-full min-w-0 border-0 bg-transparent px-2 text-sm text-inherit outline-none placeholder:text-muted/50 focus:bg-field focus:ring-2 focus:ring-accent focus:ring-inset";
 const corner = "after:pointer-events-none after:absolute after:top-0 after:right-0 after:border-[5px] after:border-transparent";
 
 /** Cell background: red for an error, amber for a warning, white otherwise. */
 function tone(check: RowCheck | undefined, key: CellKey | undefined) {
-  if (check && key && check.errors[key]) return cx("bg-red-50 dark:bg-red-950/60", corner, "after:border-t-red-500 after:border-r-red-500");
-  if (check && key && check.warnings[key]) return cx("bg-amber-50 dark:bg-amber-950/40", corner, "after:border-t-amber-400 after:border-r-amber-400");
+  if (check && key && check.errors[key]) return cx("bg-err-bg", corner, "after:border-t-err-fg after:border-r-err-fg");
+  if (check && key && check.warnings[key]) return cx("bg-warn-bg", corner, "after:border-t-warn-fg after:border-r-warn-fg");
   return plain;
 }
 
 /** Pinned next to the row number so the athlete stays in view when scrolling sideways. */
-const pinned = "sticky left-10 z-10 shadow-[inset_-1px_0_0_var(--color-slate-300)] dark:shadow-[inset_-1px_0_0_var(--color-slate-600)]";
+const pinned = "sticky left-10 z-10 shadow-[inset_-1px_0_0_var(--line-strong)]";
 
 function Cell({
   check,
@@ -112,7 +112,7 @@ function StartCells({
   const unit = timed ? "m:ss" : "m";
   return (
     <>
-      <Cell check={check} k={k("discipline")} className={n === 1 ? "border-l border-l-slate-300 dark:border-l-slate-600" : undefined}>
+      <Cell check={check} k={k("discipline")} className={n === 1 ? "border-l border-l-line-strong" : undefined}>
         <OptionInput
           check={check}
           k={k("discipline")}
@@ -148,12 +148,12 @@ function Notes({ check }: { check: RowCheck }) {
   return (
     <ul className="space-y-0.5 px-2 py-1 text-xs leading-snug">
       {errors.map((m) => (
-        <li key={m} className="text-red-700 dark:text-red-400">
+        <li key={m} className="text-err-fg">
           {m}
         </li>
       ))}
       {warnings.map((m) => (
-        <li key={m} className="text-amber-700 dark:text-amber-300">
+        <li key={m} className="text-warn-fg">
           {m}
         </li>
       ))}
@@ -188,7 +188,7 @@ export function DataStep({ state, dispatch }: { state: AppState; dispatch(a: Act
 
   const startHead = (n: 1 | 2) => (
     <>
-      <th className={cx(headCell, "min-w-24", n === 1 && "border-l border-l-slate-300 dark:border-l-slate-600")}>Discipline</th>
+      <th className={cx(headCell, "min-w-24", n === 1 && "border-l border-l-line-strong")}>Discipline</th>
       <th className={cx(headCell, "min-w-20")}>AP</th>
       <th className={cx(headCell, "min-w-20")}>PB</th>
       <th className={cx(headCell, "min-w-20")}>Dive time</th>
@@ -200,7 +200,7 @@ export function DataStep({ state, dispatch }: { state: AppState; dispatch(a: Act
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h2 className="text-xl">Athletes</h2>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-muted">
             Fix the red cells: those starts stay off the list until they're fixed. Amber cells are only warnings. The Notes
             column says what's wrong.
           </p>
@@ -225,7 +225,7 @@ export function DataStep({ state, dispatch }: { state: AppState; dispatch(a: Act
           {withErrors.length > 0 && <Badge tone="red">{withErrors.length} with errors</Badge>}
           {withWarnings.length > 0 && <Badge tone="amber">{withWarnings.length} with warnings</Badge>}
           <label className="flex items-center gap-1.5">
-            <input type="checkbox" checked={filter === "problems"} onChange={(e) => setFilter(e.target.checked ? "problems" : "all")} className="accent-brand-700" />
+            <input type="checkbox" checked={filter === "problems"} onChange={(e) => setFilter(e.target.checked ? "problems" : "all")} className="accent-accent" />
             Only rows with problems
           </label>
           <label className="flex items-center gap-1.5">
@@ -233,11 +233,11 @@ export function DataStep({ state, dispatch }: { state: AppState; dispatch(a: Act
               type="checkbox"
               checked={maxStarts === 2}
               onChange={(e) => dispatch({ type: "maxStarts", maxStarts: e.target.checked ? 2 : 1 })}
-              className="accent-brand-700"
+              className="accent-accent"
             />
             Two starts per athlete
           </label>
-          <span className="text-slate-500">{type === "POOL" ? "Pool" : "Depth"} competition</span>
+          <span className="text-muted">{type === "POOL" ? "Pool" : "Depth"} competition</span>
         </div>
         {withErrors.length > 0 && (
           <Alert tone="error">
@@ -247,8 +247,8 @@ export function DataStep({ state, dispatch }: { state: AppState; dispatch(a: Act
         )}
       </Card>
 
-      <p className="text-xs text-slate-500 md:hidden">Scroll sideways for the start columns.</p>
-      <div className="max-h-[70vh] overflow-auto border-t border-l border-slate-300 dark:border-slate-700">
+      <p className="text-xs text-muted md:hidden">Scroll sideways for the start columns.</p>
+      <div className="max-h-[70vh] overflow-auto border-t border-l border-line-strong">
         <table className="w-max min-w-full border-separate border-spacing-0 text-sm">
           <thead className="sticky top-0 z-20">
             <tr>
@@ -258,11 +258,11 @@ export function DataStep({ state, dispatch }: { state: AppState; dispatch(a: Act
               <th colSpan={4} className={headCell}>
                 Athlete
               </th>
-              <th colSpan={4} className={cx(headCell, "border-l border-l-slate-300 dark:border-l-slate-600")}>
+              <th colSpan={4} className={cx(headCell, "border-l border-l-line-strong")}>
                 Start 1
               </th>
               {maxStarts > 1 && (
-                <th colSpan={4} className={cx(headCell, "border-l border-l-slate-300 dark:border-l-slate-600")}>
+                <th colSpan={4} className={cx(headCell, "border-l border-l-line-strong")}>
                   Start 2
                 </th>
               )}
@@ -290,8 +290,8 @@ export function DataStep({ state, dispatch }: { state: AppState; dispatch(a: Act
               const check = checks.get(r.id)!;
               const name = `${r.firstName} ${r.lastName}`.trim() || "new athlete";
               return (
-                <tr key={r.id} className={cx(r.excluded && "text-slate-400 dark:text-slate-500")}>
-                  <td className={cx(grid, "sticky left-0 z-10 w-10 max-w-10 min-w-10 bg-slate-50 text-center text-xs text-slate-400 tabular-nums dark:bg-slate-800")}>
+                <tr key={r.id} className={cx(r.excluded && "text-muted")}>
+                  <td className={cx(grid, "sticky left-0 z-10 w-10 max-w-10 min-w-10 bg-sunken text-center text-xs text-muted tabular-nums")}>
                     {r.rowNumber ?? "new"}
                   </td>
                   <Cell check={check} k="name" pin>
@@ -315,7 +315,7 @@ export function DataStep({ state, dispatch }: { state: AppState; dispatch(a: Act
                       onChange={(e) => update(r.id, { excluded: !e.target.checked })}
                       aria-label={`Include ${name}`}
                       title="On the start list"
-                      className="accent-brand-700"
+                      className="accent-accent"
                     />
                   </Cell>
                   <Cell>
@@ -326,7 +326,7 @@ export function DataStep({ state, dispatch }: { state: AppState; dispatch(a: Act
                       type="button"
                       aria-label={`Delete ${name}`}
                       title="Delete athlete"
-                      className="h-8 w-full text-slate-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950"
+                      className="h-8 w-full text-muted hover:bg-err-bg hover:text-err-fg"
                       onClick={() => confirm(`Delete ${name}? This can't be undone.`) && dispatch({ type: "deleteRow", id: r.id })}
                     >
                       ✕
@@ -338,7 +338,7 @@ export function DataStep({ state, dispatch }: { state: AppState; dispatch(a: Act
           </tbody>
         </table>
       </div>
-      {shown.length === 0 && <p className="text-sm text-slate-500">Nothing to fix.</p>}
+      {shown.length === 0 && <p className="text-sm text-muted">Nothing to fix.</p>}
 
       <Button variant="secondary" onClick={() => dispatch({ type: "addRow" })}>
         + Add athlete

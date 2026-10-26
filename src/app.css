@@ -3,19 +3,163 @@
 /* Dark mode follows the header toggle (html.dark), not the OS setting. */
 @custom-variant dark (&:where(.dark, .dark *));
 
+/*
+ * Colour tokens (DESIGN §7a). Each is a CSS variable that html.dark
+ * overrides, so `bg-surface` or `text-ink` switch with the theme and need no
+ * dark: pair. Every text/background pair passes 4.5:1 in both themes.
+ */
+:root {
+  --page: #f4f6f8;
+  --surface: #ffffff;
+  --sunken: #edf1f4;
+  --field: #ffffff;
+  --line: #dce3e8;
+  --line-soft: #edf1f4;
+  --line-strong: #c9d3da;
+  --ink: #0f1f2a;
+  --ink-2: #3a4853;
+  --muted: #52606b;
+  --accent: #0b5f80;
+  --accent-hover: #084b66;
+  --accent-soft: #e2f0f6;
+  --on-accent: #ffffff;
+  --ok-bg: #e6f3ec;
+  --ok-line: #a9d8bd;
+  --ok-fg: #155e3b;
+  --warn-bg: #fff6e0;
+  --warn-line: #f0d58a;
+  --warn-fg: #6b4a00;
+  --warn-tint: #fffbef;
+  --err-bg: #fce9e7;
+  --err-line: #efb7af;
+  --err-fg: #9a2b1f;
+  --err-tint: #fef5f4;
+  --break-bg: #0f1f2a;
+  --break-fg: #ffffff;
+  --break-err: #f4a99f;
+
+  /* Discipline chips: monospace code on a tint. */
+  --cwt-bg: #dff2ee;
+  --cwt-fg: #0e5e50;
+  --cwtb-bg: #e2f0f6;
+  --cwtb-fg: #0b5f80;
+  --cnf-bg: #ece8f7;
+  --cnf-fg: #55388f;
+  --fim-bg: #fbeedf;
+  --fim-fg: #8a4b0f;
+  --sta-bg: #f8e6ee;
+  --sta-fg: #8c2457;
+  --dyn-bg: #e8f2df;
+  --dyn-fg: #3b6114;
+  --dynb-bg: #e5e9f8;
+  --dynb-fg: #30449a;
+  --dnf-bg: #f5f0d9;
+  --dnf-fg: #6b5506;
+}
+
+html.dark {
+  --page: #0b141b;
+  --surface: #121e27;
+  --sunken: #0b141b;
+  --field: #0b141b;
+  --line: #24333e;
+  --line-soft: #1a2731;
+  --line-strong: #2e3d48;
+  --ink: #e6ecf0;
+  --ink-2: #b4c0c8;
+  --muted: #9aa8b2;
+  --accent: #6cc0e3;
+  --accent-hover: #8fd0ec;
+  --accent-soft: #12313f;
+  --on-accent: #0b141b;
+  --ok-bg: #123526;
+  --ok-line: #1f5a3f;
+  --ok-fg: #7fd3a6;
+  --warn-bg: #2b2209;
+  --warn-line: #6b5310;
+  --warn-fg: #f5d27a;
+  --warn-tint: #211c0c;
+  --err-bg: #3a1512;
+  --err-line: #7a2a22;
+  --err-fg: #f4a99f;
+  --err-tint: #24130f;
+  --break-bg: #e6ecf0;
+  --break-fg: #0b141b;
+  --break-err: #9a2b1f;
+
+  --cwt-bg: #0f3330;
+  --cwt-fg: #7dd4c2;
+  --cwtb-bg: #12313f;
+  --cwtb-fg: #8ccbe6;
+  --cnf-bg: #2a2142;
+  --cnf-fg: #c3b0f0;
+  --fim-bg: #3a2611;
+  --fim-fg: #f0b47a;
+  --sta-bg: #3a1527;
+  --sta-fg: #f0a6c8;
+  --dyn-bg: #1f2e12;
+  --dyn-fg: #a9d67f;
+  --dynb-bg: #1a2142;
+  --dynb-fg: #a9b8f0;
+  --dnf-bg: #2e2a0e;
+  --dnf-fg: #e0cf72;
+}
+
 @theme {
   /* System fonts only: no third-party font requests. */
   --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --color-brand-50: oklch(0.97 0.02 230);
-  --color-brand-100: oklch(0.93 0.04 230);
-  --color-brand-600: oklch(0.52 0.13 235);
-  --color-brand-700: oklch(0.45 0.12 238);
-  --color-brand-800: oklch(0.38 0.1 240);
+
+  --color-page: var(--page);
+  --color-surface: var(--surface);
+  --color-sunken: var(--sunken);
+  /* Input background: white in light, sunken in dark. */
+  --color-field: var(--field);
+  --color-line: var(--line);
+  --color-line-soft: var(--line-soft);
+  --color-line-strong: var(--line-strong);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-soft: var(--accent-soft);
+  --color-on-accent: var(--on-accent);
+  --color-ok-bg: var(--ok-bg);
+  --color-ok-line: var(--ok-line);
+  --color-ok-fg: var(--ok-fg);
+  --color-warn-bg: var(--warn-bg);
+  --color-warn-line: var(--warn-line);
+  --color-warn-fg: var(--warn-fg);
+  --color-warn-tint: var(--warn-tint);
+  --color-err-bg: var(--err-bg);
+  --color-err-line: var(--err-line);
+  --color-err-fg: var(--err-fg);
+  --color-err-tint: var(--err-tint);
+  --color-break-bg: var(--break-bg);
+  --color-break-fg: var(--break-fg);
+  --color-break-err: var(--break-err);
+
+  --color-cwt-bg: var(--cwt-bg);
+  --color-cwt-fg: var(--cwt-fg);
+  --color-cwtb-bg: var(--cwtb-bg);
+  --color-cwtb-fg: var(--cwtb-fg);
+  --color-cnf-bg: var(--cnf-bg);
+  --color-cnf-fg: var(--cnf-fg);
+  --color-fim-bg: var(--fim-bg);
+  --color-fim-fg: var(--fim-fg);
+  --color-sta-bg: var(--sta-bg);
+  --color-sta-fg: var(--sta-fg);
+  --color-dyn-bg: var(--dyn-bg);
+  --color-dyn-fg: var(--dyn-fg);
+  --color-dynb-bg: var(--dynb-bg);
+  --color-dynb-fg: var(--dynb-fg);
+  --color-dnf-bg: var(--dnf-bg);
+  --color-dnf-fg: var(--dnf-fg);
 }
 
 @layer base {
   html {
-    @apply bg-white text-slate-900 antialiased dark:bg-slate-950 dark:text-slate-100;
+    @apply bg-page text-ink antialiased;
     color-scheme: light;
   }
   html.dark {

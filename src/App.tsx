@@ -22,8 +22,8 @@ const STEPS: [Step, string][] = [
 function PrivacyNote() {
   return (
     <details className="text-sm">
-      <summary className="cursor-pointer font-medium text-emerald-700 dark:text-emerald-300">🔒 Private: nothing leaves this browser</summary>
-      <div className="mt-2 max-w-xl space-y-1 text-slate-600 dark:text-slate-400">
+      <summary className="cursor-pointer font-medium text-ok-fg">🔒 Private: nothing leaves this browser</summary>
+      <div className="mt-2 max-w-xl space-y-1 text-ink-2">
         <p>
           Files are read and start lists are built entirely on your device. There is no server, no account, no analytics,
           and the page is set up so it cannot send data anywhere.
@@ -92,7 +92,7 @@ export default function App() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 pb-16 sm:px-6">
-      <header className="no-print flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 py-4 dark:border-slate-800">
+      <header className="no-print flex flex-wrap items-center justify-between gap-3 border-b border-line py-4">
         <button type="button" onClick={() => dispatch({ type: "step", step: "start" })} className="flex items-center gap-2 text-left">
           <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" width={28} height={28} />
           <span className="text-lg font-semibold tracking-tight">Start List Maker</span>
@@ -101,7 +101,7 @@ export default function App() {
           {hasData && (
             <>
               <label className="flex items-center gap-1.5" title="Keep your work after the tab closes (stored only in this browser)">
-                <input type="checkbox" checked={remember} onChange={(e) => toggleRemember(e.target.checked)} className="accent-brand-700" />
+                <input type="checkbox" checked={remember} onChange={(e) => toggleRemember(e.target.checked)} className="accent-accent" />
                 Remember on this device
               </label>
               <Button variant="ghost" size="sm" onClick={clearAll}>
@@ -130,8 +130,8 @@ export default function App() {
                 className={cx(
                   "rounded-full px-3 py-1.5 font-medium ring-1 ring-inset",
                   state.step === s
-                    ? "bg-brand-700 text-white ring-brand-700"
-                    : "ring-slate-300 enabled:hover:bg-slate-100 disabled:text-slate-400 dark:ring-slate-700 dark:enabled:hover:bg-slate-800",
+                    ? "bg-accent text-on-accent ring-accent"
+                    : "ring-line-strong enabled:hover:bg-sunken disabled:text-muted disabled:opacity-60",
                 )}
               >
                 {i + 1}. {label}
@@ -152,7 +152,7 @@ export default function App() {
 
       <HelpDialog open={help} onClose={() => setHelp(false)} />
 
-      <footer className="no-print mt-16 border-t border-slate-200 pt-4 text-xs text-slate-500 dark:border-slate-800">
+      <footer className="no-print mt-16 border-t border-line pt-4 text-xs text-muted">
         Start List Maker · for AIDA-style freediving competitions · runs entirely in your browser
       </footer>
     </div>
