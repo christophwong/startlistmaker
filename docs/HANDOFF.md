@@ -4,7 +4,7 @@ Last updated: 2026-10-25
 
 ## State
 
-Phases 1 to 3 of `docs/PLAN.md` are built and **not committed** (the repo has no commits yet). The checks were run on 2026-10-25:
+Phases 1 to 3 of `docs/PLAN.md` are built, committed and pushed to `origin/main`. Test fixtures were scrubbed of real names before the first commit. The checks were run on 2026-10-25:
 
 - `npm run typecheck`: clean.
 - `npm test`: 165 Vitest tests pass across 9 files.
@@ -35,8 +35,8 @@ These are recorded in PLAN.md → Decisions. Don't re-ask them.
 
 ## Next up
 
-1. Commit (this is a good milestone), create the GitHub repo, and push `main`.
-2. Pages → Source: GitHub Actions. Set the custom domain, verify the domain on the account, set the DNS records (README), and enforce HTTPS.
+1. The repo is https://github.com/christophwong/startlistmaker and is **private** while the user reviews and tests it. CI runs the checks and skips the deploy while it's private (`!github.event.repository.private` in `pages.yml`).
+2. To launch: make the repo public, then Pages → Source: GitHub Actions and re-run the workflow. Set the custom domain, verify the domain on the account, set the DNS records (README), and enforce HTTPS.
 3. After the first deploy, open https://startlistmaker.online/#demo, check the console is clean, and print a PDF.
 4. Ask the organizer to fix `Dicipline` → `Discipline` in the Google Form. If there's a real **pool** export, anonymize it and replace `src/samples/pool.csv`, which is currently from pnwapnea's synthetic fixture.
 5. Backlog (PLAN.md): a page per discipline block, a Unicode font for the jsPDF download, undo, and keyboard drag.

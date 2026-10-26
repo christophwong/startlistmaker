@@ -6,7 +6,7 @@ A light, client-only version of the pnwapnea start-list generator, hosted on Git
 
 | Topic | Decision |
 |---|---|
-| Hosting | GitHub Pages, custom domain `startlistmaker.online`, deployed by GitHub Actions |
+| Hosting | GitHub Pages, custom domain `startlistmaker.online`, deployed by GitHub Actions. The repo stays private for review, and is made public at launch (free-plan Pages needs public; the deploy job skips while private) |
 | Architecture | Static SPA, no server, no accounts; all processing in the browser |
 | Stack | Vite + TypeScript + Tailwind v4; code written against React's API, **run on Preact** (`preact/compat`) for size |
 | Code reuse | pnwapnea's `app/lib/**` and shared components **copied** (forked), not shared as a package |
@@ -47,7 +47,8 @@ A light, client-only version of the pnwapnea start-list generator, hosted on Git
 
 ### Phase 4: ship
 - [x] GitHub Actions: checks + Pages deploy (actions pinned to SHAs), Dependabot
-- [ ] Create the GitHub repo, enable Pages (source: GitHub Actions), set the custom domain, enforce HTTPS
+- [x] Create the GitHub repo (private for review: christophwong/startlistmaker) and push
+- [ ] Make it public, enable Pages (source: GitHub Actions), set the custom domain, enforce HTTPS
 - [ ] DNS at the registrar (see README), verify the domain in GitHub account settings
 - [ ] Try a real form export end to end and compare against the organizer's sheet
 
