@@ -77,7 +77,7 @@ A light, client-only version of the pnwapnea start-list generator, hosted on Git
   - [x] `lib/export/logos.ts`: Logo type, sizes, strip layout (pure, unit-tested)
   - [x] State + `parseState` schema (data URL format and size bounded), kept across loads, cleared by reset
   - [x] Image reading (canvas re-encode) and the Logos card on Finalize
-  - [ ] Print sheet: header logos beside the title, sponsor strip after the list
+  - [x] Print sheet: header logos beside the title, sponsor strip after the list
   - [ ] Download PDF: the same layout with jsPDF `addImage`
   - [ ] e2e: add logos, preview, PDF, project save/reopen; docs (DESIGN, Help)
 - [ ] **Usage monitoring: site visits, to watch usage and load** (feature branch `feature/monitoring`). This reverses a current rule ("no analytics", `connect-src 'none'`), so the branch must update every place that makes that promise:

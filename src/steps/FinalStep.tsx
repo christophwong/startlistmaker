@@ -107,7 +107,7 @@ export function FinalStep({ state, dispatch }: { state: AppState; dispatch(a: Ac
 
       {/* The preview is also what gets printed. */}
       <div className="print-area rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200 sm:p-8 print:rounded-none print:p-0 print:shadow-none print:ring-0">
-        <PrintSheet {...event} type={settings.type} table={table} pageBreakAtBreaks={print.pageBreakAtBreaks} />
+        <PrintSheet {...event} type={settings.type} table={table} pageBreakAtBreaks={print.pageBreakAtBreaks} logos={state.logos} />
       </div>
     </div>
   );
