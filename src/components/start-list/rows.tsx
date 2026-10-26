@@ -1,6 +1,6 @@
 import { useState, type DragEvent, type FormEvent, type ReactNode } from "react";
 import { DisciplineChip } from "~/components/discipline-chip";
-import { ArrowIcon, ChevronIcon, ClockIcon, GripIcon, MoreIcon, MoveIcon, WarningIcon } from "~/components/icons";
+import { ArrowIcon, ChevronIcon, ClockIcon, GripIcon, MoreIcon, MoveIcon, TrashIcon, WarningIcon } from "~/components/icons";
 import { Popover } from "~/components/popover";
 import { cx } from "~/components/ui";
 import { DISCIPLINE_NAMES, formatPerformance, type Discipline } from "~/lib/disciplines";
@@ -25,6 +25,8 @@ export interface StartListActions {
   /** `form` holds `breakMin` and `resumeAt` (see breakSchema). */
   saveBreak(entryId: string, form: FormData): void;
   removeBreak(entryId: string): void;
+  /** This start only: the athlete's other start / other day stays. Put back on Athletes. */
+  removeStart(startId: string): void;
 }
 
 export interface SortState {
@@ -66,10 +68,10 @@ export function showStart(startId: string) {
 }
 
 function SortHeader({ column, label, sort, className }: { column: ColumnKey; label: string; sort?: SortState; className?: string }) {
-  if (!sort) return <th className={cx("px-2 py-2.5", className)}>{label}</th>;
+  if (!sort) return <th className={cx("px-1.5 py-2.5", className)}>{label}</th>;
   const active = sort.column === column;
   return (
-    <th className={cx("px-2 py-2.5", className)} aria-sort={active ? (sort.dir === "ASC" ? "ascending" : "descending") : undefined}>
+    <th className={cx("px-1.5 py-2.5", className)} aria-sort={active ? (sort.dir === "ASC" ? "ascending" : "descending") : undefined}>
       <button
         type="button"
         onClick={() => sort.onSort(column)}
@@ -141,13 +143,31 @@ function PositionInput({
 const menuItem =
   "flex min-h-10 w-full items-center gap-2 rounded-lg px-2.5 text-left font-medium enabled:hover:bg-sunken disabled:text-muted";
 
-function MenuItem({ onClick, disabled, children }: { onClick(): void; disabled?: boolean; children: ReactNode }) {
+function MenuItem({ onClick, disabled, danger, children }: { onClick(): void; disabled?: boolean; danger?: boolean; children: ReactNode }) {
   return (
-    <button type="button" className={menuItem} disabled={disabled} onClick={onClick}>
+    <button type="button" className={cx(menuItem, danger && "text-err-fg enabled:hover:bg-err-bg")} disabled={disabled} onClick={onClick}>
       {children}
     </button>
   );
 }
+
+/** Last in a start's menu, after a divider. */
+function RemoveStartItem({ startId, busy, actions, close }: Shared & { startId: string; close(): void }) {
+  return (
+    <>
+      <hr className="my-1 border-line-soft" />
+      <MenuItem danger disabled={busy} onClick={() => (close(), actions.removeStart(startId))}>
+        <TrashIcon /> Remove this start
+      </MenuItem>
+    </>
+  );
+}
+
+/**
+ * ↑ ↓ ⋯ stay at the right edge when the table scrolls sideways (lanes, long
+ * names). Raised while its menu is open, so the next rows' cells don't cover it.
+ */
+const pinnedActions = "sticky right-0 z-[1] shadow-[inset_1px_0_0_var(--line-soft)] has-[[aria-expanded=true]]:z-10";
 
 const iconButton =
   "inline-flex items-center justify-center rounded-md text-muted enabled:hover:bg-sunken enabled:hover:text-ink disabled:opacity-30";
@@ -199,7 +219,8 @@ function BreakBar({
         <ClockIcon />
         <span className="font-bold tracking-widest">BREAK</span>
         <span className="text-sm text-break-fg/75">{meta}</span>
-        <span className="ml-auto flex gap-2">
+        {/* Sticky, so Edit and Remove stay in view when the table scrolls sideways. */}
+        <span className="sticky right-3 ml-auto flex gap-2 rounded-md bg-break-bg pl-2">
           {!open && (
             <button type="button" disabled={busy} onClick={() => setEditing(true)} className={barButton}>
               Edit
@@ -394,6 +415,8 @@ export function StartListRows({
     overId === r.entryId && dragId !== r.entryId && "outline-2 -outline-offset-2 outline-accent";
   // Starts in parallel (zones / lanes) share an OT; alternate groups are tinted.
   const groupTint = (r: StartRow) => showLane && r.group % 2 === 0 && "bg-page";
+  // Opaque, so the pinned actions cell can paint the same colour as its row.
+  const rowBg = (r: StartRow) => (flagged.has(r.start.id) ? "bg-warn-tint" : groupTint(r) || "bg-surface");
 
   const warnDot = (r: StartRow) => {
     const messages = flagged.get(r.start.id);
@@ -470,6 +493,7 @@ export function StartListRows({
                       <MenuItem disabled={busy} onClick={() => (close(), actions.addBreak(r.entryId))}>
                         Add break after
                       </MenuItem>
+                      <RemoveStartItem startId={r.start.id} busy={busy} actions={actions} close={close} />
                     </>
                   )}
                 </Popover>
@@ -490,17 +514,17 @@ export function StartListRows({
             <th className="w-6 py-2.5 pl-3">
               <span className="sr-only">Drag</span>
             </th>
-            <th className="px-2 py-2.5">#</th>
-            <th className="px-2 py-2.5">OT</th>
+            <th className="px-1.5 py-2.5">#</th>
+            <th className="px-1.5 py-2.5">OT</th>
             <SortHeader column="name" label="Athlete" sort={sort} />
             <SortHeader column="gender" label="G" sort={sort} />
             <SortHeader column="country" label="Ctry" sort={sort} />
             <SortHeader column="discipline" label="Disc." sort={sort} />
             <SortHeader column="ap" label="AP" sort={sort} className="text-right" />
             <SortHeader column="diveTime" label="Time" sort={sort} className="text-right" />
-            <th className="px-2 py-2.5 text-right">Check-in</th>
-            {showLane && <th className="px-2 py-2.5 text-center">{laneName}</th>}
-            <th className="px-2 py-2.5">
+            <th className="px-1.5 py-2.5 text-right">Check-in</th>
+            {showLane && <th className="px-1.5 py-2.5 text-center">{laneName}</th>}
+            <th className={cx(pinnedActions, "bg-surface px-1.5 py-2.5")}>
               <span className="sr-only">Actions</span>
             </th>
           </tr>
@@ -536,8 +560,7 @@ export function StartListRows({
                 tabIndex={-1}
                 className={cx(
                   "cursor-grab border-b border-line-soft tabular-nums outline-accent focus-visible:outline-2 active:cursor-grabbing",
-                  groupTint(r),
-                  flagged.has(r.start.id) && "bg-warn-tint",
+                  rowBg(r),
                   dragId === r.entryId && "opacity-40",
                   dropTint(r),
                 )}
@@ -545,32 +568,32 @@ export function StartListRows({
                 <td className="py-1.5 pl-3 text-muted/60 select-none" title="Drag to move">
                   <GripIcon />
                 </td>
-                <td className="px-2 py-1.5 whitespace-nowrap">{positionInput(r, "text-[13px]")}</td>
-                <td className="px-2 py-1.5 text-[17px] font-bold tracking-tight">{fmt(r.ot)}</td>
-                <td className="px-2 py-1.5 font-semibold">
+                <td className="px-1.5 py-1.5 whitespace-nowrap">{positionInput(r, "text-[13px]")}</td>
+                <td className="px-1.5 py-1.5 text-[17px] font-bold tracking-tight">{fmt(r.ot)}</td>
+                <td className="px-1.5 py-1.5 font-semibold">
                   <span className="flex items-center gap-1.5">
                     {fullName(r.start)}
                     {secondStart(r)}
                     {warnDot(r)}
                   </span>
                 </td>
-                <td className="px-2 py-1.5 text-ink-2">{r.start.gender}</td>
-                <td className="px-2 py-1.5 text-ink-2">{r.start.country}</td>
-                <td className="px-2 py-1.5">
+                <td className="px-1.5 py-1.5 text-ink-2">{r.start.gender}</td>
+                <td className="px-1.5 py-1.5 text-ink-2">{r.start.country}</td>
+                <td className="px-1.5 py-1.5">
                   <DisciplineChip discipline={r.start.discipline} />
                 </td>
-                <td className="px-2 py-1.5 text-right font-semibold">{formatPerformance(r.start.discipline, r.start.ap)}</td>
-                <td className="px-2 py-1.5 text-right text-ink-2">{formatDuration(r.start.diveTimeSec)}</td>
-                <td className="px-2 py-1.5 text-right text-ink-2">{fmt(r.checkIn)}</td>
-                {showLane && <td className="px-2 py-1.5 text-center">{r.lane}</td>}
-                <td className="py-1 pr-2 pl-1">
+                <td className="px-1.5 py-1.5 text-right font-semibold">{formatPerformance(r.start.discipline, r.start.ap)}</td>
+                <td className="px-1.5 py-1.5 text-right text-ink-2">{formatDuration(r.start.diveTimeSec)}</td>
+                <td className="px-1.5 py-1.5 text-right text-ink-2">{fmt(r.checkIn)}</td>
+                {showLane && <td className="px-1.5 py-1.5 text-center">{r.lane}</td>}
+                <td className={cx(pinnedActions, rowBg(r), "py-1 pr-2 pl-1")}>
                   <span className="flex justify-end">
                     <button
                       type="button"
                       aria-label="Move up"
                       disabled={i === 0 || busy}
                       onClick={() => actions.move(r.entryId, "up")}
-                      className={cx(iconButton, "size-9")}
+                      className={cx(iconButton, "size-8")}
                     >
                       <ChevronIcon dir="up" />
                     </button>
@@ -579,14 +602,14 @@ export function StartListRows({
                       aria-label="Move down"
                       disabled={i === rows.length - 1 || busy}
                       onClick={() => actions.move(r.entryId, "down")}
-                      className={cx(iconButton, "size-9")}
+                      className={cx(iconButton, "size-8")}
                     >
                       <ChevronIcon dir="down" />
                     </button>
                     <Popover
                       align="beside"
                       ariaLabel={`More actions for ${fullName(r.start)}`}
-                      className={cx(iconButton, "size-9")}
+                      className={cx(iconButton, "size-8")}
                       panelClassName="w-52 p-1.5"
                       label={<MoreIcon />}
                     >
@@ -596,6 +619,7 @@ export function StartListRows({
                           <MenuItem disabled={busy} onClick={() => (close(), actions.addBreak(r.entryId))}>
                             Add break after
                           </MenuItem>
+                          <RemoveStartItem startId={r.start.id} busy={busy} actions={actions} close={close} />
                         </>
                       )}
                     </Popover>

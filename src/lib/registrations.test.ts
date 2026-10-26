@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { autoMap } from "./import/columns";
 import { parseCsv } from "./import/file";
 import { parseRows } from "./import/rows";
-import { checkRow, checkRows, emptyRow, rowsFromImport, rowsToStarts, type RegRow } from "./registrations";
+import { checkRow, checkRows, emptyRow, removeStart, rowsFromImport, rowsToStarts, type RegRow } from "./registrations";
 
 const row = (patch: Partial<RegRow> = {}, s1: Partial<RegRow["starts"][0]> = {}): RegRow => {
   const r = emptyRow("x");
@@ -54,6 +54,41 @@ describe("checkRow", () => {
 
   it("excluded rows are left off", () => {
     expect(rowsToStarts([row({ excluded: true }), row({ id: "y" })], "DEPTH", 1).map((s) => s.athleteId)).toEqual(["y"]);
+  });
+});
+
+describe("removeStart", () => {
+  const two = () => {
+    const r = row();
+    r.starts[1] = { discipline: "FIM", ap: "25", pb: "", diveTime: "1:00" };
+    return r;
+  };
+
+  it("takes one start off the list and keeps the other", () => {
+    const r = removeStart(two(), 2, "DEPTH", 2);
+    expect(r).toMatchObject({ startOff: [false, true], excluded: false });
+    const c = checkRow(r, "DEPTH", 2);
+    expect(c.starts.map((s) => s.id)).toEqual(["x-s1"]);
+    expect(c.off).toEqual([2]);
+  });
+
+  it("a start that's off isn't checked: no errors for it", () => {
+    const r = two();
+    r.starts[1] = { discipline: "??", ap: "", pb: "", diveTime: "" };
+    expect(checkRow(r, "DEPTH", 2).errors["s2.discipline"]).toBeDefined();
+    expect(checkRow(removeStart(r, 2, "DEPTH", 2), "DEPTH", 2).errors).toEqual({});
+  });
+
+  it("removing the last start is the same as unticking On list", () => {
+    const once = removeStart(two(), 1, "DEPTH", 2);
+    const twice = removeStart(once, 2, "DEPTH", 2);
+    expect(twice).toMatchObject({ excluded: true, startOff: undefined });
+    // With one start per athlete, start 1 is the only one.
+    expect(removeStart(row(), 1, "DEPTH", 1)).toMatchObject({ excluded: true });
+  });
+
+  it("on a two-day form it takes that day off", () => {
+    expect(removeStart(two(), 2, "DEPTH", 1, 2)).toMatchObject({ dayOff: [false, true], excluded: false });
   });
 });
 

@@ -97,6 +97,7 @@ export function ListStep({ state, dispatch }: { state: AppState; dispatch(a: Act
       if (result.success) edit((list) => updateBreak(list, id, result.data));
     },
     removeBreak: (id) => edit((list) => removeBreak(list, id)),
+    removeStart: (startId) => dispatch({ type: "removeStart", startId }),
   };
 
   const sortBy = (column: ColumnKey, dir?: "ASC" | "DESC") => {

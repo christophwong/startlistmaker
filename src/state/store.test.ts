@@ -126,6 +126,36 @@ describe("editing", () => {
     expect(reread.importedKey).not.toBe(fixed.importedKey);
   });
 
+  it("Remove this start: off the list, and back in the same place when it's put back", () => {
+    const pool = run([{ type: "demo", filename: "p.csv", table: sample("pool.csv"), event }]);
+    const visible = (s: AppState) => {
+      const live = new Set(startsOf(s).map((x) => x.id));
+      return s.entries.flatMap((e) => (e.kind === "START" && live.has(e.startId) ? [e.startId] : []));
+    };
+    const target = visible(pool)[3];
+    const rowId = target.replace(/-s[12]$/, "");
+    const removed = run([{ type: "removeStart", startId: target }], pool);
+    expect(visible(removed)).toEqual(visible(pool).filter((id) => id !== target));
+    // The athlete's other start stays, and the order isn't touched.
+    expect(startsOf(removed).some((x) => x.athleteId === rowId)).toBe(true);
+    expect(removed.entries).toBe(pool.entries);
+    expect(removed.editedRows).toContain(rowId);
+
+    const row = removed.registrations.find((r) => r.id === rowId)!;
+    const back = run([{ type: "updateRow", id: rowId, patch: { startOff: undefined } }], removed);
+    expect(row.startOff).toBeDefined();
+    expect(visible(back)).toEqual(visible(pool));
+    // Saved and reopened, it's still off.
+    expect(fromProjectJson(toProjectJson(removed)).registrations.find((r) => r.id === rowId)!.startOff).toEqual(row.startOff);
+  });
+
+  it("Remove this start on a two-day form takes that day off only", () => {
+    const start = startsOf(base)[0];
+    const s = run([{ type: "removeStart", startId: start.id }], base);
+    expect(startsOf(s).some((x) => x.id === start.id)).toBe(false);
+    expect(s.registrations.find((r) => r.id === start.athleteId)!.dayOff).toEqual([true, false]);
+  });
+
   it("blank start: enter athletes by hand", () => {
     const s = run([{ type: "blank" }]);
     expect(s.step).toBe("data");

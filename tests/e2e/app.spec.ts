@@ -357,6 +357,43 @@ test("work survives a reload in the same tab, and Clear all data removes it", as
   expect(stored).toEqual([0, 0]);
 });
 
+test("start list: row actions stay in view when the table scrolls sideways", async ({ page }) => {
+  test.skip(isMobile(page), "the phone list is cards, with a move menu on each");
+  // 1024: the settings column is beside a narrow list, and the pool lanes make the table overflow.
+  await page.setViewportSize({ width: 1024, height: 800 });
+  await page.goto("/#demo-pool");
+  const box = page.locator("table").locator("..");
+  const overflow = await box.evaluate((el) => el.scrollWidth - el.clientWidth);
+  expect(overflow).toBeGreaterThan(0);
+  const more = page.getByRole("button", { name: /^More actions for / }).first();
+  const [b, m] = [await box.boundingBox(), await more.boundingBox()];
+  expect(m!.x + m!.width).toBeLessThanOrEqual(b!.x + b!.width);
+  await more.click();
+  await expect(page.getByRole("button", { name: "Add break after" })).toBeVisible();
+});
+
+test("start list: Remove this start takes one start off; Put back on Athletes returns it", async ({ page }) => {
+  await page.goto("/#demo-pool");
+  const summary = page.getByText(/^\d+ starts · \d+ discipline/);
+  const count = async () => Number((await summary.textContent())!.match(/^(\d+)/)![1]);
+  const before = await count();
+  // The first start's menu: ⋯ on desktop, the move menu on a phone.
+  const menu = page.getByRole("button", { name: isMobile(page) ? /^Move (?!break )/ : /^More actions for / }).first();
+  const name = (await menu.getAttribute("aria-label"))!.replace(/^(Move|More actions for) /, "");
+  await menu.click();
+  await page.getByRole("button", { name: "Remove this start" }).click();
+  await expect(summary).toHaveText(new RegExp(`^${before - 1} starts`));
+  // Pool athletes have two starts: the other one stays on the list.
+  await expect(page.locator("[data-start]").filter({ hasText: name }).filter({ visible: true })).toHaveCount(1);
+
+  await goToStep(page, /Athletes/);
+  await expect(page.getByText(/^Start [12] is off the list\./)).toHaveCount(1);
+  await page.getByRole("button", { name: "Put back" }).click();
+  await expect(page.getByText(/is off the list\./)).toHaveCount(0);
+  await page.getByRole("button", { name: "Back to start list" }).click();
+  await expect(summary).toHaveText(new RegExp(`^${before} starts`));
+});
+
 test("demo picker: pool with one start per athlete", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "Pool demo" }).click();

@@ -4,7 +4,7 @@ import { autoMap, dayLabels, hasStart2, selectStart, type Mapping } from "~/lib/
 import { detectCompetitionType, detectMaxStarts } from "~/lib/import/detect";
 import type { NamedSheet, SheetTable } from "~/lib/import/file";
 import { parseRows, type ParsedRow } from "~/lib/import/rows";
-import { emptyRow, emptyStart, rowsFromDays, rowsFromImport, rowsToStarts, type Day, type RegRow } from "~/lib/registrations";
+import { emptyRow, emptyStart, removeStart, rowsFromDays, rowsFromImport, rowsToStarts, type Day, type RegRow } from "~/lib/registrations";
 import {
   defaultSettings,
   DEFAULT_TIME_FORMAT,
@@ -126,6 +126,7 @@ export type Action =
   | { type: "addRow" }
   | { type: "blank" }
   | { type: "deleteRow"; id: string }
+  | { type: "removeStart"; startId: string }
   | { type: "maxStarts"; maxStarts: 1 | 2 }
   | { type: "generate" }
   | { type: "append" }
@@ -374,6 +375,20 @@ export function reducer(state: AppState, action: Action): AppState {
         registrations: state.registrations.filter((r) => r.id !== action.id),
         editedRows: edited(state, action.id),
       };
+    case "removeStart": {
+      // Only the registration changes: its entry is skipped while the start is
+      // off the list, and comes back in the same place when it's put back.
+      const [, id, n] = /^(.+)-s([12])$/.exec(action.startId) ?? [];
+      if (!id) return state;
+      const day = state.twoDay ? state.day : undefined;
+      return {
+        ...state,
+        registrations: state.registrations.map((r) =>
+          r.id === id ? removeStart(r, Number(n) as 1 | 2, state.settings.type, state.maxStarts, day) : r,
+        ),
+        editedRows: edited(state, id),
+      };
+    }
     case "maxStarts":
       return { ...state, maxStarts: action.maxStarts };
     case "generate":

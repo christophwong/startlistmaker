@@ -39,6 +39,8 @@ export interface RegRow {
   excluded: boolean;
   /** Two-day form: left off one day's list ("On list" on that day's tab). */
   dayOff?: [boolean, boolean];
+  /** One-day form: one start left off the list, the athlete's other start stays ("Remove this start"). */
+  startOff?: [boolean, boolean];
 }
 
 /** Which day of a two-day form a check or list is for; starts[0] is Day 1, starts[1] Day 2. */
@@ -55,6 +57,8 @@ export interface RowCheck {
   starts: EngineStartWithAthlete[];
   /** Checked for one day and nothing is entered for it: not diving that day, not an error. */
   notEntered?: boolean;
+  /** Starts taken off the list on their own (one-day forms); not checked. */
+  off?: (1 | 2)[];
 }
 
 export const emptyStart = (): RegStart => ({ discipline: "", ap: "", pb: "", diveTime: "" });
@@ -94,13 +98,19 @@ export function checkRow(row: RegRow, type: CompetitionType, maxStarts: 1 | 2, o
   if (!gender) warnings.gender = row.gender.trim() ? `Gender "${row.gender}" isn't M or F.` : "Gender is missing.";
 
   const other = type === "POOL" ? "depth" : "pool";
+  const off: (1 | 2)[] = [];
   for (const n of day ? [day] : ([1, 2] as const)) {
     if (!day && n > maxStarts) break;
+    // A two-day form takes a day off with dayOff (onList) instead.
+    if (!day && row.startOff?.[n - 1]) {
+      off.push(n);
+      continue;
+    }
     const s = row.starts[n - 1];
     const k = (f: keyof RegStart) => `s${n}.${f}` as CellKey;
     const p = day ? `Day ${n}` : `Start ${n}`;
     if (isBlank(s)) {
-      if (!day && n === 1 && isBlank(row.starts[1])) errors[k("discipline")] = `${p}: discipline is missing.`;
+      if (!day && n === 1 && isBlank(row.starts[1]) && !row.startOff?.[1]) errors[k("discipline")] = `${p}: discipline is missing.`;
       if (s.ap.trim()) warnings[k("ap")] = `${p}: AP given without a discipline. The AP is ignored.`;
       continue;
     }
@@ -140,11 +150,28 @@ export function checkRow(row: RegRow, type: CompetitionType, maxStarts: 1 | 2, o
       order,
     });
   }
-  return { errors, warnings, starts, ...(notEntered && { notEntered }) };
+  return { errors, warnings, starts, ...(notEntered && { notEntered }), ...(off.length > 0 && { off }) };
 }
 
 /** On that day's list: not unticked as a whole (one-day files) or for that day. */
 export const onList = (row: RegRow, day?: Day) => !row.excluded && !(day && row.dayOff?.[day - 1]);
+
+/**
+ * "Remove this start": start `n` leaves the list and the athlete's other
+ * start stays. On a two-day form that's the day (dayOff). When no start is
+ * left, it's the same as unticking On list, so ticking it brings them back.
+ */
+export function removeStart(row: RegRow, n: 1 | 2, type: CompetitionType, maxStarts: 1 | 2, day?: Day): RegRow {
+  if (day) {
+    const dayOff: [boolean, boolean] = [...(row.dayOff ?? [false, false])];
+    dayOff[day - 1] = true;
+    return { ...row, dayOff };
+  }
+  const startOff: [boolean, boolean] = [...(row.startOff ?? [false, false])];
+  startOff[n - 1] = true;
+  const next = { ...row, startOff };
+  return checkRow(next, type, maxStarts).starts.length ? next : { ...row, excluded: true, startOff: undefined };
+}
 
 /**
  * `checkRow` for every row, plus a name warning on included rows that share a

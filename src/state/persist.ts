@@ -104,6 +104,7 @@ const stateSchema = z.object({
       starts: z.tuple([regStart, regStart]),
       excluded: z.boolean(),
       dayOff: z.optional(z.tuple([z.boolean(), z.boolean()])),
+      startOff: z.optional(z.tuple([z.boolean(), z.boolean()])),
     }),
     MAX_ROWS,
   ),

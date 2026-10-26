@@ -120,9 +120,11 @@ function StartCells({
   const name = `${row.firstName} ${row.lastName}`.trim() || "new athlete";
   const timed = isTimedDiscipline(normalizeDiscipline(s.discipline, type) ?? "");
   const unit = timed ? "m:ss" : "m";
+  // Removed on its own from the start list: kept, muted, until it's put back (see Notes).
+  const off = check.off?.includes(n) ? "text-muted" : undefined;
   return (
     <>
-      <Cell check={check} k={k("discipline")} className={first ? "border-l border-l-line-strong" : undefined}>
+      <Cell check={check} k={k("discipline")} className={cx(first && "border-l border-l-line-strong", off)}>
         <OptionInput
           check={check}
           k={k("discipline")}
@@ -132,13 +134,13 @@ function StartCells({
           onChange={(discipline) => onStart(n, { discipline })}
         />
       </Cell>
-      <Cell check={check} k={k("ap")}>
+      <Cell check={check} k={k("ap")} className={off}>
         <TextInput check={check} k={k("ap")} value={s.ap} placeholder={unit} aria-label={`${label} AP, ${name}`} onChange={(e) => onStart(n, { ap: e.target.value })} />
       </Cell>
-      <Cell check={check} k={k("pb")}>
+      <Cell check={check} k={k("pb")} className={off}>
         <TextInput check={check} k={k("pb")} value={s.pb} placeholder={unit} aria-label={`${label} PB, ${name}`} onChange={(e) => onStart(n, { pb: e.target.value })} />
       </Cell>
-      <Cell check={check} k={k("diveTime")}>
+      <Cell check={check} k={k("diveTime")} className={off}>
         <TextInput
           check={check}
           k={k("diveTime")}
@@ -152,12 +154,20 @@ function StartCells({
   );
 }
 
-function Notes({ check, day }: { check: RowCheck; day?: 1 | 2 }) {
+function Notes({ check, day, onPutBack }: { check: RowCheck; day?: 1 | 2; onPutBack(n: 1 | 2): void }) {
   const errors = Object.values(check.errors);
   const warnings = Object.values(check.warnings);
   return (
     <ul className="space-y-0.5 px-2 py-1 text-xs leading-snug">
       {check.notEntered && <li className="text-muted">Not diving Day {day}. Fill in its columns to add a start.</li>}
+      {check.off?.map((n) => (
+        <li key={n} className="flex flex-wrap items-center gap-x-2 text-muted">
+          Start {n} is off the list.
+          <button type="button" onClick={() => onPutBack(n)} className="font-semibold text-accent underline-offset-2 hover:underline">
+            Put back
+          </button>
+        </li>
+      ))}
       {errors.map((m) => (
         <li key={m} className="text-err-fg">
           {m}
@@ -191,6 +201,13 @@ const setDayOff =(row: RegRow, day: 1 | 2, off: boolean): [boolean, boolean] => 
   const dayOff: [boolean, boolean] = [...(row.dayOff ?? [false, false])];
   dayOff[day - 1] = off;
   return dayOff;
+};
+
+/** Start n back on the list; no flag left when neither start is off. */
+const putBack = (row: RegRow, n: 1 | 2): RegRow["startOff"] => {
+  const startOff: [boolean, boolean] = [...(row.startOff ?? [false, false])];
+  startOff[n - 1] = false;
+  return startOff.some(Boolean) ? startOff : undefined;
 };
 
 const label = (key: CellKey, start: string) =>
@@ -406,7 +423,7 @@ export function DataStep({ state, dispatch }: { state: AppState; dispatch(a: Act
                     />
                   </Cell>
                   <Cell>
-                    <Notes check={check} day={day} />
+                    <Notes check={check} day={day} onPutBack={(n) => update(r.id, { startOff: putBack(r, n) })} />
                   </Cell>
                   <Cell>
                     <input
