@@ -33,7 +33,7 @@ These are recorded in PLAN.md → Decisions. Don't re-ask them.
 - New settings: `spacingMode` / `bufferMin` / `roundToMin` (dive time + buffer) and `halftimeBreakMin`.
 - New edits: `moveEntryTo` and `sortEntriesBy`. `EngineStart` gained optional `gender` and `order`.
 
-## Review round 1 (2026-10-25, uncommitted)
+## Review round 1 (2026-10-25, pushed in aa7845c)
 
 The user is testing the local preview before making the repo public (decided: public). Changes from their feedback:
 - The app opens light, with a ☾ Dark / ☀ Light header toggle (`src/theme.ts`).
