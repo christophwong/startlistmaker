@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { LogosEditor } from "~/components/logos-editor";
 import { PrintSheet } from "~/components/start-list/print-sheet";
 import { Alert, Button, Card } from "~/components/ui";
 import { downloadBlob, downloadText, toPdf, toXlsx, type SheetTitle } from "~/lib/export/files";
@@ -97,6 +98,10 @@ export function FinalStep({ state, dispatch }: { state: AppState; dispatch(a: Ac
             Files are made in this browser. The PDF download uses standard fonts; for names in non-Latin scripts use Print /
             Save as PDF.
           </p>
+        </Card>
+
+        <Card className="!p-4">
+          <LogosEditor logos={state.logos} dispatch={dispatch} />
         </Card>
       </div>
 

@@ -1,4 +1,5 @@
 import type { CompetitionType } from "~/lib/disciplines";
+import type { Logo } from "~/lib/export/logos";
 import { autoMap, dayLabels, hasStart2, selectStart, type Mapping } from "~/lib/import/columns";
 import { detectCompetitionType, detectMaxStarts } from "~/lib/import/detect";
 import type { NamedSheet, SheetTable } from "~/lib/import/file";
@@ -67,6 +68,8 @@ export interface AppState {
   /** Order changed by hand since the last generate or sort. */
   manualOrder: boolean;
   print: PrintOptions;
+  /** Header and sponsor logos; kept, like the event details, when a new file is loaded. */
+  logos: Logo[];
 }
 
 export const initialState: AppState = {
@@ -83,6 +86,7 @@ export const initialState: AppState = {
   nextId: 1,
   manualOrder: false,
   print: { showWarmup: true, showCheckIn: true, showStartNumber: false, pageBreakAtBreaks: false },
+  logos: [],
 };
 
 export type Action =
@@ -104,6 +108,10 @@ export type Action =
   | { type: "sortColumn"; column: ColumnKey; dir: "ASC" | "DESC" }
   | { type: "event"; patch: Partial<EventInfo> }
   | { type: "print"; patch: Partial<PrintOptions> }
+  | { type: "addLogos"; logos: Omit<Logo, "id">[] }
+  | { type: "updateLogo"; id: string; patch: Partial<Pick<Logo, "place" | "size">> }
+  | { type: "moveLogo"; id: string; by: -1 | 1 }
+  | { type: "removeLogo"; id: string }
   | { type: "step"; step: Step }
   | { type: "demo"; filename: string; table: SheetTable; event: EventInfo }
   | { type: "restore"; state: AppState }
@@ -154,6 +162,7 @@ function loadSource(state: AppState, source: Source): AppState {
     ...initialState,
     print: state.print,
     event: state.event,
+    logos: state.logos,
     settings: { ...defaultSettings(type), startTime: state.settings.startTime, timeFormat: state.settings.timeFormat },
     step: "map",
     source,
@@ -220,6 +229,7 @@ export function reducer(state: AppState, action: Action): AppState {
         settings: state.settings,
         event: state.event,
         print: state.print,
+        logos: state.logos,
         step: "data",
         maxStarts: 1,
         registrations: [emptyRow("n1")],
@@ -257,6 +267,23 @@ export function reducer(state: AppState, action: Action): AppState {
       return { ...state, event: { ...state.event, ...action.patch } };
     case "print":
       return { ...state, print: { ...state.print, ...action.patch } };
+    case "addLogos": {
+      let nextId = state.nextId;
+      const added = action.logos.map((l) => ({ ...l, id: `l${nextId++}` }));
+      return { ...state, logos: [...state.logos, ...added], nextId };
+    }
+    case "updateLogo": {
+      const updated = state.logos.map((l) => (l.id === action.id ? { ...l, ...action.patch } : l));
+      // A logo moved to another place goes to the end of that place.
+      const moved = updated.find((l) => l.id === action.id);
+      const before = state.logos.find((l) => l.id === action.id);
+      if (!moved || moved.place === before?.place) return { ...state, logos: updated };
+      return { ...state, logos: [...updated.filter((l) => l.id !== action.id), moved] };
+    }
+    case "moveLogo":
+      return { ...state, logos: moveWithinPlace(state.logos, action.id, action.by) };
+    case "removeLogo":
+      return { ...state, logos: state.logos.filter((l) => l.id !== action.id) };
     case "step":
       return { ...state, step: action.step };
     case "demo": {
@@ -268,6 +295,18 @@ export function reducer(state: AppState, action: Action): AppState {
     case "reset":
       return { ...initialState, settings: { ...initialState.settings, timeFormat: state.settings.timeFormat } };
   }
+}
+
+/** Swaps a logo with its neighbour in the same place (left to right). */
+function moveWithinPlace(logos: Logo[], id: string, by: -1 | 1): Logo[] {
+  const i = logos.findIndex((l) => l.id === id);
+  if (i < 0) return logos;
+  let j = i + by;
+  while (j >= 0 && j < logos.length && logos[j].place !== logos[i].place) j += by;
+  if (j < 0 || j >= logos.length) return logos;
+  const out = [...logos];
+  [out[i], out[j]] = [out[j], out[i]];
+  return out;
 }
 
 /** Which steps the stepper can jump to. */

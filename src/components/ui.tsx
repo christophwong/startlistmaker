@@ -17,23 +17,17 @@ const variants: Record<Variant, string> = {
 const buttonBase =
   "inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg px-4 text-sm font-medium focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed sm:min-h-10";
 
+/** Button styles, for a <label> around a file input that should look like a button. */
+export const buttonClass = (variant: Variant = "primary", size?: "sm") =>
+  cx(buttonBase, variants[variant], size === "sm" && "min-h-9 px-2.5 sm:min-h-8");
+
 export function Button({
   variant = "primary",
   size,
   className,
   ...props
 }: ComponentProps<"button"> & { variant?: Variant; size?: "sm" }) {
-  return (
-    <button
-      className={cx(
-        buttonBase,
-        variants[variant],
-        size === "sm" && "min-h-9 px-2.5 sm:min-h-8",
-        className,
-      )}
-      {...props}
-    />
-  );
+  return <button className={cx(buttonClass(variant, size), className)} {...props} />;
 }
 
 export function ButtonLink({

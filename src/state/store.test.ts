@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import { describe, expect, it } from "vitest";
+import { MAX_LOGO_SRC, type Logo } from "~/lib/export/logos";
 import { parseCsv } from "~/lib/import/file";
 import { schedule } from "~/lib/startlist";
 import { fromProjectJson, parseState, ProjectError, toProjectJson } from "./persist";
@@ -126,7 +127,71 @@ describe("project files and stored state", () => {
   it("fills in fields added later (older saves still open)", () => {
     const old = JSON.parse(JSON.stringify(s));
     delete old.print;
+    delete old.logos;
     delete old.settings.halftimeBreakMin;
-    expect(parseState(old)).toMatchObject({ print: initialState.print, settings: { halftimeBreakMin: 0 } });
+    expect(parseState(old)).toMatchObject({ print: initialState.print, logos: [], settings: { halftimeBreakMin: 0 } });
+  });
+
+  it("keeps logos in the project file and rejects anything but PNG/JPEG data URLs", () => {
+    const withLogo = run([{ type: "addLogos", logos: [logo("HEADER_LEFT")] }], s);
+    expect(fromProjectJson(toProjectJson(withLogo)).logos).toEqual(withLogo.logos);
+    const swap = (src: string) => parseState({ ...withLogo, logos: [{ ...withLogo.logos[0], src }] });
+    expect(swap("data:image/svg+xml;base64,PHN2Zz4=")).toBeNull();
+    expect(swap("https://example.com/logo.png")).toBeNull();
+    expect(swap("data:image/png;base64,AAAA\" onerror=\"x")).toBeNull();
+    expect(swap(`data:image/png;base64,${"A".repeat(MAX_LOGO_SRC)}`)).toBeNull();
+    const many = Array.from({ length: 6 }, (_, i) => ({
+      ...withLogo.logos[0],
+      id: `l${i}`,
+      src: `data:image/png;base64,${"A".repeat(MAX_LOGO_SRC - 100)}`,
+    }));
+    expect(parseState({ ...withLogo, logos: many })).toBeNull(); // over the total
+  });
+});
+
+const logo = (place: Logo["place"], name = "logo.png"): Omit<Logo, "id"> => ({
+  name,
+  src: "data:image/png;base64,iVBORw0KGgo=",
+  width: 200,
+  height: 100,
+  place,
+  size: "M",
+});
+
+describe("logos", () => {
+  const base = run([
+    { type: "addLogos", logos: [logo("HEADER_LEFT", "comp"), logo("SPONSORS", "a"), logo("HEADER_RIGHT", "aida")] },
+    { type: "addLogos", logos: [logo("SPONSORS", "b"), logo("SPONSORS", "c")] },
+  ]);
+  const names = (s: AppState, place: Logo["place"]) => s.logos.filter((l) => l.place === place).map((l) => l.name);
+
+  it("adds logos with unique ids", () => {
+    expect(new Set(base.logos.map((l) => l.id)).size).toBe(5);
+    expect(names(base, "SPONSORS")).toEqual(["a", "b", "c"]);
+  });
+
+  it("moves a logo within its place only", () => {
+    const b = base.logos.find((l) => l.name === "b")!;
+    expect(names(run([{ type: "moveLogo", id: b.id, by: -1 }], base), "SPONSORS")).toEqual(["b", "a", "c"]);
+    expect(names(run([{ type: "moveLogo", id: b.id, by: 1 }], base), "SPONSORS")).toEqual(["a", "c", "b"]);
+    const a = base.logos.find((l) => l.name === "a")!;
+    expect(run([{ type: "moveLogo", id: a.id, by: -1 }], base).logos).toEqual(base.logos);
+  });
+
+  it("a logo moved to another place goes last there; size changes in place", () => {
+    const comp = base.logos.find((l) => l.name === "comp")!;
+    const s = run([{ type: "updateLogo", id: comp.id, patch: { place: "SPONSORS" } }], base);
+    expect(names(s, "SPONSORS")).toEqual(["a", "b", "c", "comp"]);
+    const sized = run([{ type: "updateLogo", id: comp.id, patch: { size: "L" } }], base);
+    expect(sized.logos[0]).toMatchObject({ name: "comp", size: "L" });
+  });
+
+  it("are kept when a new file is loaded, and cleared by reset", () => {
+    const loaded = run([{ type: "load", filename: "p.csv", table: sample("pool.csv") }], base);
+    expect(loaded.logos).toEqual(base.logos);
+    expect(run([{ type: "blank" }], base).logos).toEqual(base.logos);
+    expect(run([{ type: "reset" }], base).logos).toEqual([]);
+    const removed = run([{ type: "removeLogo", id: base.logos[0].id }], base);
+    expect(removed.logos).toHaveLength(4);
   });
 });

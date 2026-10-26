@@ -1,5 +1,6 @@
 import * as z from "zod/mini";
 import { DEPTH_DISCIPLINES, POOL_DISCIPLINES } from "~/lib/disciplines";
+import { LOGO_SRC, MAX_LOGO_PX, MAX_LOGO_SRC, MAX_LOGOS, MAX_LOGOS_TOTAL } from "~/lib/export/logos";
 import { MAX_ROWS } from "~/lib/import/file";
 import { THEME_KEY } from "~/theme";
 import { initialState, type AppState } from "./store";
@@ -25,6 +26,19 @@ const table = z.object({
   rows: list(list(str(5000), 200), MAX_ROWS),
 });
 const regStart = z.object({ discipline: str(), ap: str(), pb: str(), diveTime: str() });
+// Only PNG/JPEG data URLs (what the app itself writes), bounded per logo and in total.
+const logos = list(
+  z.object({
+    id: str(40),
+    name: str(200),
+    src: z.string().check(z.maxLength(MAX_LOGO_SRC), z.regex(LOGO_SRC)),
+    width: int(1, MAX_LOGO_PX),
+    height: int(1, MAX_LOGO_PX),
+    place: z.enum(["HEADER_LEFT", "HEADER_RIGHT", "SPONSORS"]),
+    size: z.enum(["S", "M", "L"]),
+  }),
+  MAX_LOGOS,
+).check(z.refine((l) => l.reduce((sum, x) => sum + x.src.length, 0) <= MAX_LOGOS_TOTAL));
 
 const stateSchema = z.object({
   step: z.enum(["start", "map", "data", "list", "final"]),
@@ -97,6 +111,7 @@ const stateSchema = z.object({
     showStartNumber: z.boolean(),
     pageBreakAtBreaks: z.boolean(),
   }),
+  logos,
 });
 
 /** Fills fields added in later versions with defaults, then validates. */

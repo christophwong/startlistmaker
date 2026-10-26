@@ -26,6 +26,9 @@ A light, client-only version of the pnwapnea start-list generator, hosted on Git
 | Theme | Light by default (the user found the system-following dark too dark); a header toggle for dark mode |
 | Athletes editor | Spreadsheet layout at all widths (gridded, borderless cells, Notes column), replacing the bordered inputs and mobile cards |
 | Spacing | FIXED interval, or DIVE_TIME = longest dive in the OT group + buffer, rounded up to 1/5/10 min (falls back to fixed when no dive time) |
+| Logos (2026-10-26) | Header logos (competition, AIDA) left and/or right of the title on the first page, plus a sponsor strip right after the list on the last page, as on the ECAC sheet. One mechanism for both: add an image, choose its place (header left / header right / sponsors), size and order |
+| Logo files | Read locally, decoded and redrawn on a canvas (max 800 px, PNG if transparent, else JPEG), so only clean PNG/JPEG data URLs reach state, the project file and jsPDF. Up to 12 logos. Kept across new uploads like event details; "Clear all data" removes them |
+| AP tie-break, country spellings | Not now (user, 2026-10-26): organizers reorder by hand when needed |
 | Sheet design | Keep the current print/PDF design (user, 2026-10-26, after comparing with the ECAC Day 2 sheet): M/F gender, one-line date · location, Discipline before AP, black break bar |
 
 ## TODO
@@ -70,10 +73,13 @@ A light, client-only version of the pnwapnea start-list generator, hosted on Git
 - [ ] Keyboard drag-and-drop (today: ↑↓ buttons and "move to #")
 - [ ] Multiple days in one project (today: one day at a time via the Day picker)
 - [ ] Results entry, judges' sheets, emergency contact sheet
-- [ ] **Logos / sponsor strip on the last page** (feature branch `feature/sponsor-strip`). The organizer adds organizer, federation and sponsor logos, shown at the bottom of the last page in Print / Save as PDF and in Download PDF. The current design stays as it is otherwise.
-  - Logos come only from the user's own files and are stored as data URLs in state and the project file, validated in `parseState`. Nothing is fetched (CSP).
-  - Settle the size limits, image types and the `img-src` CSP for `data:`/`blob:`, and whether logos also go in the sheet header (as on the ECAC sheet).
-  - Tests: unit tests for the schema and the export, and e2e for adding a logo, print preview, PDF, and project save/reopen.
+- [ ] **Header logos + sponsor strip** (feature branch `feature/sponsor-strip`; see Decisions → Logos)
+  - [x] `lib/export/logos.ts`: Logo type, sizes, strip layout (pure, unit-tested)
+  - [x] State + `parseState` schema (data URL format and size bounded), kept across loads, cleared by reset
+  - [x] Image reading (canvas re-encode) and the Logos card on Finalize
+  - [ ] Print sheet: header logos beside the title, sponsor strip after the list
+  - [ ] Download PDF: the same layout with jsPDF `addImage`
+  - [ ] e2e: add logos, preview, PDF, project save/reopen; docs (DESIGN, Help)
 - [ ] **Usage monitoring: site visits, to watch usage and load** (feature branch `feature/monitoring`). This reverses a current rule ("no analytics", `connect-src 'none'`), so the branch must update every place that makes that promise:
   - Pick a cookieless, privacy-first service that doesn't track people across sites (e.g. GoatCounter or Plausible) and decide which tier and where it's hosted. Count page views only; never athlete data, file names or the contents of the app's state. GitHub Pages has no server logs or analytics of its own.
   - Load it from the site's own origin if possible. Otherwise allow exactly one origin in `script-src`/`connect-src` in `vite.config.ts`, and update CLAUDE.md's privacy rules and the e2e off-origin check to match (allowlist that one origin; everything else still fails).
