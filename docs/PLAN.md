@@ -29,6 +29,7 @@ A light, client-only version of the pnwapnea start-list generator, hosted on Git
 | Logos (2026-10-26) | Header logos (competition, AIDA) left and/or right of the title on the first page, plus a sponsor strip right after the list on the last page, as on the ECAC sheet. One mechanism for both: add an image, choose its place (header left / header right / sponsors), size and order |
 | Logo files | Read locally, decoded and redrawn on a canvas (max 800 px, PNG if transparent, else JPEG), so only clean PNG/JPEG data URLs reach state, the project file and jsPDF. Up to 12 logos. Kept across new uploads like event details; "Clear all data" removes them |
 | AP tie-break, country spellings | Not now (user, 2026-10-26): organizers reorder by hand when needed |
+| Home page | Calls to action, then a short "What your file needs" (required fields, an example table from the depth sample, sample downloads). The full how-to stays in Help. Upload button: "Upload your Google Forms export" with the Forms download path under it (user, 2026-10-26; replaces "calls to action only") |
 | Sheet design | Keep the current print/PDF design (user, 2026-10-26, after comparing with the ECAC Day 2 sheet): M/F gender, one-line date · location, Discipline before AP, black break bar |
 
 ## TODO
@@ -57,6 +58,7 @@ A light, client-only version of the pnwapnea start-list generator, hosted on Git
 - [x] Light by default + dark mode toggle
 - [x] Athletes step as a spreadsheet
 - [x] Home page has only the calls to action; the guidelines are in a Help dialog (header, every step)
+- [x] Home page explains what the file needs, with an example table and sample downloads (2026-10-26)
 - [x] One prominent "Try a demo" button → picker (Pool/Depth, 1 or 2 starts/days)
 
 ### Phase 4: ship

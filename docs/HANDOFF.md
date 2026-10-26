@@ -32,7 +32,7 @@ These are recorded in PLAN.md → Decisions. Don't re-ask them.
 - **UI, from the user's review:**
   - The app opens light, whatever the OS setting, with a dark toggle in the header.
   - The Athletes step is a spreadsheet at every width.
-  - The home page shows only the calls to action. The guidelines are in a Help dialog.
+  - The home page shows the calls to action, then a short "What your file needs" with an example table and sample downloads (2026-10-26). The full guidelines are in a Help dialog.
   - There's one prominent "Try a demo" button, which opens a picker: Depth or Pool, then 1 or 2 days/starts.
 - **Hosting, from the user:**
   - The repo is public, and the site is served at `startlistmaker.online` (the user asked for DNS on 2026-10-26).
@@ -51,7 +51,7 @@ These are recorded in PLAN.md → Decisions. Don't re-ask them.
   - Light by default, with a ☾ Dark / ☀ Light toggle (`src/theme.ts`, Tailwind `@custom-variant dark` on `html.dark`). The theme is saved only once toggled.
   - The Athletes step is a gridded spreadsheet (`src/steps/DataStep.tsx`): borderless cells, pinned row number and first name, tinted error and warning cells with corner markers, and a Notes column. The mobile cards are gone.
 - **Round 2:**
-  - The home page (`src/steps/StartStep.tsx`) keeps only the headline, a "New here? ▶ Try a demo" banner, the drop zone, and the links for paste, by hand, and how it works.
+  - The home page (`src/steps/StartStep.tsx`) keeps only the headline, a "New here? ▶ Try a demo" banner, the drop zone, and the links for paste, by hand, and how it works. (Later, on 2026-10-26, a "What your file needs" section was added below.)
   - The Help dialog is `src/components/help.tsx`.
   - The demo picker is `src/components/demo-picker.tsx`. The 1-start demos cut the same samples before the second start or day (`src/samples/index.ts`, `START2_FROM`).
   - Both dialogs share `src/components/modal.tsx`, which is a native `<dialog>`.

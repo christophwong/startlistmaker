@@ -1,5 +1,6 @@
 import { useState, type DragEvent } from "react";
 import { DemoPicker } from "~/components/demo-picker";
+import { SampleDownloads } from "~/components/sample-downloads";
 import { Alert, Button, cx } from "~/components/ui";
 import { parsePasted, readSpreadsheet, SpreadsheetError, type SheetTable, type Workbook } from "~/lib/import/file";
 import { loadSample, type SampleKind, type SampleStarts } from "~/samples";
@@ -10,7 +11,15 @@ const MAX_PROJECT_BYTES = 20 * 1024 * 1024;
 
 const link = "font-medium text-brand-700 underline-offset-4 hover:underline dark:text-sky-300";
 
-/** The home page: only the calls to action. How-to and form requirements are in Help. */
+/** The first rows of src/samples/depth-2day.csv, cut to the columns that matter. */
+const EXAMPLE_HEADERS = ["Name", "Gender", "Country", "Discipline | Day 1", "DAY 1 Announcement Depth (M)"];
+const EXAMPLE_ROWS = [
+  ["Jonah Ibarra", "Male", "Canada", "CWTB", "42"],
+  ["Yuki Castell", "Female", "USA", "CWTB", "24"],
+  ["Clara Varga", "Female", "Mexico", "FIM", "24"],
+];
+
+/** The home page: the calls to action, then what the file needs with an example. The full how-to is in Help. */
 export function StartStep({ dispatch, onHelp }: { dispatch(a: Action): void; onHelp(): void }) {
   const [error, setError] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
@@ -93,14 +102,18 @@ export function StartStep({ dispatch, onHelp }: { dispatch(a: Action): void; onH
         )}
       >
         <span className="inline-flex min-h-11 items-center rounded-lg bg-brand-700 px-5 font-medium text-white">
-          Choose your sign-up sheet
+          Upload your Google Forms export
         </span>
-        <span className="text-sm text-slate-500">or drop it here · CSV or Excel</span>
+        <span className="text-sm text-slate-500">
+          In Google Forms: Responses → ⋮ → Download responses (.csv).
+          <br />
+          Or drop the file here · CSV or Excel
+        </span>
         <input
           type="file"
           accept=".csv,.tsv,.xlsx,.json,text/csv"
           className="sr-only"
-          aria-label="Sign-up sheet file"
+          aria-label="Google Forms export file"
           onChange={(e) => {
             void readFile(e.target.files?.[0]);
             e.target.value = "";
@@ -136,6 +149,45 @@ export function StartStep({ dispatch, onHelp }: { dispatch(a: Action): void; onH
           </Button>
         </div>
       )}
+
+      <section className="space-y-3 text-left text-sm text-slate-700 dark:text-slate-300">
+        <h2 className="text-lg">What your file needs</h2>
+        <p>
+          One row per athlete, with the form's questions as the header row. Each start needs a <strong>name</strong>,{" "}
+          <strong>discipline</strong> and <strong>announced performance (AP)</strong>. Gender, country, PB and dive time are
+          used when they're there. Column titles don't have to match exactly: you check them on the next step.
+        </p>
+        <div className="overflow-x-auto rounded-lg ring-1 ring-slate-200 dark:ring-slate-700">
+          <table className="w-full text-xs whitespace-nowrap" aria-describedby="example-note">
+            <thead className="bg-slate-100 dark:bg-slate-800">
+              <tr>
+                {EXAMPLE_HEADERS.map((h) => (
+                  <th key={h} scope="col" className="px-2 py-1.5 text-left font-semibold">
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {EXAMPLE_ROWS.map((row) => (
+                <tr key={row[0]} className="border-t border-slate-200 dark:border-slate-700">
+                  {row.map((cell, i) => (
+                    <td key={i} className="px-2 py-1.5">
+                      {cell}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p id="example-note" className="text-xs text-slate-500">
+          The first columns of sample-depth-2day.csv. The athletes are made up.
+        </p>
+        <p>
+          Download a sample to see the full format or start your form from it: <SampleDownloads />
+        </p>
+      </section>
     </div>
   );
 }

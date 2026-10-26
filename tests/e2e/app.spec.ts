@@ -75,7 +75,7 @@ test("#demo-pool link opens the pool sample with lanes", async ({ page }) => {
 
 test("upload → fix a row → generate; reorder and sort", async ({ page }) => {
   await page.goto("/");
-  await page.getByLabel("Sign-up sheet file").setInputFiles("tests/fixtures/ecac-depth-day1.csv");
+  await page.getByLabel("Google Forms export file").setInputFiles("tests/fixtures/ecac-depth-day1.csv");
   await expect(page.getByRole("heading", { name: "Match the columns" })).toBeVisible();
   await page.getByRole("button", { name: "Continue to athletes" }).click();
   await expect(page.getByRole("heading", { name: "Athletes" })).toBeVisible();
@@ -138,7 +138,7 @@ test("Excel export, and a saved project reopens where it left off", async ({ pag
 
   page.once("dialog", (d) => d.accept());
   await page.getByRole("button", { name: "Clear all data" }).click();
-  await page.getByLabel("Sign-up sheet file").setInputFiles({
+  await page.getByLabel("Google Forms export file").setInputFiles({
     name: "event.startlist.json",
     mimeType: "application/json",
     buffer: fs.readFileSync(projectPath),
@@ -207,7 +207,7 @@ test("logos: header and sponsors on the sheet, in the PDF and in a saved project
   const projectPath = await (await json).path();
   page.once("dialog", (d) => d.accept());
   await page.getByRole("button", { name: "Clear all data" }).click();
-  await page.getByLabel("Sign-up sheet file").setInputFiles({
+  await page.getByLabel("Google Forms export file").setInputFiles({
     name: "event.startlist.json",
     mimeType: "application/json",
     buffer: fs.readFileSync(projectPath),
@@ -254,8 +254,13 @@ test("demo picker: pool with one start per athlete", async ({ page }) => {
   await expect(page.getByText("BREAK", { exact: true }).filter({ visible: true })).toHaveCount(0);
 });
 
-test("the home page keeps only the calls to action; the how-to is in Help", async ({ page }) => {
+test("the home page shows what the file needs with an example; the full how-to is in Help", async ({ page }) => {
   await page.goto("/");
+  await expect(page.getByRole("heading", { name: "What your file needs" })).toBeVisible();
+  await expect(page.getByRole("table").getByText("Jonah Ibarra")).toBeVisible();
+  const homeDownload = page.waitForEvent("download");
+  await page.getByRole("button", { name: "sample-depth-2day.csv" }).click();
+  expect((await homeDownload).suggestedFilename()).toBe("sample-depth-2day.csv");
   await expect(page.getByRole("heading", { name: "What the form needs" })).toBeHidden();
   await page.getByRole("button", { name: "How it works" }).click();
   const help = page.getByRole("dialog", { name: "Help" });

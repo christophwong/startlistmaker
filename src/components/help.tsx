@@ -1,8 +1,7 @@
 import type { ReactNode } from "react";
 import { Modal } from "~/components/modal";
-import { downloadText } from "~/lib/export/files";
+import { SampleDownloads } from "~/components/sample-downloads";
 import { FIELDS } from "~/lib/import/columns";
-import { SAMPLES, loadSample } from "~/samples";
 
 /** The how-to that used to fill the Input step; opened from the header on any step. */
 
@@ -65,21 +64,7 @@ export function HelpDialog({ open, onClose }: { open: boolean; onClose(): void }
         </ul>
         <p>
           Sample files to use as a template:{" "}
-          {SAMPLES.map((s, i) => (
-            <span key={s.kind}>
-              {i > 0 && " · "}
-              <button
-                type="button"
-                className="text-brand-700 underline dark:text-sky-300"
-                onClick={async () => {
-                  const sample = await loadSample(s.kind);
-                  downloadText(sample.filename, sample.csv, "text/csv;charset=utf-8");
-                }}
-              >
-                {s.filename}
-              </button>
-            </span>
-          ))}
+          <SampleDownloads />
           . The athletes in them are made up.
         </p>
       </Section>
