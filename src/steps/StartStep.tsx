@@ -73,7 +73,7 @@ export function StartStep({ dispatch, onHelp }: { dispatch(a: Action): void; onH
     <div className="mx-auto max-w-2xl space-y-6 py-6 text-center sm:py-12">
       <section className="space-y-3">
         <h1 className="text-3xl sm:text-4xl">Freediving start lists in minutes</h1>
-        <p className="text-slate-600 dark:text-slate-400">Upload your sign-up sheet and get a printable start list.</p>
+        <p className="text-slate-600 dark:text-slate-400">Turn your Google Forms export into a printable start list.</p>
       </section>
 
       <div className="flex flex-col items-center justify-center gap-3 rounded-2xl bg-brand-50 px-4 py-5 ring-1 ring-brand-100 sm:flex-row sm:gap-5 dark:bg-slate-800 dark:ring-slate-700">
