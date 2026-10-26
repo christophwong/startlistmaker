@@ -85,8 +85,8 @@ async function record() {
   await shot("4-startlist");
   await smoothScroll(0);
 
-  // 5. Finalize: preview and download the PDF.
-  await page.getByRole("button", { name: "Finalize →" }).click();
+  // 5. Print & export: preview and download the PDF.
+  await page.getByRole("button", { name: "Print & export →" }).click();
   await page.locator(".print-area tbody tr").first().waitFor();
   await pause(1500);
   await smoothScroll(500);

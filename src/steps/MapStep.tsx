@@ -35,7 +35,7 @@ export function MapStep({ state, dispatch }: { state: AppState; dispatch(a: Acti
         <div>
           <h2 className="text-xl">Match the columns</h2>
           <p className="text-sm text-slate-500">
-            {source.filename} · {rows.length} responses
+            {source.filename} · {rows.length} row{rows.length === 1 ? "" : "s"}
           </p>
         </div>
         <Button onClick={() => dispatch({ type: "confirmMapping" })} disabled={rows.length === 0}>
@@ -106,13 +106,15 @@ export function MapStep({ state, dispatch }: { state: AppState; dispatch(a: Acti
 
       <Card className="space-y-3">
         <p className="text-sm">
-          <strong>{valid.length}</strong> athletes, <strong>{startCount}</strong> starts read cleanly
+          <strong>{valid.length}</strong> athlete{valid.length === 1 ? "" : "s"} and <strong>{startCount}</strong> start
+          {startCount === 1 ? " is" : "s are"} ready.
           {errors.length > 0 && (
             <>
-              ; <strong className="text-red-600">{errors.length}</strong> rows need fixing (you can fix them on the next step)
+              {" "}
+              <strong className="text-red-600">{errors.length}</strong> row{errors.length === 1 ? " needs" : "s need"} fixing,
+              which you can do on the next step.
             </>
           )}
-          .
         </p>
         <ErrorSummary rows={rows} />
       </Card>

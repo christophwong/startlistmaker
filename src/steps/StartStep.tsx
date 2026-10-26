@@ -28,7 +28,7 @@ export function StartStep({ dispatch, onHelp }: { dispatch(a: Action): void; onH
   const [picking, setPicking] = useState(false);
 
   const accept = (filename: string, table: SheetTable | Workbook) => {
-    if (!table.rows.length) return setError("The file has a header row but no responses.");
+    if (!table.rows.length) return setError("The file has a header row but no athletes under it.");
     setError(null);
     const sheets = "sheets" in table ? { sheets: table.sheets, sheet: table.sheet } : {};
     dispatch({ type: "load", filename, table: { headers: table.headers, rows: table.rows }, ...sheets });
@@ -44,7 +44,7 @@ export function StartStep({ dispatch, onHelp }: { dispatch(a: Action): void; onH
       }
       accept(file.name, await readSpreadsheet(file));
     } catch (e) {
-      setError(e instanceof SpreadsheetError || e instanceof ProjectError ? e.message : "Could not read that file.");
+      setError(e instanceof SpreadsheetError || e instanceof ProjectError ? e.message : "This isn't a CSV or Excel file.");
     }
   };
   const readPaste = () => {
@@ -140,12 +140,12 @@ export function StartStep({ dispatch, onHelp }: { dispatch(a: Action): void; onH
             onChange={(e) => setPaste(e.target.value)}
             rows={5}
             autoFocus
-            aria-label="Pasted responses"
+            aria-label="Pasted cells"
             className="block w-full rounded-lg border-0 bg-white p-2 font-mono text-xs ring-1 ring-slate-300 dark:bg-slate-900 dark:ring-slate-700"
-            placeholder={"Select the header row and all responses in the sheet, copy, and paste here."}
+            placeholder={"In Google Sheets, press Ctrl/⌘ + A, copy, and paste here. Include the header row."}
           />
           <Button size="sm" onClick={readPaste} disabled={!paste.trim()}>
-            Use pasted data
+            Read pasted data
           </Button>
         </div>
       )}

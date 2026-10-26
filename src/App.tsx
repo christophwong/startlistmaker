@@ -12,11 +12,11 @@ import { StartStep } from "~/steps/StartStep";
 import { applyTheme, getTheme } from "~/theme";
 
 const STEPS: [Step, string][] = [
-  ["start", "Input"],
+  ["start", "Upload"],
   ["map", "Columns"],
   ["data", "Athletes"],
   ["list", "Start list"],
-  ["final", "Finalize"],
+  ["final", "Print & export"],
 ];
 
 function PrivacyNote() {

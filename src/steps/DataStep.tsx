@@ -204,8 +204,8 @@ export function DataStep({ state, dispatch }: { state: AppState; dispatch(a: Act
         <div>
           <h2 className="text-xl">Athletes</h2>
           <p className="text-sm text-slate-500">
-            Click a cell to edit it. Red cells keep a start off the list; amber ones are fine to leave. Hover a marked cell, or
-            read the Notes column, for what's wrong.
+            Fix the red cells: those starts stay off the list until they're fixed. Amber cells are only warnings. The Notes
+            column says what's wrong.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -330,7 +330,7 @@ export function DataStep({ state, dispatch }: { state: AppState; dispatch(a: Act
                       aria-label={`Delete ${name}`}
                       title="Delete athlete"
                       className="h-8 w-full text-slate-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950"
-                      onClick={() => confirm("Delete this athlete?") && dispatch({ type: "deleteRow", id: r.id })}
+                      onClick={() => confirm(`Delete ${name}? This can't be undone.`) && dispatch({ type: "deleteRow", id: r.id })}
                     >
                       ✕
                     </button>
@@ -341,7 +341,7 @@ export function DataStep({ state, dispatch }: { state: AppState; dispatch(a: Act
           </tbody>
         </table>
       </div>
-      {shown.length === 0 && <p className="text-sm text-slate-500">No rows with problems.</p>}
+      {shown.length === 0 && <p className="text-sm text-slate-500">Nothing to fix.</p>}
 
       <Button variant="secondary" onClick={() => dispatch({ type: "addRow" })}>
         + Add athlete

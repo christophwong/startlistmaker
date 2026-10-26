@@ -125,7 +125,7 @@ describe("parseRows", () => {
     const { headers, rows } = fixture("google-form-pool.csv");
     const [first] = parseRows(rows.slice(0, 1), autoMap(headers), { type: "POOL", maxStarts: 1 });
     expect(first.draft!.starts).toHaveLength(1);
-    expect(first.warnings).toContain("This event allows one start; start 2 ignored.");
+    expect(first.warnings).toContain("Start 2 is ignored: this competition has one start per athlete.");
   });
 
   it("handles a differently shaped depth form with errors", () => {
@@ -133,9 +133,9 @@ describe("parseRows", () => {
     const parsed = parseRows(rows, autoMap(headers), { type: "DEPTH", maxStarts: 1 });
     const byRow = Object.fromEntries(parsed.map((p) => [p.rowNumber, p]));
 
-    // Superseded by the later resubmission (row 8)
+    // Replaced by the later resubmission (row 8)
     expect(byRow[2].draft).toBeNull();
-    expect(byRow[2].warnings[0]).toMatch(/Superseded by row 8/);
+    expect(byRow[2].warnings[0]).toMatch(/Replaced by row 8/);
     expect(byRow[8].draft).toMatchObject({
       firstName: "Ana", lastName: "Lima", gender: "F", country: "Brazil",
       emergencyName: "Rui Lima", emergencyPhone: "+55 11 5555 0101",
@@ -152,8 +152,8 @@ describe("parseRows", () => {
       "Start 1: STA is a pool discipline, not allowed in a depth competition.",
     ]);
     expect(byRow[6]).toBeUndefined(); // blank row skipped
-    expect(byRow[7].errors).toEqual(['Start 1: AP "deep" is not meters.']);
-    expect(byRow[7].warnings).toContain('Gender "X" is not male/female, left blank.');
+    expect(byRow[7].errors).toEqual(['Start 1: AP "deep" isn\'t in meters.']);
+    expect(byRow[7].warnings).toContain('Gender "X" isn\'t male or female. It\'s left blank.');
   });
 });
 
@@ -198,7 +198,7 @@ describe("real two-day depth form", () => {
     const day1 = parseRows(rows, selectStart(mapping, 1), { type: "DEPTH", maxStarts: 1, selectedLabel: "Day 1" });
     expect(day1.flatMap((p) => p.errors)).toEqual([]);
     expect(day1.filter((p) => p.draft)).toHaveLength(18);
-    expect(day1.find((p) => p.rowNumber === 24)).toMatchObject({ draft: null, warnings: ["No Day 1 entry."] });
+    expect(day1.find((p) => p.rowNumber === 24)).toMatchObject({ draft: null, warnings: ["No Day 1 entry. This row is skipped."] });
     // An ALL-CAPS name is title-cased
     expect(byName(day1)["Meihua (May) Wu"].starts).toMatchObject([{ discipline: "CNF", ap: 10 }]);
 
@@ -233,7 +233,7 @@ describe("errors vs warnings", () => {
 
     const bad = parse(["Ana Lima", "X", "CWT", "30", "soon"]);
     expect(bad.errors).toEqual([]);
-    expect(bad.warnings).toContain('Start 1: dive time "soon" is not m:ss, ignored.');
+    expect(bad.warnings).toContain('Start 1: dive time "soon" isn\'t m:ss. It\'s ignored.');
   });
 
   it("name, discipline and AP are still errors", () => {

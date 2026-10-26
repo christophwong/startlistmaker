@@ -79,36 +79,37 @@ export function checkRow(row: RegRow, type: CompetitionType, maxStarts: 1 | 2, o
   const lastName = row.lastName.trim();
   if (!firstName && !lastName) errors.name = "Name is missing.";
   const gender = parseGender(row.gender);
-  if (!gender) warnings.gender = row.gender.trim() ? `"${row.gender}" is not M / F.` : "Gender is missing.";
+  if (!gender) warnings.gender = row.gender.trim() ? `Gender "${row.gender}" isn't M or F.` : "Gender is missing.";
 
   const other = type === "POOL" ? "depth" : "pool";
   for (const n of [1, 2] as const) {
     if (n > maxStarts) break;
     const s = row.starts[n - 1];
     const k = (f: keyof RegStart) => `s${n}.${f}` as CellKey;
+    const p = `Start ${n}`;
     if (isBlank(s)) {
-      if (n === 1 && isBlank(row.starts[1])) errors[k("discipline")] = "Discipline is missing.";
-      if (s.ap.trim()) warnings[k("ap")] = "AP without a discipline is ignored.";
+      if (n === 1 && isBlank(row.starts[1])) errors[k("discipline")] = `${p}: discipline is missing.`;
+      if (s.ap.trim()) warnings[k("ap")] = `${p}: AP given without a discipline. The AP is ignored.`;
       continue;
     }
     const discipline = normalizeDiscipline(s.discipline, type);
     if (!discipline) {
-      errors[k("discipline")] = `Unknown discipline "${s.discipline}".`;
+      errors[k("discipline")] = `${p}: unknown discipline "${s.discipline}".`;
       continue;
     }
     if (!isDiscipline(discipline, type)) {
-      errors[k("discipline")] = `${discipline} is a ${other} discipline.`;
+      errors[k("discipline")] = `${p}: ${discipline} is a ${other} discipline.`;
       continue;
     }
-    const unit = isTimedDiscipline(discipline) ? "a time (m:ss)" : "meters";
+    const unit = isTimedDiscipline(discipline) ? "a time (m:ss)" : "in meters";
     const ap = parsePerformance(discipline, s.ap);
-    if (ap === null) errors[k("ap")] = s.ap.trim() ? `AP is not ${unit}.` : "AP is missing.";
+    if (ap === null) errors[k("ap")] = s.ap.trim() ? `${p}: AP isn't ${unit}.` : `${p}: AP is missing.`;
     const pb = parsePerformance(discipline, s.pb);
-    if (s.pb.trim() && pb === null) warnings[k("pb")] = `PB is not ${unit}, ignored.`;
+    if (s.pb.trim() && pb === null) warnings[k("pb")] = `${p}: PB isn't ${unit}. It's ignored.`;
     let diveTimeSec = parseDuration(s.diveTime);
     if (diveTimeSec === null && isTimedDiscipline(discipline) && ap !== null) diveTimeSec = ap;
     if (diveTimeSec === null) {
-      warnings[k("diveTime")] = s.diveTime.trim() ? "Dive time is not m:ss, ignored." : "Dive time is missing.";
+      warnings[k("diveTime")] = s.diveTime.trim() ? `${p}: dive time isn't m:ss. It's ignored.` : `${p}: dive time is missing.`;
     }
     if (ap === null || errors.name) continue;
     starts.push({

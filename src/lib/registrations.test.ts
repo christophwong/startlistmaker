@@ -30,8 +30,8 @@ describe("checkRow", () => {
   it("blocks on name, discipline and AP; warns on the rest", () => {
     expect(checkRow(row({ firstName: "", lastName: "" }), "DEPTH", 1).errors.name).toMatch(/Name/);
     expect(checkRow(row({}, { discipline: "DYN" }), "DEPTH", 1).errors["s1.discipline"]).toMatch(/pool discipline/);
-    expect(checkRow(row({}, { discipline: "Bungee" }), "DEPTH", 1).errors["s1.discipline"]).toMatch(/Unknown/);
-    expect(checkRow(row({}, { ap: "" }), "DEPTH", 1).errors["s1.ap"]).toBe("AP is missing.");
+    expect(checkRow(row({}, { discipline: "Bungee" }), "DEPTH", 1).errors["s1.discipline"]).toMatch(/unknown discipline/);
+    expect(checkRow(row({}, { ap: "" }), "DEPTH", 1).errors["s1.ap"]).toBe("Start 1: AP is missing.");
     expect(checkRow(row({}, { ap: "deep" }), "DEPTH", 1).starts).toEqual([]);
 
     const w = checkRow(row({ gender: "x" }, { pb: "far", diveTime: "" }), "DEPTH", 1);
@@ -81,6 +81,6 @@ describe("rowsFromImport", () => {
     const [r] = rowsFromImport(parsed, table.rows, mapping, 1);
     expect(r).toMatchObject({ firstName: "Ana", lastName: "Lima", gender: "F" });
     expect(r.starts[0].discipline).toBe("CWT");
-    expect(checkRow(r, "DEPTH", 1).errors["s1.ap"]).toBe("AP is missing.");
+    expect(checkRow(r, "DEPTH", 1).errors["s1.ap"]).toBe("Start 1: AP is missing.");
   });
 });

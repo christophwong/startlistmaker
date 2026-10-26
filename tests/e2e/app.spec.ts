@@ -45,15 +45,15 @@ test("demo: sample depth list → finalize → CSV and PDF downloads", async ({ 
   // Defaults: depth, 2 days.
   await page.getByRole("dialog", { name: "Try a demo" }).getByRole("button", { name: "Open the demo" }).click();
   await expect(page.getByRole("heading", { name: "Start list" })).toBeVisible();
-  await expect(page.getByText(/demo data with fictional athletes/)).toBeVisible();
-  await expect(page.getByText(/18\/18 starts scheduled|\d+\/\d+ starts scheduled/)).toBeVisible();
+  await expect(page.getByText(/This is a demo with made-up athletes/)).toBeVisible();
+  await expect(page.getByText(/(\d+) of \1 starts on the list/)).toBeVisible();
 
-  await page.getByRole("button", { name: "Finalize →" }).click();
+  await page.getByRole("button", { name: "Print & export →" }).click();
   await expect(page.getByText("Sample Depth Challenge · Day 1")).toBeVisible();
   await expect(page.locator(".print-area tbody tr").first()).toBeVisible();
 
   const csv = page.waitForEvent("download");
-  await page.getByRole("button", { name: "CSV", exact: true }).click();
+  await page.getByRole("button", { name: "Download CSV" }).click();
   const csvFile = await (await csv).path();
   const text = fs.readFileSync(csvFile, "utf8");
   expect(text).toContain("Diver Name,Gender,Country,Discipline,AP,Time,OT,WT,Check-in");
@@ -113,21 +113,21 @@ test("upload → fix a row → generate; reorder and sort", async ({ page }) => 
 test("paste from Google Sheets", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "Paste from Google Sheets" }).click();
-  await page.getByLabel("Pasted responses").fill(
+  await page.getByLabel("Pasted cells").fill(
     "Name\tGender\tDiscipline\tAnnounced Performance (AP)\tDive Time\nAna Lima\tFemale\tCWT\t30\t1:10\nBo Chen\tMale\tFIM\t40\t1:30\n",
   );
-  await page.getByRole("button", { name: "Use pasted data" }).click();
+  await page.getByRole("button", { name: "Read pasted data" }).click();
   await page.getByRole("button", { name: "Continue to athletes" }).click();
   await page.getByRole("button", { name: /Generate start list/ }).click();
-  await expect(page.getByText("2/2 starts scheduled")).toBeVisible();
+  await expect(page.getByText("2 of 2 starts on the list")).toBeVisible();
 });
 
 test("Excel export, and a saved project reopens where it left off", async ({ page }) => {
   await page.goto("/#demo-pool");
-  await page.getByRole("button", { name: "Finalize →" }).click();
+  await page.getByRole("button", { name: "Print & export →" }).click();
 
   const xlsx = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Excel (.xlsx)" }).click();
+  await page.getByRole("button", { name: "Download Excel" }).click();
   const x = await xlsx;
   expect(x.suggestedFilename()).toBe("Sample-Pool-Classic.xlsx");
   expect(fs.readFileSync(await x.path()).subarray(0, 2).toString()).toBe("PK"); // a zip
@@ -144,7 +144,7 @@ test("Excel export, and a saved project reopens where it left off", async ({ pag
     buffer: fs.readFileSync(projectPath),
   });
   await expect(page.getByRole("heading", { name: "Start list", exact: true })).toBeVisible();
-  await expect(page.getByText("41/41 starts scheduled")).toBeVisible();
+  await expect(page.getByText("41 of 41 starts on the list")).toBeVisible();
 });
 
 /** A PNG drawn in the page, so no binary fixtures are needed. */
@@ -164,7 +164,7 @@ async function png(page: Page, width: number, height: number, color: string) {
 
 test("logos: header and sponsors on the sheet, in the PDF and in a saved project", async ({ page }) => {
   await page.goto("/#demo");
-  await page.getByRole("button", { name: "Finalize →" }).click();
+  await page.getByRole("button", { name: "Print & export →" }).click();
 
   const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="300" height="100"><rect width="300" height="100" fill="#1e40af"/></svg>';
   await page.locator("label", { hasText: "+ Header logo" }).locator("input").setInputFiles([
@@ -212,7 +212,7 @@ test("logos: header and sponsors on the sheet, in the PDF and in a saved project
     mimeType: "application/json",
     buffer: fs.readFileSync(projectPath),
   });
-  await page.getByRole("button", { name: "Finalize →" }).click();
+  await page.getByRole("button", { name: "Print & export →" }).click();
   await expect(page.getByLabel("Size of sponsor-b.png")).toHaveValue("L");
   await expect(page.getByRole("button", { name: "Move sponsor-b.png left" })).toBeDisabled();
   await expect(sheet.locator("header img")).toHaveCount(2);
@@ -250,7 +250,7 @@ test("demo picker: pool with one start per athlete", async ({ page }) => {
   await picker.getByRole("button", { name: "Open the demo" }).click();
   await expect(page.getByRole("heading", { name: "Start list", exact: true })).toBeVisible();
   await expect(page.getByText("Sample Pool Classic").first()).toBeVisible();
-  await expect(page.getByText(/(\d+)\/\1 starts scheduled/)).toBeVisible();
+  await expect(page.getByText(/(\d+) of \1 starts on the list/)).toBeVisible();
   await expect(page.getByText("BREAK", { exact: true }).filter({ visible: true })).toHaveCount(0);
 });
 
@@ -261,10 +261,11 @@ test("the home page shows what the file needs with an example; the full how-to i
   const homeDownload = page.waitForEvent("download");
   await page.getByRole("button", { name: "sample-depth-2day.csv" }).click();
   expect((await homeDownload).suggestedFilename()).toBe("sample-depth-2day.csv");
-  await expect(page.getByRole("heading", { name: "What the form needs" })).toBeHidden();
+  await expect(page.getByRole("heading", { name: "Getting your Google Forms export" })).toBeHidden();
   await page.getByRole("button", { name: "How it works" }).click();
   const help = page.getByRole("dialog", { name: "Help" });
-  await expect(help.getByRole("heading", { name: "What the form needs" })).toBeVisible();
+  await expect(help.getByRole("heading", { name: "Getting your Google Forms export" })).toBeVisible();
+  await expect(help.getByRole("heading", { name: "What your file needs" })).toBeVisible();
   const download = page.waitForEvent("download");
   await help.getByRole("button", { name: "sample-pool.csv" }).click();
   expect((await download).suggestedFilename()).toBe("sample-pool.csv");

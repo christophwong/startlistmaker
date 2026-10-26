@@ -44,18 +44,18 @@ export function FinalStep({ state, dispatch }: { state: AppState; dispatch(a: Ac
       <div className="no-print space-y-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h2 className="text-xl">Finalize</h2>
+            <h2 className="text-xl">Print & export</h2>
             <p className="text-sm text-slate-500">Check the sheet, then print it or download it.</p>
           </div>
           <Button variant="secondary" onClick={() => dispatch({ type: "step", step: "list" })}>
-            ← Back to editing
+            ← Back to start list
           </Button>
         </div>
 
         {problems.length > 0 && (
           <Alert tone="warning">
             {problems.length} warning{problems.length === 1 ? "" : "s"} on the start list (recovery time, same OT). See the
-            editor for details.
+            Start list step for details.
           </Alert>
         )}
         {error && <Alert tone="error">{error}</Alert>}
@@ -71,25 +71,25 @@ export function FinalStep({ state, dispatch }: { state: AppState; dispatch(a: Ac
               {busy === "PDF" ? "Creating PDF…" : "Download PDF"}
             </Button>
             <Button variant="secondary" onClick={() => downloadText(`${base}.csv`, toCsv(table), "text/csv;charset=utf-8")}>
-              CSV
+              Download CSV
             </Button>
             <Button
               variant="secondary"
               disabled={!!busy}
               onClick={() => run("Excel file", async () => downloadBlob(`${base}.xlsx`, await toXlsx(table, title)))}
             >
-              {busy === "Excel file" ? "Creating…" : "Excel (.xlsx)"}
+              {busy === "Excel file" ? "Creating Excel file…" : "Download Excel"}
             </Button>
             <Button
               variant="ghost"
-              title="Everything (athletes, settings, order) to reopen later"
+              title="Everything (athletes, settings, order, logos) to reopen later"
               onClick={() => downloadText(`${base}.startlist.json`, toProjectJson(state), "application/json")}
             >
               Save project
             </Button>
           </div>
           <div className="flex flex-wrap gap-x-6 gap-y-2">
-            <Toggle label="WT column" checked={print.showWarmup} onChange={(v) => setPrint({ showWarmup: v })} />
+            <Toggle label="Warm-up (WT) column" checked={print.showWarmup} onChange={(v) => setPrint({ showWarmup: v })} />
             <Toggle label="Check-in column" checked={print.showCheckIn} onChange={(v) => setPrint({ showCheckIn: v })} />
             <Toggle label="Start numbers" checked={print.showStartNumber} onChange={(v) => setPrint({ showStartNumber: v })} />
             <Toggle label="New page after each break" checked={print.pageBreakAtBreaks} onChange={(v) => setPrint({ pageBreakAtBreaks: v })} />

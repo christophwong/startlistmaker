@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Start List Maker (startlistmaker.online) is a static, client-only single-page app that builds AIDA freediving start lists from a Google Forms sign-up sheet. It's a light fork of `../pnwapnea` (accounts, SQLite, SSR): it has no server and no accounts, and athlete data never leaves the browser. Product decisions and TODOs are in `tmp/docs/PLAN.md`, the design is in `tmp/docs/DESIGN.md`, resume notes are in `tmp/docs/HANDOFF.md`, and the QA report is in `tmp/docs/QA.md`. They're local only (`tmp/` is gitignored, because the repo is public). Read them before changing behavior.
+Start List Maker (startlistmaker.online) is a static, client-only single-page app that builds AIDA freediving start lists from a Google Forms export. It's a light fork of `../pnwapnea` (accounts, SQLite, SSR): it has no server and no accounts, and athlete data never leaves the browser. Product decisions and TODOs are in `tmp/docs/PLAN.md`, the design is in `tmp/docs/DESIGN.md`, resume notes are in `tmp/docs/HANDOFF.md`, and the QA report is in `tmp/docs/QA.md`. They're local only (`tmp/` is gitignored, because the repo is public). Read them before changing behavior.
 
 ## Commands
 
@@ -25,7 +25,7 @@ The stack is Vite, TypeScript, Tailwind v4 and **Preact via `preact/compat`**. C
 
 - **`src/lib/`** holds pure domain logic, mostly copied from pnwapnea. `startlist/` is the engine (sort, generate, schedule, validate, edits) and `import/` covers CSV/XLSX/paste → mapped columns → parsed rows. `registrations.ts` has the editable athlete rows and per-cell validation. `export/` builds the shared table for print, CSV, XLSX and PDF.
 - **`src/state/`**: `store.ts` holds one reducer with all app state, `persist.ts` covers session/local storage and project files (zod/mini validated), and `derived.ts` has the `useStartList` hook.
-- **`src/steps/`** has one component per step (Input → Columns → Athletes → Start list → Finalize). **`src/components/`** holds the shared UI copied from pnwapnea (callback-driven).
+- **`src/steps/`** has one component per step (Upload → Columns → Athletes → Start list → Print & export). **`src/components/`** holds the shared UI copied from pnwapnea (callback-driven).
 - **`src/samples/`** holds the anonymized demo CSVs, bundled as `?raw` and loaded on demand.
 
 Key points that span files:

@@ -8,15 +8,13 @@ import type { ParsedRow } from "~/lib/import/rows";
  * (server) and the client-side demo.
  */
 
-export type RowStatus = "new" | "update" | "error" | "skipped";
+export type RowStatus = "ready" | "error" | "skipped";
 
-export const rowStatus = (p: ParsedRow, isUpdate = false): RowStatus =>
-  !p.draft ? (p.errors.length ? "error" : "skipped") : isUpdate ? "update" : "new";
+export const rowStatus = (p: ParsedRow): RowStatus => (p.draft ? "ready" : p.errors.length ? "error" : "skipped");
 
 const statusBadge: Record<RowStatus, React.ReactNode> = {
-  new: <Badge tone="emerald">New</Badge>,
-  update: <Badge tone="brand">Update</Badge>,
-  error: <Badge tone="red">Error</Badge>,
+  ready: <Badge tone="emerald">Ready</Badge>,
+  error: <Badge tone="red">Needs fixing</Badge>,
   skipped: <Badge>Skipped</Badge>,
 };
 
@@ -36,7 +34,7 @@ export function MissingColumns({ labels }: { labels: string[] }) {
   if (!labels.length) return null;
   return (
     <Alert tone="error">
-      No column is mapped to <strong>{labels.join(", ")}</strong>. Every row will fail until you pick{" "}
+      No column is chosen for <strong>{labels.join(", ")}</strong>. No athlete can be read until you choose{" "}
       {labels.length === 1 ? "one" : "them"} under Column mapping.
     </Alert>
   );
@@ -54,7 +52,7 @@ export function DayPicker({
 }) {
   return (
     <label className="flex flex-wrap items-center gap-2 text-sm">
-      <span className="font-medium">Import columns for</span>
+      <span className="font-medium">Build the list for</span>
       <select
         name="use"
         value={value}
@@ -94,8 +92,8 @@ export function ErrorSummary({ rows }: { rows: ParsedRow[] }) {
       ))}
       {warned > 0 && (
         <p className="text-amber-700 dark:text-amber-300">
-          <strong className="tabular-nums">{warned}</strong> row{warned === 1 ? "" : "s"} will import with
-          warnings (shown below); warnings don't block the import.
+          <strong className="tabular-nums">{warned}</strong> row{warned === 1 ? " has" : "s have"} warnings (shown below).
+          Warnings don't keep anyone off the list.
         </p>
       )}
     </div>

@@ -1,6 +1,6 @@
 # Start List Maker
 
-**Freediving start lists in minutes, straight from your Google Forms sign-up sheet.**
+**Freediving start lists in minutes, straight from your Google Forms export.**
 
 Start List Maker turns competition registrations into a printable AIDA-style start list, with official tops (OT), warm-up and check-in times, lanes or zones, and breaks. It runs entirely in your browser: there's no account to create, and athlete data never leaves your device.
 
@@ -22,11 +22,11 @@ Your work stays in the current tab until you close it, unless you turn on **Reme
 
 ## How to use it
 
-1. **Get your responses.** In Google Forms, open **Responses → ⋮ → Download responses (.csv)**. Or select the cells in the linked Google Sheet and copy them.
+1. **Get your Google Forms export.** In Google Forms, open **Responses → ⋮ → Download responses (.csv)**. Or select the cells in the linked Google Sheet and copy them.
 2. **Upload or paste** them on the home page, then check the column matching.
 3. **Fix anything flagged** in the athletes table.
 4. **Set the schedule:** first OT, spacing, lanes or zones, breaks and order. Then adjust by hand.
-5. **Finalize:** add logos, then print or download.
+5. **Print & export:** add logos, then print or download.
 
 New to it? Open **Try a demo** on the home page to see a finished start list with made-up athletes.
 

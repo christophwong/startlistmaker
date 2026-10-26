@@ -89,7 +89,7 @@ function parseStart(
   const rawTime = get(`s${n}DiveTime`);
 
   if (startIsBlank(n, get)) {
-    if (n === 2 && rawAp) warnings.push(`${p}: AP given without a discipline, ignored.`);
+    if (n === 2 && rawAp) warnings.push(`${p}: AP given without a discipline. The AP is ignored.`);
     return null;
   }
 
@@ -106,15 +106,15 @@ function parseStart(
     return null;
   }
 
-  const unit = isTimedDiscipline(discipline) ? "a time (m:ss)" : "meters";
+  const unit = isTimedDiscipline(discipline) ? "a time (m:ss)" : "in meters";
   const ap = parsePerformance(discipline, rawAp);
   if (ap === null) {
     errors.push(
-      rawAp ? `${p}: AP "${rawAp}" is not ${unit}.` : `${p}: AP is missing.`,
+      rawAp ? `${p}: AP "${rawAp}" isn't ${unit}.` : `${p}: AP is missing.`,
     );
   }
   const pb = parsePerformance(discipline, rawPb);
-  if (rawPb && pb === null) warnings.push(`${p}: PB "${rawPb}" is not ${unit}, ignored.`);
+  if (rawPb && pb === null) warnings.push(`${p}: PB "${rawPb}" isn't ${unit}. It's ignored.`);
 
   let diveTimeSec = parseDuration(rawTime);
   if (diveTimeSec === null && isTimedDiscipline(discipline) && ap !== null) {
@@ -122,7 +122,7 @@ function parseStart(
   }
   if (diveTimeSec === null) {
     warnings.push(
-      rawTime ? `${p}: dive time "${rawTime}" is not m:ss, ignored.` : `${p}: dive time is missing.`,
+      rawTime ? `${p}: dive time "${rawTime}" isn't m:ss. It's ignored.` : `${p}: dive time is missing.`,
     );
   }
 
@@ -151,7 +151,7 @@ export function parseRow(
 
   const s1Blank = startIsBlank(1, get);
   if (ctx.selectedLabel && s1Blank && !get("s1Ap") && !get("s1DiveTime")) {
-    return { rowNumber, draft: null, errors, warnings: [`No ${ctx.selectedLabel} entry.`], partial: false };
+    return { rowNumber, draft: null, errors, warnings: [`No ${ctx.selectedLabel} entry. This row is skipped.`], partial: false };
   }
 
   let firstName = fixAllCaps(get("firstName"));
@@ -168,7 +168,7 @@ export function parseRow(
   const rawGender = get("gender");
   const gender = parseGender(rawGender);
   if (!gender) {
-    warnings.push(rawGender ? `Gender "${rawGender}" is not male/female, left blank.` : "Gender is missing.");
+    warnings.push(rawGender ? `Gender "${rawGender}" isn't male or female. It's left blank.` : "Gender is missing.");
   }
 
   let emergencyName = get("emergencyName");
@@ -183,7 +183,7 @@ export function parseRow(
   if (s1) starts.push(s1);
   const s2 = parseStart(2, get, ctx, errors, warnings);
   if (s2) {
-    if (ctx.maxStarts < 2) warnings.push("This event allows one start; start 2 ignored.");
+    if (ctx.maxStarts < 2) warnings.push("Start 2 is ignored: this competition has one start per athlete.");
     else starts.push(s2);
   }
 
@@ -284,13 +284,13 @@ export function parseRows(rows: string[][], mapping: Mapping, ctx: ImportContext
     while (replacedBy.has(last)) last = replacedBy.get(last)!.by;
     const row = parsed[last].rowNumber;
     parsed[i].warnings.push(
-      merged ? `Merged into row ${row} (same athlete).` : `Superseded by row ${row} (same athlete).`,
+      merged ? `Merged into row ${row} (same athlete).` : `Replaced by row ${row} (same athlete).`,
     );
   }
   for (const i of holders) {
     const p = parsed[i];
     if (p.partial && !p.draft!.starts.some((s) => s.startNumber === 1)) {
-      p.warnings.push("Only start 2 given.");
+      p.warnings.push("Start 1 is empty, so this athlete has only start 2.");
     }
   }
   return parsed;

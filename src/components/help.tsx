@@ -3,7 +3,7 @@ import { Modal } from "~/components/modal";
 import { SampleDownloads } from "~/components/sample-downloads";
 import { FIELDS } from "~/lib/import/columns";
 
-/** The how-to that used to fill the Input step; opened from the header on any step. */
+/** The full how-to; opened from the header on any step, or from "How it works" on the Upload step. */
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -20,7 +20,7 @@ export function HelpDialog({ open, onClose }: { open: boolean; onClose(): void }
       <Section title="How it works">
         <ol className="list-decimal space-y-1 pl-5">
           <li>
-            <strong>Input:</strong> choose or drop your Google Forms export, paste it from Google Sheets, or enter athletes by
+            <strong>Upload:</strong> choose or drop your Google Forms export, paste it from Google Sheets, or enter athletes by
             hand.
           </li>
           <li>
@@ -35,24 +35,24 @@ export function HelpDialog({ open, onClose }: { open: boolean; onClose(): void }
             order. Drag rows or sort by a column.
           </li>
           <li>
-            <strong>Finalize:</strong> add logos if you like (competition and AIDA beside the title, sponsors after the list),
+            <strong>Print & export:</strong> add logos if you like (competition and AIDA beside the title, sponsors after the list),
             then print, save as PDF, or download PDF, CSV or Excel.
           </li>
         </ol>
       </Section>
 
-      <Section title="Getting your responses">
+      <Section title="Getting your Google Forms export">
         <p>
-          <strong>Google Forms:</strong> open Responses → ⋮ → Download responses (.csv), then choose that file on the Input
+          <strong>Google Forms:</strong> open Responses → ⋮ → Download responses (.csv), then choose that file on the Upload
           step. Excel files (.xlsx) work too.
         </p>
         <p>
-          <strong>Google Sheets:</strong> in the linked responses sheet, select everything (Ctrl/⌘ + A), copy, and use “Paste
+          <strong>Google Sheets:</strong> in the form's linked sheet, select everything (Ctrl/⌘ + A), copy, and use “Paste
           from Google Sheets”.
         </p>
       </Section>
 
-      <Section title="What the form needs">
+      <Section title="What your file needs">
         <p>
           One row per athlete. Columns are matched by their question titles (for example “Start 1 - Discipline” or
           “Discipline | Day 1”), and you can fix the matching on the Columns step. Only name, discipline and AP are required.
@@ -71,8 +71,8 @@ export function HelpDialog({ open, onClose }: { open: boolean; onClose(): void }
 
       <Section title="Saving your work">
         <p>
-          <strong>Save project</strong> on the Finalize step downloads a .json file with everything: athletes, settings,
-          the order and logos. To carry on later, choose that file on the Input step.
+          <strong>Save project</strong> on the Print & export step downloads a .json file with everything: athletes,
+          settings, the order and logos. To carry on later, choose that file on the Upload step.
         </p>
         <p>
           Your work is kept in this tab until you close it. Tick “Remember on this device” to keep it after the tab closes, and

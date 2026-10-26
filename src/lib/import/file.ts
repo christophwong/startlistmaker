@@ -122,7 +122,12 @@ export async function readSpreadsheet(file: File): Promise<SheetTable | Workbook
   if (name.endsWith(".xls")) {
     throw new SpreadsheetError("Old .xls files aren't supported. Save as .xlsx or CSV.");
   }
-  if (name.endsWith(".tsv")) return parsePasted(await file.text());
-  if (name.endsWith(".csv") || file.type.includes("csv")) return parseCsv(await file.text());
-  throw new SpreadsheetError("Upload a .csv or .xlsx file (Google Forms: Responses → Download).");
+  const notSpreadsheet = "This isn't a CSV or Excel file. In Google Forms, use Responses → ⋮ → Download responses (.csv).";
+  if (name.endsWith(".tsv") || name.endsWith(".csv") || file.type.includes("csv")) {
+    const text = await file.text();
+    // Text files never contain NUL; a binary file renamed .csv does.
+    if (text.includes("\0")) throw new SpreadsheetError(notSpreadsheet);
+    return name.endsWith(".tsv") ? parsePasted(text) : parseCsv(text);
+  }
+  throw new SpreadsheetError(notSpreadsheet);
 }

@@ -143,6 +143,11 @@ describe("readSpreadsheet", () => {
     const xlsx = new File(["x"], "regs.xlsx");
     await expect(readSpreadsheet(xlsx)).rejects.toThrow(/valid \.xlsx/);
     await expect(readSpreadsheet(new File(["x"], "regs.xls"))).rejects.toThrow(SpreadsheetError);
-    await expect(readSpreadsheet(new File(["x"], "regs.pdf"))).rejects.toThrow(/\.csv or \.xlsx/);
+    await expect(readSpreadsheet(new File(["x"], "regs.pdf"))).rejects.toThrow(/isn't a CSV or Excel file/);
+  });
+
+  it("rejects a binary file renamed .csv", async () => {
+    const binary = new File([new Uint8Array([0x50, 0x4b, 0x03, 0x04, 0x00, 0x00, 0x08])], "photo.csv", { type: "text/csv" });
+    await expect(readSpreadsheet(binary)).rejects.toThrow(/isn't a CSV or Excel file/);
   });
 });

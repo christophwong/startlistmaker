@@ -92,13 +92,12 @@ export function ListStep({ state, dispatch }: { state: AppState; dispatch(a: Act
             Drag rows, use ↑ ↓, or click a number to move a start. Click a column title to sort. Times update as you go.
           </p>
         </div>
-        <Button onClick={() => dispatch({ type: "step", step: "final" })}>Finalize →</Button>
+        <Button onClick={() => dispatch({ type: "step", step: "final" })}>Print & export →</Button>
       </div>
 
       {state.demo && (
         <Alert>
-          You're looking at demo data with fictional athletes. Change anything you like; start over with your own file
-          from step 1.
+          This is a demo with made-up athletes, so try anything. To use your own file, go to 1. Upload.
         </Alert>
       )}
 
@@ -126,7 +125,7 @@ export function ListStep({ state, dispatch }: { state: AppState; dispatch(a: Act
         </Button>
         {unscheduled && (
           <Button variant="secondary" onClick={() => dispatch({ type: "append" })}>
-            Append {unscheduled.startIds.length} unscheduled
+            Add {unscheduled.startIds.length} missing start{unscheduled.startIds.length === 1 ? "" : "s"} at the end
           </Button>
         )}
         <Button variant="ghost" onClick={() => dispatch({ type: "step", step: "data" })}>
@@ -148,7 +147,7 @@ export function ListStep({ state, dispatch }: { state: AppState; dispatch(a: Act
           </select>
         </label>
         <span className="ml-auto text-sm text-slate-500 tabular-nums">
-          {startCount}/{starts.length} starts scheduled
+          {startCount} of {starts.length} starts on the list
         </span>
       </div>
 
