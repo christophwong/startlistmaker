@@ -94,6 +94,10 @@ Follow-ups considered and declined for now (user, 2026-10-26; in PLAN decisions)
 - **Known:** Chrome gives an SVG with no width/height a default 300×150, so the "has no size" message doesn't show there. With header logos, a long title wraps to the middle half. The PDF title sits a few points lower than before, even without logos.
 - **Not done:** trying it with the real ECAC/AIDA/sponsor files.
 
+## QA/PM review (2026-10-26)
+
+Report in `docs/QA.md`, proposals in PLAN.md → "QA/PM review" (none agreed yet). Checks at the time: typecheck clean, 183 unit, e2e 23 passed + 1 skipped. Two real bugs: **F1**, revisiting Columns → Continue silently wipes athlete edits (`confirmMapping` always rebuilds), and **F2**, Download PDF garbles Latin Extended names (Polish/Czech) as well as CJK, with no warning. One product question for the user: **F3**, same name with a different email is treated as a resubmission (pnwapnea rule).
+
 ## Next up
 
 1. **Logos:** try `feature/sponsor-strip` with the real logo files, adjust sizes if needed, then merge to `main` and push (that deploys).

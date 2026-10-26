@@ -29,7 +29,7 @@ Pure logic has no DOM or I/O and is unit-tested. Preact runs the React-API code 
 ### State and derivation
 
 - `source.table` holds the uploaded headers and rows, kept so the mapping can change.
-- `registrations: RegRow[]` holds editable rows built once by **Continue** from the parsed rows. Clean rows are stored as normalized values, rows with errors as their raw cells, and superseded or "no entry for this day" rows are dropped. **They are the source of truth after that.**
+- `registrations: RegRow[]` holds editable rows built by **Continue** on the Columns step from the parsed rows. Every Continue rebuilds them, so revisiting Columns and continuing again replaces any edits made on Athletes, without asking (QA F1, planned fix). Clean rows are stored as normalized values, rows with errors as their raw cells, and superseded or "no entry for this day" rows are dropped. **They are the source of truth after that.**
 - Starts are derived: `rowsToStarts(registrations, type, maxStarts)`, with ids `${rowId}-s1|s2`.
 - `entries` hold the order and breaks only. `schedule()` computes OT / WT / check-in and lanes on every render.
 - `logos` (`lib/export/logos.ts`) hold each image as a PNG/JPEG data URL with its pixel size, place (`HEADER_LEFT`, `HEADER_RIGHT`, `SPONSORS`) and size (S/M/L). Array order is left-to-right order within a place. Like `event` and `print`, they're kept when a new file is loaded.
@@ -99,6 +99,8 @@ The layout is mobile-first: 16 px gutters, cards below `md`, tables from `md` up
 - **Logos card** (`components/logos-editor.tsx`): "+ Header logo" (the first goes left of the title, later ones right) and "+ Sponsor logos", both taking several files. Each logo is a row grouped by place: thumbnail, file name, Place and Size selects, ← → within its place, and ✕. Files that can't be used are listed in a red alert and the rest are still added.
 
 ## 8. Testing
+
+The latest exploratory pass, its findings (F1–F10), the coverage gaps and a manual pre-merge checklist are in [QA.md](./QA.md).
 
 | Layer | Tool | What |
 |---|---|---|

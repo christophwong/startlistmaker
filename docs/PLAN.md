@@ -68,9 +68,31 @@ A light, client-only version of the pnwapnea start-list generator, hosted on Git
 - [x] Custom domain `startlistmaker.online` (verified on the account, DNS at Namecheap, set in Pages, HTTPS enforced)
 - [x] Try a real form export end to end and compare against the organizer's sheet (ECAC Day 2 depth, 2026-10-26: every row and time matches; see HANDOFF)
 
+### QA/PM review (2026-10-26, proposed, not yet agreed)
+Findings F1–F10 are in [QA.md](./QA.md). The order below is the suggested priority. Each item needs the user's OK before it moves to Decisions.
+
+**Now: fixes (before or with the logos merge)**
+- [ ] **F1: keep athlete edits when revisiting Columns.** If the sheet, mapping, day and type are unchanged, **Continue** just returns to Athletes. If they changed and the athletes were edited, ask first: "Re-read the file? Your changes to N athletes will be replaced." Track edits with a `registrationsEdited` flag set by `updateRow` / `addRow` / `deleteRow`. Add an e2e test.
+- [ ] **F2: no silent garbling in Download PDF.** Short term: before building the PDF, check the table for characters outside WinAnsi. If there are any, list the affected names and offer Print / Save as PDF. Fix the hint text ("letters outside Western European alphabets", not "non-Latin scripts"). Long term: the backlog Unicode font item below, lazy-loaded with jsPDF.
+- [ ] **F4: quieter warnings.** Fold a warning that hits every row ("No emergency contact") into one summary line on Columns, and keep per-row amber for row-specific issues, so the Columns and Athletes counts agree.
+- [ ] **F6: copy fixes.** "1 response" plural; a binary or unreadable file says "This isn't a CSV or Excel file".
+- [ ] **F9: one name for the input.** The button is "Upload your Google Forms export" (decided), but the subtitle above it still says "Upload your sign-up sheet" and Help says "sign-up sheet". Align the subtitle, or say "sign-up sheet (Google Forms export)" once.
+
+**Next: product decisions to make**
+- [ ] **F3: same name, different email.** Option A (recommended): if both rows have non-empty emails that differ, keep both and mark them amber "Possible duplicate of row N". Same email, or a missing email, stays a resubmission as now. Option B: keep pnwapnea's behaviour. This changes a pnwapnea rule, so it's the user's call.
+- [ ] **F5: AP sanity warnings** (amber, never blocking): AP of 0, and AP above the current AIDA world record for the discipline (a small table in `lib/disciplines.ts`).
+- [ ] **Undo** (already in the backlog; suggested next): the start list has many "Replace your manual order?" confirmations, and one level of undo for entries and settings would make them less scary. The reducer is already pure, so a history stack of `entries`/`settings`/`manualOrder` is small.
+
+**Later: new features (suggested)**
+- [ ] **Competition-day changes.** Mark a start **Withdrawn / DNS**: the row stays on the sheet struck through with its slot and OTs unchanged (published times don't move), versus delete, where later times shift up. Organizers usually republish after scratches without moving anyone's OT.
+- [ ] **Version stamp on the sheet**: "Updated Sun 10:42 · v3" in the footer, so divers can tell a reprinted or re-posted list from an old one. The version goes up on each export after the list changed.
+- [ ] **Copy as text** for WhatsApp, Signal or email groups, where start lists are commonly posted: `OT 9:00 · Milo Mbeki (CAN) CNF 51 m`, one line per start, with breaks. It uses the Clipboard API, which is local only and doesn't conflict with the CSP.
+- [ ] **Times past midnight** (F7): a validation issue when the last OT is earlier than the first.
+- [ ] **Mobile chrome** (F8): fold Remember / Clear all data / Dark into a "⋯" menu below `sm`, and make the stepper a single scrollable row, to win back about 200 px above the step.
+
 ### Backlog
 - [ ] Page per discipline block in print/PDF (today: optional new page after each break)
-- [ ] Unicode font for the jsPDF download (non-Latin names; Print / Save as PDF already handles them)
+- [ ] Unicode font for the jsPDF download (non-Latin **and** Latin Extended names such as Polish or Czech, see QA F2; Print / Save as PDF already handles them)
 - [ ] Undo for start-list edits
 - [ ] Keyboard drag-and-drop (today: ↑↓ buttons and "move to #")
 - [ ] Multiple days in one project (today: one day at a time via the Day picker)
