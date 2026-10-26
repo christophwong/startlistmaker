@@ -21,7 +21,7 @@ import type { TimeFormat } from "~/lib/time";
 /**
  * All app state, in one reducer. Starts and times are derived: registrations
  * are the source of truth for athletes, `entries` hold only the order and
- * breaks, and schedule() computes every time (as in pnwapnea).
+ * breaks, and schedule() computes every time.
  */
 
 export type Step = "start" | "map" | "data" | "list" | "final";
