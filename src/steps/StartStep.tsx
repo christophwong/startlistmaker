@@ -12,12 +12,12 @@ const MAX_PROJECT_BYTES = 20 * 1024 * 1024;
 
 const link = "font-medium text-accent underline-offset-4 hover:underline";
 
-/** The first rows of src/samples/depth-2day.csv, cut to the columns that matter. */
-const EXAMPLE_HEADERS = ["Name", "Gender", "Country", "Discipline | Day 1", "DAY 1 Announcement Depth (M)"];
+/** Day 1 of the first rows of src/samples/depth-2day.csv, cut to the columns that matter. */
+const EXAMPLE_HEADERS = ["Name", "Discipline", "AP", "Dive Time", "PB"];
 const EXAMPLE_ROWS = [
-  ["Jonah Ibarra", "Male", "Canada", "CWTB", "42"],
-  ["Yuki Castell", "Female", "USA", "CWTB", "24"],
-  ["Clara Varga", "Female", "Mexico", "FIM", "24"],
+  ["Jonah Ibarra", "CWTB", "42", "0:01:27", "47"],
+  ["Yuki Castell", "CWTB", "24", "0:00:48", "26"],
+  ["Clara Varga", "FIM", "24", "0:01:37", "28"],
 ];
 
 /** The home page: the calls to action, then what the file needs with an example. The full how-to is in Help. */
@@ -155,9 +155,8 @@ export function StartStep({ dispatch, onHelp }: { dispatch(a: Action): void; onH
       <section className="space-y-3 text-left text-sm text-ink-2">
         <h2 className="text-lg">What your file needs</h2>
         <p>
-          One row per athlete, with the form's questions as the header row. Each start needs a <strong>name</strong>,{" "}
-          <strong>discipline</strong> and <strong>announced performance (AP)</strong>. Gender, country, PB and dive time are
-          used when they're there. Column titles don't have to match exactly: you check them on the next step.
+          Required columns: <strong>name</strong>, <strong>discipline</strong> and{" "}
+          <strong>Announced Performance (AP)</strong>. Optional: Personal Best (PB), dive time, gender and country.
         </p>
         <div className="overflow-x-auto rounded-lg bg-surface ring-1 ring-line">
           <table className="w-full text-xs whitespace-nowrap" aria-describedby="example-note">
@@ -184,7 +183,7 @@ export function StartStep({ dispatch, onHelp }: { dispatch(a: Action): void; onH
           </table>
         </div>
         <p id="example-note" className="text-xs text-muted">
-          The first columns of sample-depth-2day.csv. The athletes are made up.
+          
         </p>
         <p>
           Download a sample to see the full format or start your form from it: <SampleDownloads />
