@@ -44,14 +44,6 @@ export default defineConfig({
   plugins: [tailwindcss(), react(), csp()],
   resolve: {
     tsconfigPaths: true,
-    // Written against React's API (and type-checked with @types/react), run on
-    // Preact: the same hooks, about 50 KB less to download.
-    alias: [
-      { find: /^react-dom\/client$/, replacement: "preact/compat/client" },
-      { find: /^react-dom$/, replacement: "preact/compat" },
-      { find: /^react\/jsx-(dev-)?runtime$/, replacement: "preact/jsx-runtime" },
-      { find: /^react$/, replacement: "preact/compat" },
-    ],
   },
   build: {
     // No inline scripts, styles or data: assets beyond what the CSP allows.

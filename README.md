@@ -57,7 +57,7 @@ npm run build        # static site in dist/
 
 Run `npx playwright install chromium` once before the end-to-end tests.
 
-**Stack:** Vite, TypeScript, Tailwind CSS and Preact, through `preact/compat`, so the code is written against React's API. The scheduling engine and the import and export code are pure TypeScript in `src/lib/`, with no browser dependencies, so they're unit-tested on their own. App state is a single reducer in `src/state/`, and each step of the flow is a component in `src/steps/`. The PDF and Excel libraries load only when you use them.
+**Stack:** Vite, TypeScript, Tailwind CSS and React. The scheduling engine and the import and export code are pure TypeScript in `src/lib/`, with no browser dependencies, so they're unit-tested on their own. App state is a single reducer in `src/state/`, and each step of the flow is a component in `src/steps/`. The PDF and Excel libraries load only when you use them.
 
 The build is a static site with no backend, so any static host can serve it.
 
