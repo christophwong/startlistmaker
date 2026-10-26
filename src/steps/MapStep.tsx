@@ -1,6 +1,7 @@
 import { useMemo } from "react";
+import { DayBadge } from "~/components/day-tabs";
 import {
-  DayPicker,
+  DayRowList,
   ErrorSummary,
   ImportRowList,
   mappableFields,
@@ -12,8 +13,8 @@ import { Button, Card, RadioGroup } from "~/components/ui";
 import type { CompetitionType } from "~/lib/disciplines";
 import { missingRequired } from "~/lib/import/columns";
 import { detectMaxStarts } from "~/lib/import/detect";
-import { commonWarnings } from "~/lib/import/rows";
-import { dayImport, importKey, parsedRows, type Action, type AppState } from "~/state/store";
+import { commonWarnings, type ParsedRow } from "~/lib/import/rows";
+import { dayMapping, formDays, importKey, parsedRows, type Action, type AppState } from "~/state/store";
 
 /** Continue re-reads the file only if the import changed; ask first when that replaces edited athletes. */
 function continueToAthletes(state: AppState, dispatch: (a: Action) => void) {
@@ -24,21 +25,42 @@ function continueToAthletes(state: AppState, dispatch: (a: Action) => void) {
   dispatch({ type: "confirmMapping" });
 }
 
+/** "18 athletes and 18 starts are ready. 1 row needs fixing, …" */
+function ReadyLine({ rows }: { rows: ParsedRow[] }) {
+  const valid = rows.filter((r) => r.draft);
+  const errors = rows.filter((r) => rowStatus(r) === "error");
+  const startCount = valid.reduce((n, r) => n + r.draft!.starts.length, 0);
+  return (
+    <p className="text-sm">
+      <strong>{valid.length}</strong> athlete{valid.length === 1 ? "" : "s"} and <strong>{startCount}</strong> start
+      {startCount === 1 ? " is" : "s are"} ready.
+      {errors.length > 0 && (
+        <>
+          {" "}
+          <strong className="text-err-fg">{errors.length}</strong> row{errors.length === 1 ? " needs" : "s need"} fixing,
+          which you can do on the next step.
+        </>
+      )}
+    </p>
+  );
+}
+
 export function MapStep({ state, dispatch }: { state: AppState; dispatch(a: Action): void }) {
   const source = state.source!;
-  const { days, mapping: effective, selectedLabel } = dayImport(state);
-  const maxStarts = detectMaxStarts(effective);
-  const missing = missingRequired(effective).map((f) =>
-    selectedLabel ? f.label.replace("Start 1", selectedLabel) : f.label,
+  // A two-day form is read once per day; both days are shown together.
+  const days = formDays(source);
+  const dayNumbers = days ? ([1, 2] as const) : ([1] as const);
+  const maxStarts = detectMaxStarts(state.mapping);
+  const missing = dayNumbers.flatMap((d) =>
+    missingRequired(dayMapping(state, d)).map((f) => (days ? f.label.replace("Start 1", days[d - 1]) : f.label)),
   );
-  const rows = useMemo(
-    () => parsedRows(state).map((p) => ({ ...p, status: rowStatus(p) })),
-    [state.source, state.mapping, state.use, state.settings.type],
+  const parsed = useMemo(
+    () => dayNumbers.map((d) => parsedRows(state, d)),
+    [state.source, state.mapping, state.settings.type],
   );
-  const common = useMemo(() => commonWarnings(rows), [rows]);
-  const valid = rows.filter((r) => r.draft);
-  const errors = rows.filter((r) => r.status === "error");
-  const startCount = valid.reduce((n, r) => n + r.draft!.starts.length, 0);
+  const common = useMemo(() => parsed.map(commonWarnings), [parsed]);
+  const fileRows = parsed[0].length;
+  const anyValid = parsed.some((rows) => rows.some((r) => r.draft));
 
   return (
     <div className="space-y-6">
@@ -46,10 +68,10 @@ export function MapStep({ state, dispatch }: { state: AppState; dispatch(a: Acti
         <div>
           <h2 className="text-xl">Match the columns</h2>
           <p className="text-sm text-muted">
-            {source.filename} · {rows.length} row{rows.length === 1 ? "" : "s"}
+            {source.filename} · {fileRows} row{fileRows === 1 ? "" : "s"}
           </p>
         </div>
-        <Button onClick={() => continueToAthletes(state, dispatch)} disabled={rows.length === 0}>
+        <Button onClick={() => continueToAthletes(state, dispatch)} disabled={fileRows === 0}>
           Continue to athletes
         </Button>
       </div>
@@ -85,17 +107,16 @@ export function MapStep({ state, dispatch }: { state: AppState; dispatch(a: Acti
         <p className="text-xs text-muted">
           Detected from the disciplines in the file.{" "}
           {days
-            ? "The form has one section per day; each day is its own start list."
+            ? "The form has one section per day, so you get a start list for each day from the same athletes."
             : maxStarts > 1
               ? "The file has second-start columns, so athletes may have two starts."
               : "One start per athlete."}
         </p>
-        {days && <DayPicker labels={days} value={state.use} onChange={(use) => dispatch({ type: "use", use })} />}
       </Card>
 
       <MissingColumns labels={missing} />
 
-      <details className="rounded-xl bg-surface ring-1 ring-line" open={valid.length === 0 || missing.length > 0}>
+      <details className="rounded-xl bg-surface ring-1 ring-line" open={!anyValid || missing.length > 0}>
         <summary className="cursor-pointer p-4 font-medium">
           Column mapping{" "}
           <span className="text-sm font-normal text-muted">({Object.keys(state.mapping).length} columns matched)</span>
@@ -115,22 +136,21 @@ export function MapStep({ state, dispatch }: { state: AppState; dispatch(a: Acti
         </div>
       </details>
 
-      <Card className="space-y-3">
-        <p className="text-sm">
-          <strong>{valid.length}</strong> athlete{valid.length === 1 ? "" : "s"} and <strong>{startCount}</strong> start
-          {startCount === 1 ? " is" : "s are"} ready.
-          {errors.length > 0 && (
-            <>
-              {" "}
-              <strong className="text-err-fg">{errors.length}</strong> row{errors.length === 1 ? " needs" : "s need"} fixing,
-              which you can do on the next step.
-            </>
-          )}
-        </p>
-        <ErrorSummary rows={rows} common={common} />
+      <Card className="space-y-4">
+        {dayNumbers.map((d) => (
+          <div key={d} className="space-y-1">
+            {days && <DayBadge day={d} />}
+            <ReadyLine rows={parsed[d - 1]} />
+            <ErrorSummary rows={parsed[d - 1]} common={common[d - 1]} />
+          </div>
+        ))}
       </Card>
 
-      <ImportRowList rows={rows} common={common} />
+      {days ? (
+        <DayRowList days={[parsed[0], parsed[1]]} labels={days} common={[...new Set(common.flat())]} />
+      ) : (
+        <ImportRowList rows={parsed[0].map((p) => ({ ...p, status: rowStatus(p) }))} common={common[0]} />
+      )}
     </div>
   );
 }

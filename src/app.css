@@ -38,6 +38,10 @@
   --break-fg: #ffffff;
   --break-err: #f4a99f;
 
+  /* Two-day forms: Day 1 is the accent, Day 2 plum (tabs, badges, the bar under the tabs). */
+  --day2: #8a2c7a;
+  --day2-soft: #f6e7f3;
+
   /* Discipline chips: monospace code on a tint. */
   --cwt-bg: #dff2ee;
   --cwt-fg: #0e5e50;
@@ -86,6 +90,9 @@ html.dark {
   --break-bg: #e6ecf0;
   --break-fg: #0b141b;
   --break-err: #9a2b1f;
+
+  --day2: #e4a3d8;
+  --day2-soft: #351a31;
 
   --cwt-bg: #0f3330;
   --cwt-fg: #7dd4c2;
@@ -138,6 +145,10 @@ html.dark {
   --color-break-bg: var(--break-bg);
   --color-break-fg: var(--break-fg);
   --color-break-err: var(--break-err);
+  --color-day1: var(--accent);
+  --color-day1-soft: var(--accent-soft);
+  --color-day2: var(--day2);
+  --color-day2-soft: var(--day2-soft);
 
   --color-cwt-bg: var(--cwt-bg);
   --color-cwt-fg: var(--cwt-fg);

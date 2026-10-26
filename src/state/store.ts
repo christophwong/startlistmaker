@@ -4,7 +4,7 @@ import { autoMap, dayLabels, hasStart2, selectStart, type Mapping } from "~/lib/
 import { detectCompetitionType, detectMaxStarts } from "~/lib/import/detect";
 import type { NamedSheet, SheetTable } from "~/lib/import/file";
 import { parseRows, type ParsedRow } from "~/lib/import/rows";
-import { emptyRow, rowsFromImport, rowsToStarts, type RegRow } from "~/lib/registrations";
+import { emptyRow, emptyStart, rowsFromDays, rowsFromImport, rowsToStarts, type Day, type RegRow } from "~/lib/registrations";
 import {
   defaultSettings,
   DEFAULT_TIME_FORMAT,
@@ -17,6 +17,8 @@ import {
   type StartListSettings,
 } from "~/lib/startlist";
 import type { TimeFormat } from "~/lib/time";
+
+export type { Day };
 
 /**
  * All app state, in one reducer. Starts and times are derived: registrations
@@ -52,13 +54,29 @@ export interface Source {
   sheet?: string;
 }
 
+/** The start list of the day that isn't on screen (two-day forms). */
+export interface DayList {
+  settings: Settings;
+  entries: Entry[];
+  manualOrder: boolean;
+  /** YYYY-MM-DD, or "" */
+  date: string;
+}
+
 export interface AppState {
   step: Step;
   demo: boolean;
   source: Source | null;
   mapping: Mapping;
-  /** Which day of a two-day form to build the list for. */
-  use: 1 | 2;
+  /**
+   * A form with one section per day: two start lists from one set of
+   * athletes, Day 1 in starts[0] and Day 2 in starts[1].
+   */
+  twoDay: boolean;
+  /** The day on screen. `settings`, `entries`, `manualOrder` and `event.date` are that day's. */
+  day: Day;
+  /** The other day's list, swapped in by the day tabs. Null unless `twoDay`. */
+  otherDay: DayList | null;
   maxStarts: 1 | 2;
   registrations: RegRow[];
   /** importKey() of the file read that built `registrations`, so Continue on Columns re-reads only when it changed. */
@@ -81,7 +99,9 @@ export const initialState: AppState = {
   demo: false,
   source: null,
   mapping: {},
-  use: 1,
+  twoDay: false,
+  day: 1,
+  otherDay: null,
   maxStarts: 1,
   registrations: [],
   importedKey: null,
@@ -99,7 +119,7 @@ export type Action =
   | { type: "load"; filename: string; table: SheetTable; sheets?: NamedSheet[]; sheet?: string }
   | { type: "sheet"; name: string }
   | { type: "mapping"; mapping: Mapping }
-  | { type: "use"; use: 1 | 2 }
+  | { type: "day"; day: Day }
   | { type: "competition"; competition: CompetitionType }
   | { type: "confirmMapping" }
   | { type: "updateRow"; id: string; patch: Partial<RegRow> }
@@ -124,41 +144,74 @@ export type Action =
   | { type: "reset" };
 
 /**
- * A form with one section per day ("Day 1", "Day 2") is two start lists, so
- * one day is built at a time. Other two-start files stay two starts.
+ * "Day 1" / "Day 2" when the form has one section per day: each day is its
+ * own start list. Other two-start files stay two starts on one list.
  */
-export function dayImport(state: Pick<AppState, "source" | "mapping" | "use">) {
-  const headers = state.source?.table.headers ?? [];
-  const days = hasStart2(autoMap(headers)) ? dayLabels(headers) : null;
-  return {
-    days,
-    mapping: days ? selectStart(state.mapping, state.use) : state.mapping,
-    selectedLabel: days?.[state.use - 1],
-  };
+export function formDays(source: Source | null): [string, string] | null {
+  const headers = source?.table.headers ?? [];
+  return hasStart2(autoMap(headers)) ? dayLabels(headers) : null;
 }
 
-export function parsedRows(state: Pick<AppState, "source" | "mapping" | "use" | "settings">): ParsedRow[] {
+/** One day's columns of a two-day form, read as start 1; otherwise the whole mapping. */
+export const dayMapping = (state: Pick<AppState, "source" | "mapping">, day: Day): Mapping =>
+  formDays(state.source) ? selectStart(state.mapping, day) : state.mapping;
+
+/** The file's rows, parsed for `day` on a two-day form. */
+export function parsedRows(state: Pick<AppState, "source" | "mapping" | "settings">, day: Day = 1): ParsedRow[] {
   if (!state.source) return [];
-  const { mapping, selectedLabel } = dayImport(state);
+  const mapping = dayMapping(state, day);
   return parseRows(state.source.table.rows, mapping, {
     type: state.settings.type,
     maxStarts: detectMaxStarts(mapping),
-    selectedLabel,
+    selectedLabel: formDays(state.source)?.[day - 1],
   });
 }
 
-/** What a re-read of the file depends on: sheet, columns, day and competition type. */
-export function importKey(state: Pick<AppState, "source" | "mapping" | "use" | "settings">): string | null {
+/** What a re-read of the file depends on: sheet, columns and competition type. */
+export function importKey(state: Pick<AppState, "source" | "mapping" | "settings">): string | null {
   if (!state.source) return null;
   const { filename, sheet } = state.source;
-  return JSON.stringify([filename, sheet ?? null, state.mapping, state.use, state.settings.type]);
+  return JSON.stringify([filename, sheet ?? null, state.mapping, state.settings.type]);
 }
 
 const edited = (state: AppState, id: string) =>
   state.editedRows.includes(id) ? state.editedRows : [...state.editedRows, id];
 
-export const startsOf = (state: Pick<AppState, "registrations" | "settings" | "maxStarts">) =>
-  rowsToStarts(state.registrations, state.settings.type, state.maxStarts);
+/** The starts on screen: the current day's on a two-day form. */
+export const startsOf = (state: Pick<AppState, "registrations" | "settings" | "maxStarts" | "twoDay" | "day">) =>
+  rowsToStarts(state.registrations, state.settings.type, state.maxStarts, state.twoDay ? state.day : undefined);
+
+export const otherOf = (day: Day): Day => (day === 1 ? 2 : 1);
+
+/** A day's list, whether it's on screen or not. */
+export function dayList(state: AppState, day: Day): DayList | null {
+  if (day === state.day) {
+    return { settings: state.settings, entries: state.entries, manualOrder: state.manualOrder, date: state.event.date };
+  }
+  return state.otherDay;
+}
+
+/** The day after a YYYY-MM-DD date, or "" for no date. */
+export function nextDate(date: string): string {
+  const d = new Date(`${date}T12:00:00Z`);
+  if (!date || Number.isNaN(d.getTime())) return "";
+  d.setUTCDate(d.getUTCDate() + 1);
+  return d.toISOString().slice(0, 10);
+}
+
+function switchDay(state: AppState, day: Day): AppState {
+  const other = state.otherDay;
+  if (!other || day === state.day) return state;
+  return {
+    ...state,
+    day,
+    settings: other.settings,
+    entries: other.entries,
+    manualOrder: other.manualOrder,
+    event: { ...state.event, date: other.date },
+    otherDay: dayList(state, state.day),
+  };
+}
 
 function withIds(nextId: number, list: EntryInput[]): { entries: Entry[]; nextId: number } {
   return { entries: list.map((e) => ({ ...e, id: String(nextId++) })), nextId };
@@ -170,16 +223,29 @@ function settingsForType(s: Settings, type: CompetitionType): Settings {
   return { ...defaultSettings(type), startTime: s.startTime, timeFormat: s.timeFormat };
 }
 
+/** Both days share the competition type. */
+function withType(state: AppState, type: CompetitionType): AppState {
+  const other = state.otherDay;
+  return {
+    ...state,
+    settings: settingsForType(state.settings, type),
+    otherDay: other && { ...other, settings: settingsForType(other.settings, type) },
+  };
+}
+
 function loadSource(state: AppState, source: Source): AppState {
   const mapping = autoMap(source.table.headers);
-  const day1 = dayImport({ source, mapping, use: 1 }).mapping;
-  const type = detectCompetitionType(source.table.rows, day1);
+  const type = detectCompetitionType(source.table.rows, dayMapping({ source, mapping }, 1));
+  const settings = { ...defaultSettings(type), startTime: state.settings.startTime, timeFormat: state.settings.timeFormat };
+  const twoDay = !!formDays(source);
   return {
     ...initialState,
     print: state.print,
     event: state.event,
     logos: state.logos,
-    settings: { ...defaultSettings(type), startTime: state.settings.startTime, timeFormat: state.settings.timeFormat },
+    settings,
+    twoDay,
+    otherDay: twoDay ? { settings, entries: [], manualOrder: false, date: nextDate(state.event.date) } : null,
     step: "map",
     source,
     mapping,
@@ -190,15 +256,62 @@ function loadSource(state: AppState, source: Source): AppState {
 function confirmMapping(state: AppState): AppState {
   const key = importKey(state);
   if (key === state.importedKey && state.registrations.length) return { ...state, step: "data" };
-  const { mapping } = dayImport(state);
-  const maxStarts = detectMaxStarts(mapping);
-  const registrations = rowsFromImport(parsedRows(state), state.source?.table.rows ?? [], mapping, maxStarts);
-  return { ...state, step: "data", maxStarts, registrations, importedKey: key, editedRows: [] };
+  const table = state.source?.table.rows ?? [];
+  const read = { step: "data" as const, importedKey: key, editedRows: [] };
+  if (state.twoDay) {
+    const registrations = rowsFromDays([parsedRows(state, 1), parsedRows(state, 2)], table, [dayMapping(state, 1), dayMapping(state, 2)]);
+    // New athletes: both days' lists are generated again.
+    return { ...state, ...read, maxStarts: 1, registrations, otherDay: state.otherDay && { ...state.otherDay, entries: [] } };
+  }
+  const maxStarts = detectMaxStarts(state.mapping);
+  const registrations = rowsFromImport(parsedRows(state), table, state.mapping, maxStarts);
+  return { ...state, ...read, maxStarts, registrations };
 }
 
+/** The list on screen; on a two-day form the other day too, the first time. */
 function generate(state: AppState): AppState {
   const ids = withIds(state.nextId, generateEntries(startsOf(state), state.settings));
-  return { ...state, step: "list", ...ids, manualOrder: false };
+  const next: AppState = { ...state, step: "list", ...ids, manualOrder: false };
+  const other = state.otherDay;
+  if (!other || other.entries.length) return next;
+  const more = withIds(next.nextId, generateEntries(startsOf({ ...state, day: otherOf(state.day) }), other.settings));
+  return { ...next, nextId: more.nextId, otherDay: { ...other, entries: more.entries, manualOrder: false } };
+}
+
+/**
+ * A save from when a two-day form was built one day at a time (`use`): the
+ * saved day keeps its athlete edits, order and breaks, and the other day is
+ * read from the file and generated.
+ */
+export function upgradeOneDaySave(state: AppState, use: Day): AppState {
+  const fresh = confirmMapping({ ...state, twoDay: true, importedKey: null, otherDay: null });
+  const saved = new Map(state.registrations.map((r) => [r.id, r]));
+  const moved = (r: RegRow, base: RegRow["starts"]): RegRow => {
+    const starts: RegRow["starts"] = [...base];
+    starts[use - 1] = r.starts[0];
+    const dayOff: [boolean, boolean] = [false, false];
+    dayOff[use - 1] = r.excluded;
+    return { ...r, starts, excluded: false, dayOff };
+  };
+  const fromFile = new Set(fresh.registrations.map((r) => r.id));
+  const registrations = [
+    ...fresh.registrations.map((r) => (saved.has(r.id) ? moved(saved.get(r.id)!, r.starts) : r)),
+    ...state.registrations.filter((r) => !fromFile.has(r.id)).map((r) => moved(r, [emptyStart(), emptyStart()])),
+  ];
+  const entries = state.entries.map((e) => (e.kind === "START" ? { ...e, startId: e.startId.replace(/-s1$/, `-s${use}`) } : e));
+  const upgraded: AppState = {
+    ...state,
+    twoDay: true,
+    day: use,
+    maxStarts: 1,
+    registrations,
+    entries,
+    importedKey: fresh.importedKey,
+    otherDay: { settings: state.settings, entries: [], manualOrder: false, date: use === 1 ? nextDate(state.event.date) : "" },
+  };
+  const other = otherOf(use);
+  const more = withIds(upgraded.nextId, generateEntries(startsOf({ ...upgraded, day: other }), state.settings));
+  return { ...upgraded, nextId: more.nextId, otherDay: { ...upgraded.otherDay!, entries: more.entries } };
 }
 
 export function reducer(state: AppState, action: Action): AppState {
@@ -218,16 +331,15 @@ export function reducer(state: AppState, action: Action): AppState {
     case "mapping": {
       const next = { ...state, mapping: action.mapping };
       // Detect pool/depth once a discipline column is picked by hand.
-      const before = dayImport(state).mapping.s1Discipline;
-      const after = dayImport(next).mapping.s1Discipline;
+      const before = dayMapping(state, 1).s1Discipline;
+      const after = dayMapping(next, 1).s1Discipline;
       if (before !== undefined || after === undefined || !state.source) return next;
-      const type = detectCompetitionType(state.source.table.rows, dayImport(next).mapping);
-      return { ...next, settings: settingsForType(state.settings, type) };
+      return withType(next, detectCompetitionType(state.source.table.rows, dayMapping(next, 1)));
     }
-    case "use":
-      return { ...state, use: action.use };
+    case "day":
+      return switchDay(state, action.day);
     case "competition":
-      return { ...state, settings: settingsForType(state.settings, action.competition) };
+      return withType(state, action.competition);
     case "confirmMapping":
       return confirmMapping(state);
     case "updateRow":
@@ -288,8 +400,14 @@ export function reducer(state: AppState, action: Action): AppState {
         manualOrder: false,
       };
     }
-    case "event":
-      return { ...state, event: { ...state.event, ...action.patch } };
+    case "event": {
+      const event = { ...state.event, ...action.patch };
+      // Day 2 is the day after Day 1 until it's given a date of its own.
+      const other = state.otherDay;
+      const follows = other && state.day === 1 && action.patch.date !== undefined;
+      if (!follows || (other.date && other.date !== nextDate(state.event.date))) return { ...state, event };
+      return { ...state, event, otherDay: { ...other, date: nextDate(event.date) } };
+    }
     case "print":
       return { ...state, print: { ...state.print, ...action.patch } };
     case "addLogos": {
@@ -312,8 +430,8 @@ export function reducer(state: AppState, action: Action): AppState {
     case "step":
       return { ...state, step: action.step };
     case "demo": {
-      const loaded = loadSource({ ...initialState, settings: state.settings }, { filename: action.filename, table: action.table });
-      return { ...generate(confirmMapping(loaded)), demo: true, event: action.event };
+      const loaded = loadSource({ ...initialState, settings: state.settings, event: action.event }, { filename: action.filename, table: action.table });
+      return { ...generate(confirmMapping(loaded)), demo: true };
     }
     case "restore":
       return action.state;
@@ -345,6 +463,6 @@ export function reachable(state: AppState, step: Step): boolean {
       return state.registrations.length > 0;
     case "list":
     case "final":
-      return state.entries.length > 0;
+      return state.entries.length > 0 || !!state.otherDay?.entries.length;
   }
 }

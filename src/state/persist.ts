@@ -3,7 +3,7 @@ import { DEPTH_DISCIPLINES, POOL_DISCIPLINES } from "~/lib/disciplines";
 import { LOGO_SRC, MAX_LOGO_PX, MAX_LOGO_SRC, MAX_LOGOS, MAX_LOGOS_TOTAL } from "~/lib/export/logos";
 import { MAX_ROWS } from "~/lib/import/file";
 import { THEME_KEY } from "~/theme";
-import { importKey, initialState, type AppState } from "./store";
+import { formDays, importKey, initialState, upgradeOneDaySave, type AppState } from "./store";
 
 /**
  * Session persistence and project files. Everything stays in this browser:
@@ -15,7 +15,8 @@ import { importKey, initialState, type AppState } from "./store";
 const STATE_KEY = "startlistmaker.state.v1";
 const REMEMBER_KEY = "startlistmaker.remember";
 export const PROJECT_APP = "startlistmaker";
-export const PROJECT_VERSION = 1;
+/** 2: two-day forms keep both days (older versions can't open these). */
+export const PROJECT_VERSION = 2;
 
 const str = (max = 500) => z.string().check(z.maxLength(max));
 const int = (min: number, max: number) => z.int().check(z.minimum(min), z.maximum(max));
@@ -26,6 +27,41 @@ const table = z.object({
   rows: list(list(str(5000), 200), MAX_ROWS),
 });
 const regStart = z.object({ discipline: str(), ap: str(), pb: str(), diveTime: str() });
+const settings = z.object({
+  type: z.enum(["POOL", "DEPTH"]),
+  startTime: int(0, 24 * 60 - 1),
+  spacingMode: z.enum(["FIXED", "DIVE_TIME"]),
+  intervalMin: int(1, 120),
+  staIntervalMin: int(1, 120),
+  bufferMin: int(0, 60),
+  roundToMin: int(1, 30),
+  lanes: int(1, 10),
+  staLanes: int(1, 10),
+  scheduleMode: z.enum(["ROUNDS", "SINGLE"]),
+  round2Order: z.enum(["SORTED", "ROUND1_ORDER"]),
+  minRecoveryMin: int(0, 600),
+  roundBreakMin: int(0, 600),
+  halftimeBreakMin: int(0, 600),
+  groupBy: z.enum(["DISCIPLINE", "MIXED"]),
+  blockOrder: list(discipline, 8),
+  genderOrder: z.enum(["NONE", "F_FIRST", "M_FIRST"]),
+  sortBy: z.enum(["AP", "DIVE_TIME", "NAME", "REGISTRATION"]),
+  sortDir: z.enum(["ASC", "DESC"]),
+  timeFormat: z.enum(["24h", "12h"]),
+});
+const entries = list(
+  z.union([
+    z.object({ id: str(40), kind: z.literal("START"), startId: str(50) }),
+    z.object({
+      id: str(40),
+      kind: z.literal("BREAK"),
+      breakMin: z.nullable(int(0, 600)),
+      resumeAt: z.nullable(int(0, 24 * 60 - 1)),
+    }),
+  ]),
+  MAX_ROWS * 3,
+);
+const day = z.union([z.literal(1), z.literal(2)]);
 // Only PNG/JPEG data URLs (what the app itself writes), bounded per logo and in total.
 const logos = list(
   z.object({
@@ -52,7 +88,9 @@ const stateSchema = z.object({
     }),
   ),
   mapping: z.record(z.string(), int(0, 199)),
-  use: z.union([z.literal(1), z.literal(2)]),
+  twoDay: z.boolean(),
+  day,
+  otherDay: z.nullable(z.object({ settings, entries, manualOrder: z.boolean(), date: str(20) })),
   maxStarts: z.union([z.literal(1), z.literal(2)]),
   registrations: list(
     z.object({
@@ -65,46 +103,15 @@ const stateSchema = z.object({
       email: str(),
       starts: z.tuple([regStart, regStart]),
       excluded: z.boolean(),
+      dayOff: z.optional(z.tuple([z.boolean(), z.boolean()])),
     }),
     MAX_ROWS,
   ),
   importedKey: z.nullable(str(20000)),
   editedRows: list(str(40), MAX_ROWS * 2),
   event: z.object({ name: str(), date: str(20), location: str(), notes: str(2000) }),
-  settings: z.object({
-    type: z.enum(["POOL", "DEPTH"]),
-    startTime: int(0, 24 * 60 - 1),
-    spacingMode: z.enum(["FIXED", "DIVE_TIME"]),
-    intervalMin: int(1, 120),
-    staIntervalMin: int(1, 120),
-    bufferMin: int(0, 60),
-    roundToMin: int(1, 30),
-    lanes: int(1, 10),
-    staLanes: int(1, 10),
-    scheduleMode: z.enum(["ROUNDS", "SINGLE"]),
-    round2Order: z.enum(["SORTED", "ROUND1_ORDER"]),
-    minRecoveryMin: int(0, 600),
-    roundBreakMin: int(0, 600),
-    halftimeBreakMin: int(0, 600),
-    groupBy: z.enum(["DISCIPLINE", "MIXED"]),
-    blockOrder: list(discipline, 8),
-    genderOrder: z.enum(["NONE", "F_FIRST", "M_FIRST"]),
-    sortBy: z.enum(["AP", "DIVE_TIME", "NAME", "REGISTRATION"]),
-    sortDir: z.enum(["ASC", "DESC"]),
-    timeFormat: z.enum(["24h", "12h"]),
-  }),
-  entries: list(
-    z.union([
-      z.object({ id: str(40), kind: z.literal("START"), startId: str(50) }),
-      z.object({
-        id: str(40),
-        kind: z.literal("BREAK"),
-        breakMin: z.nullable(int(0, 600)),
-        resumeAt: z.nullable(int(0, 24 * 60 - 1)),
-      }),
-    ]),
-    MAX_ROWS * 3,
-  ),
+  settings,
+  entries,
   nextId: int(1, Number.MAX_SAFE_INTEGER),
   manualOrder: z.boolean(),
   print: z.object({
@@ -130,7 +137,16 @@ export function parseState(value: unknown): AppState | null {
   // Saved before imports were tracked: treat the athletes as read with the current columns, so Continue keeps them.
   if (v.importedKey === undefined && merged.registrations.length) merged.importedKey = importKey(merged);
   const result = stateSchema.safeParse(merged);
-  return result.success ? (result.data as AppState) : null;
+  if (!result.success) return null;
+  const state = result.data as AppState;
+  // Saved when a two-day form was built one day at a time: open it with both days.
+  if (v.twoDay !== undefined || !formDays(state.source)) return state;
+  if (!state.registrations.length) {
+    return { ...state, twoDay: true, otherDay: { settings: state.settings, entries: [], manualOrder: false, date: "" } };
+  }
+  const use = (value as { use?: unknown }).use === 2 ? 2 : 1;
+  const upgraded = stateSchema.safeParse(upgradeOneDaySave(state, use));
+  return upgraded.success ? (upgraded.data as AppState) : null;
 }
 
 function storage(kind: "local" | "session"): Storage | null {
@@ -223,5 +239,6 @@ export function fromProjectJson(text: string): AppState {
   }
   const state = parseState(d.state);
   if (!state) throw new ProjectError("The project file is damaged or incomplete.");
-  return { ...state, step: state.entries.length ? "list" : state.registrations.length ? "data" : "start" };
+  const hasList = state.entries.length || state.otherDay?.entries.length;
+  return { ...state, step: hasList ? "list" : state.registrations.length ? "data" : "start" };
 }

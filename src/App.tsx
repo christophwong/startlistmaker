@@ -1,10 +1,12 @@
 import { useEffect, useReducer, useRef, useState } from "react";
+import { DAY_PANEL_ID, DayTabs, dayTabId } from "~/components/day-tabs";
 import { HelpDialog } from "~/components/help";
 import { LockIcon, MoonIcon, SunIcon } from "~/components/icons";
 import { Button, cx } from "~/components/ui";
 import { loadSample, type SampleKind } from "~/samples";
 import { clearStorage, getRemember, loadState, saveState, setRemember } from "~/state/persist";
-import { initialState, reachable, reducer, type Step } from "~/state/store";
+import { formatEventDate } from "~/lib/format";
+import { dayList, initialState, reachable, reducer, startsOf, type Step } from "~/state/store";
 import { DataStep } from "~/steps/DataStep";
 import { FinalStep } from "~/steps/FinalStep";
 import { ListStep } from "~/steps/ListStep";
@@ -88,6 +90,7 @@ export default function App() {
     dispatch({ type: "reset" });
   };
   const hasData = !!state.source || state.registrations.length > 0;
+  const showDayTabs = state.twoDay && (state.step === "data" || state.step === "list" || state.step === "final");
   const toggleTheme = () => {
     const next = theme === "dark" ? "light" : "dark";
     applyTheme(next, true);
@@ -154,12 +157,29 @@ export default function App() {
         <PrivacyNote />
       </nav>
 
-      <main ref={mainRef} tabIndex={-1} className="outline-none">
+      {showDayTabs && (
+        <DayTabs
+          value={state.day}
+          onChange={(day) => dispatch({ type: "day", day })}
+          tabs={([1, 2] as const).map((day) => {
+            const date = dayList(state, day)?.date;
+            return { day, date: date ? formatEventDate(date) : "", starts: startsOf({ ...state, day }).length };
+          })}
+        />
+      )}
+
+      <main
+        ref={mainRef}
+        tabIndex={-1}
+        className="outline-none"
+        {...(showDayTabs && { id: DAY_PANEL_ID, role: "tabpanel", "aria-labelledby": dayTabId(state.day) })}
+      >
         {state.step === "start" && <StartStep dispatch={dispatch} onHelp={() => setHelp(true)} />}
         {state.step === "map" && state.source && <MapStep state={state} dispatch={dispatch} />}
-        {state.step === "data" && <DataStep state={state} dispatch={dispatch} />}
-        {state.step === "list" && <ListStep state={state} dispatch={dispatch} />}
-        {state.step === "final" && <FinalStep state={state} dispatch={dispatch} />}
+        {/* Keyed by day: a day's sort column and open panels aren't the other day's. */}
+        {state.step === "data" && <DataStep key={state.day} state={state} dispatch={dispatch} />}
+        {state.step === "list" && <ListStep key={state.day} state={state} dispatch={dispatch} />}
+        {state.step === "final" && <FinalStep key={state.day} state={state} dispatch={dispatch} />}
       </main>
 
       <HelpDialog open={help} onClose={() => setHelp(false)} />

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { DayBadge } from "~/components/day-tabs";
 import { ArrowIcon } from "~/components/icons";
 import { IssueList, laneLabel, showLaneColumn, SORT_COLUMNS, StartListRows, type StartListActions } from "~/components/start-list/rows";
 import { SettingsPanel } from "~/components/start-list/settings";
@@ -27,8 +28,22 @@ export function EventPanel({ state, dispatch }: { state: AppState; dispatch(a: A
       </summary>
       <div className="space-y-3 border-t border-line p-4">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <Field label="Name" name="eventName" value={event.name} maxLength={120} placeholder="e.g. Emerald City Challenge · Day 1" onChange={(e) => set({ name: e.target.value })} />
-          <Field label="Date" name="eventDate" type="date" value={event.date} onChange={(e) => set({ date: e.target.value })} />
+          <Field
+            label="Name"
+            name="eventName"
+            value={event.name}
+            maxLength={120}
+            placeholder={state.twoDay ? "e.g. Emerald City Challenge" : "e.g. Emerald City Challenge · Day 1"}
+            hint={state.twoDay ? "The sheet adds the day: “· Day 1”." : undefined}
+            onChange={(e) => set({ name: e.target.value })}
+          />
+          <Field
+            label={state.twoDay ? `Date of Day ${state.day}` : "Date"}
+            name="eventDate"
+            type="date"
+            value={event.date}
+            onChange={(e) => set({ date: e.target.value })}
+          />
           <Field label="Location" name="eventLocation" value={event.location} maxLength={120} onChange={(e) => set({ location: e.target.value })} />
           <Field label="Note on the sheet" name="eventNotes" value={event.notes} maxLength={300} placeholder="optional" onChange={(e) => set({ notes: e.target.value })} />
         </div>
@@ -88,7 +103,9 @@ export function ListStep({ state, dispatch }: { state: AppState; dispatch(a: Act
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h2 className="text-xl">Start list</h2>
+          <h2 className="flex items-center gap-2 text-xl">
+            Start list {state.twoDay && <DayBadge day={state.day} />}
+          </h2>
           <p className="text-sm text-muted">
             Drag rows, use ↑ ↓, or click a number to move a start. Click a column title to sort. Times update as you go.
           </p>

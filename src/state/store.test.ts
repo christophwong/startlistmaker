@@ -5,16 +5,28 @@ import { parseCsv } from "~/lib/import/file";
 import { schedule } from "~/lib/startlist";
 import { fromProjectJson, parseState, ProjectError, toProjectJson } from "./persist";
 import { loadSample } from "~/samples";
-import { dayImport, initialState, reachable, reducer, startsOf, type Action, type AppState } from "./store";
+import { checkRow, emptyRow, rowsFromImport } from "~/lib/registrations";
+import {
+  dayList,
+  dayMapping,
+  formDays,
+  initialState,
+  parsedRows,
+  reachable,
+  reducer,
+  startsOf,
+  type Action,
+  type AppState,
+} from "./store";
 
 const run = (actions: Action[], state: AppState = initialState) => actions.reduce(reducer, state);
 const sample = (name: string) => parseCsv(fs.readFileSync(`src/samples/${name}`, "utf8"));
 const event = { name: "Test", date: "2026-09-05", location: "Cove", notes: "" };
 
 describe("demo flow", () => {
-  it("depth sample: day 1 of a two-day form, every athlete scheduled", () => {
+  it("depth sample: a two-day form, Day 1 on screen, every athlete scheduled", () => {
     const s = run([{ type: "demo", filename: "d.csv", table: sample("depth-2day.csv"), event }]);
-    expect(s).toMatchObject({ step: "list", demo: true, maxStarts: 1, use: 1 });
+    expect(s).toMatchObject({ step: "list", demo: true, maxStarts: 1, twoDay: true, day: 1 });
     expect(s.settings.type).toBe("DEPTH");
     const starts = startsOf(s);
     expect(starts.length).toBeGreaterThan(10);
@@ -43,7 +55,8 @@ describe("demo flow", () => {
 
     const depth = await loadSample("depth", 1);
     const d = run([{ type: "demo", filename: depth.filename, table: depth.table, event: depth.event }]);
-    expect(dayImport(d).days).toBeNull(); // no Day 1 / Day 2 picker
+    expect(formDays(d.source)).toBeNull(); // one list, no day tabs
+    expect(d).toMatchObject({ twoDay: false, otherDay: null });
     expect(d.entries.filter((e) => e.kind === "START")).toHaveLength(startsOf(d).length);
     expect(depth.event.name).toBe("Sample Depth Challenge");
     // The template download stays the full 2-day file.
@@ -106,9 +119,10 @@ describe("editing", () => {
     expect(back.step).toBe("data");
     expect(back.registrations).toBe(fixed.registrations);
 
-    const reread = run([{ type: "use", use: 2 }, { type: "confirmMapping" }], fixed);
+    const { country: _, ...noCountry } = fixed.mapping;
+    const reread = run([{ type: "mapping", mapping: noCountry }, { type: "confirmMapping" }], fixed);
     expect(reread.registrations.some((x) => x.firstName === "Fixed")).toBe(false);
-    expect(reread).toMatchObject({ editedRows: [], use: 2 });
+    expect(reread).toMatchObject({ editedRows: [] });
     expect(reread.importedKey).not.toBe(fixed.importedKey);
   });
 
@@ -118,6 +132,80 @@ describe("editing", () => {
     expect(s.registrations).toHaveLength(1);
     expect(reachable(s, "list")).toBe(false);
     expect(reachable(s, "data")).toBe(true);
+  });
+});
+
+describe("two-day forms", () => {
+  const table = sample("depth-2day.csv");
+  const base = run([{ type: "demo", filename: "d.csv", table, event }]);
+  const ids = (entries: AppState["entries"]) => entries.flatMap((e) => (e.kind === "START" ? [e.startId] : []));
+
+  it("generates both days' lists from one set of athletes", () => {
+    expect(ids(base.entries).every((id) => id.endsWith("-s1"))).toBe(true);
+    const day2 = base.otherDay!;
+    expect(ids(day2.entries).length).toBe(startsOf({ ...base, day: 2 }).length);
+    expect(ids(day2.entries).every((id) => id.endsWith("-s2"))).toBe(true);
+    expect(day2.date).toBe("2026-09-06"); // the day after Day 1
+    expect(base.registrations.length).toBe(18);
+    // Day 2 is its own list, not a second round: no round break, no "(2nd)".
+    expect(day2.entries.every((e) => e.kind === "START")).toBe(true);
+    expect(startsOf({ ...base, day: 2 }).every((s) => s.startNumber === 1)).toBe(true);
+  });
+
+  it("the day tabs swap settings, order, breaks and date, and swap back", () => {
+    const d2 = run([{ type: "day", day: 2 }], base);
+    expect(d2).toMatchObject({ day: 2, entries: base.otherDay!.entries, event: { date: "2026-09-06", name: "Test" } });
+    const edited = run([{ type: "settings", settings: { ...d2.settings, startTime: 600 } }], d2);
+    const back = run([{ type: "day", day: 1 }], edited);
+    expect(back.settings.startTime).toBe(base.settings.startTime);
+    expect(back.entries).toBe(base.entries);
+    expect(dayList(back, 2)?.settings.startTime).toBe(600);
+  });
+
+  it("a name fix shows on both days; On list is per day", () => {
+    const r = base.registrations[0];
+    const s = run([{ type: "updateRow", id: r.id, patch: { firstName: "Fixed", dayOff: [false, true] } }], base);
+    expect(startsOf(s).find((x) => x.athleteId === r.id)!.firstName).toBe("Fixed");
+    expect(startsOf({ ...s, day: 2 }).some((x) => x.athleteId === r.id)).toBe(false);
+  });
+
+  it("an athlete with nothing for a day isn't an error that day", () => {
+    const row = { ...emptyRow("n1"), firstName: "Ana", lastName: "Solis", starts: [emptyRow("x").starts[0], { discipline: "CWT", ap: "30", pb: "", diveTime: "" }] as const };
+    const day1 = checkRow({ ...row, starts: [...row.starts] }, "DEPTH", 1, 0, 1);
+    expect(day1).toMatchObject({ errors: {}, starts: [], notEntered: true });
+    expect(checkRow({ ...row, starts: [...row.starts] }, "DEPTH", 1, 0, 2).starts).toMatchObject([{ id: "n1-s2", startNumber: 1, ap: 30 }]);
+  });
+
+  it("one form per day from the same athlete becomes one row", () => {
+    const blank = Array<string>(17).fill("");
+    const d1 = [...blank];
+    [d1[1], d1[2], d1[3], d1[5], d1[9]] = ["ana@example.com", "Ana Solis", "Female", "CWT", "30"];
+    const d2 = [...blank];
+    [d2[1], d2[2], d2[3], d2[11], d2[15]] = ["ana@example.com", "Ana Solis", "Female", "FIM", "25"];
+    const s = run([{ type: "demo", filename: "d.csv", table: { ...table, rows: [...table.rows, d1, d2] }, event }]);
+    const ana = s.registrations.filter((r) => r.firstName === "Ana");
+    expect(ana).toHaveLength(1);
+    expect(ana[0].starts.map((x) => x.discipline)).toEqual(["CWT", "FIM"]);
+  });
+
+  it("a save from the one-day-at-a-time picker opens with both days", () => {
+    // What the old app stored for Day 2: that day's columns as start 1, ids ending -s1.
+    const loaded = run([{ type: "load", filename: "d.csv", table }]);
+    const registrations = rowsFromImport(parsedRows(loaded, 2), table.rows, dayMapping(loaded, 2), 1);
+    registrations[0] = { ...registrations[0], firstName: "Edited" };
+    const entries = registrations.map((r, i) => ({ id: String(i + 1), kind: "START" as const, startId: `${r.id}-s1` }));
+    const { twoDay: _t, day: _d, otherDay: _o, ...rest } = { ...loaded, step: "list" as const, registrations, entries, nextId: 100 };
+    const state = parseState({ ...rest, use: 2, importedKey: "old" })!;
+    expect(state).toMatchObject({ twoDay: true, day: 2 });
+    expect(ids(state.entries)).toEqual(registrations.map((r) => `${r.id}-s2`));
+    expect(state.registrations.find((r) => r.id === registrations[0].id)!.firstName).toBe("Edited");
+    expect(ids(state.otherDay!.entries).length).toBe(startsOf({ ...state, day: 1 }).length);
+    expect(ids(state.otherDay!.entries).length).toBeGreaterThan(10);
+  });
+
+  it("round-trips through a project file", () => {
+    const d2 = run([{ type: "day", day: 2 }], base);
+    expect(fromProjectJson(toProjectJson(d2))).toEqual({ ...d2, step: "list" });
   });
 });
 

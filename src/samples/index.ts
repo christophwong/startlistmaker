@@ -33,7 +33,8 @@ const notes = "Demo data: athletes are fictional.";
 const EVENTS: Record<SampleKind, Record<SampleStarts, EventInfo>> = {
   depth: {
     1: { name: "Sample Depth Challenge", date: "2026-09-05", location: "Sample Cove", notes },
-    2: { name: "Sample Depth Challenge · Day 1", date: "2026-09-05", location: "Sample Cove", notes },
+    // Two days: the sheet adds "· Day 1" / "· Day 2" itself.
+    2: { name: "Sample Depth Challenge", date: "2026-09-05", location: "Sample Cove", notes },
   },
   pool: {
     1: { name: "Sample Pool Classic", date: "2026-04-04", location: "Sample Aquatic Centre", notes },

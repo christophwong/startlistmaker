@@ -54,6 +54,9 @@ export interface ImportContext {
 
 const NO_START = /^(none|no|n\/?a|-+|no second start|just one|only one|0)$/i;
 
+/** The note on a row with nothing in one day's columns ("Day 2"). */
+export const noEntry = (label: string) => `No ${label} entry. This row is skipped.`;
+
 export function parseGender(raw: string): "M" | "F" | null {
   const s = raw.trim().toLowerCase();
   if (/^(m|male|man|men|masculin[oe]?)$/.test(s)) return "M";
@@ -82,7 +85,8 @@ function parseStart(
   errors: string[],
   warnings: string[],
 ): StartDraft | null {
-  const p = `Start ${n}`;
+  // One day imported on its own reads that day's columns as start 1, so name the day.
+  const p = ctx.selectedLabel ?? `Start ${n}`;
   const rawDiscipline = get(`s${n}Discipline`);
   const rawAp = get(`s${n}Ap`);
   const rawPb = get(`s${n}Pb`);
@@ -151,7 +155,7 @@ export function parseRow(
 
   const s1Blank = startIsBlank(1, get);
   if (ctx.selectedLabel && s1Blank && !get("s1Ap") && !get("s1DiveTime")) {
-    return { rowNumber, draft: null, errors, warnings: [`No ${ctx.selectedLabel} entry. This row is skipped.`], partial: false };
+    return { rowNumber, draft: null, errors, warnings: [noEntry(ctx.selectedLabel)], partial: false };
   }
 
   let firstName = fixAllCaps(get("firstName"));
@@ -188,7 +192,7 @@ export function parseRow(
   }
 
   const partial = s1Blank && !!s2 && ctx.maxStarts >= 2;
-  if (s1Blank && !partial) errors.push("Start 1: discipline is missing.");
+  if (s1Blank && !partial) errors.push(`${ctx.selectedLabel ?? "Start 1"}: discipline is missing.`);
 
   const draft: RegistrationDraft | null = errors.length
     ? null

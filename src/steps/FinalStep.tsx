@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { DayBadge } from "~/components/day-tabs";
 import { ArrowIcon } from "~/components/icons";
 import { LogosEditor } from "~/components/logos-editor";
 import { PrintSheet } from "~/components/start-list/print-sheet";
@@ -22,9 +23,12 @@ export function FinalStep({ state, dispatch }: { state: AppState; dispatch(a: Ac
   const { table, issues } = useStartList(state);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const { event, settings, print } = state;
+  const { settings, print } = state;
+  // A two-day form prints and exports the day on screen, named on the sheet and in the file names.
+  const dayName = state.twoDay ? `Day ${state.day}` : "";
+  const event = { ...state.event, name: [state.event.name, dayName].filter(Boolean).join(" · ") };
   const title: SheetTitle = { type: settings.type, ...event };
-  const base = fileBase(event.name || state.source?.filename.replace(/\.[^.]+$/, "") || "");
+  const base = fileBase([state.event.name || state.source?.filename.replace(/\.[^.]+$/, ""), dayName].filter(Boolean).join(" "));
   const setPrint = (patch: Partial<PrintOptions>) => dispatch({ type: "print", patch });
   const problems = issues.filter((i) => i.severity !== "info");
 
@@ -45,7 +49,9 @@ export function FinalStep({ state, dispatch }: { state: AppState; dispatch(a: Ac
       <div className="no-print space-y-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h2 className="text-xl">Print & export</h2>
+            <h2 className="flex items-center gap-2 text-xl">
+              Print & export {state.twoDay && <DayBadge day={state.day} />}
+            </h2>
             <p className="text-sm text-muted">Check the sheet, then print it or download it.</p>
           </div>
           <Button variant="secondary" onClick={() => dispatch({ type: "step", step: "list" })}>

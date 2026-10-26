@@ -6,8 +6,11 @@ import { startsOf, type AppState } from "./store";
 
 /** Starts, scheduled rows, issues and the export table, all derived from state. */
 export function useStartList(state: AppState) {
-  const { settings, registrations, maxStarts, entries, print } = state;
-  const starts = useMemo(() => startsOf({ registrations, settings, maxStarts }), [registrations, settings, maxStarts]);
+  const { settings, registrations, maxStarts, twoDay, day, entries, print } = state;
+  const starts = useMemo(
+    () => startsOf({ registrations, settings, maxStarts, twoDay, day }),
+    [registrations, settings, maxStarts, twoDay, day],
+  );
   const rows = useMemo((): EditorRow[] => {
     const byId = new Map(starts.map((s) => [s.id, s]));
     // Entries whose start vanished (athlete removed or fixed into an error) are skipped.

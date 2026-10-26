@@ -1,8 +1,9 @@
-import { useMemo, useState, type ComponentProps, type ReactNode } from "react";
+import { Fragment, useMemo, useState, type ComponentProps, type ReactNode } from "react";
+import { DayBadge } from "~/components/day-tabs";
 import { TrashIcon } from "~/components/icons";
 import { Alert, Badge, Button, Card, cx } from "~/components/ui";
 import { disciplinesFor, isTimedDiscipline, normalizeDiscipline, type CompetitionType } from "~/lib/disciplines";
-import { checkRows, type CellKey, type RegRow, type RegStart, type RowCheck } from "~/lib/registrations";
+import { checkRows, onList, type CellKey, type RegRow, type RegStart, type RowCheck } from "~/lib/registrations";
 import type { Action, AppState } from "~/state/store";
 
 /**
@@ -96,12 +97,18 @@ function OptionInput({
 function StartCells({
   row,
   n,
+  label,
+  first,
   check,
   type,
   onStart,
 }: {
   row: RegRow;
   n: 1 | 2;
+  /** "Start 2", or "Day 2" on a two-day form */
+  label: string;
+  /** The first start column group: a heavier line on its left. */
+  first: boolean;
   check: RowCheck;
   type: CompetitionType;
   onStart(n: 1 | 2, patch: Partial<RegStart>): void;
@@ -113,21 +120,21 @@ function StartCells({
   const unit = timed ? "m:ss" : "m";
   return (
     <>
-      <Cell check={check} k={k("discipline")} className={n === 1 ? "border-l border-l-line-strong" : undefined}>
+      <Cell check={check} k={k("discipline")} className={first ? "border-l border-l-line-strong" : undefined}>
         <OptionInput
           check={check}
           k={k("discipline")}
           value={s.discipline}
           options={disciplinesFor(type)}
-          label={`Start ${n} discipline, ${name}`}
+          label={`${label} discipline, ${name}`}
           onChange={(discipline) => onStart(n, { discipline })}
         />
       </Cell>
       <Cell check={check} k={k("ap")}>
-        <TextInput check={check} k={k("ap")} value={s.ap} placeholder={unit} aria-label={`Start ${n} AP, ${name}`} onChange={(e) => onStart(n, { ap: e.target.value })} />
+        <TextInput check={check} k={k("ap")} value={s.ap} placeholder={unit} aria-label={`${label} AP, ${name}`} onChange={(e) => onStart(n, { ap: e.target.value })} />
       </Cell>
       <Cell check={check} k={k("pb")}>
-        <TextInput check={check} k={k("pb")} value={s.pb} placeholder={unit} aria-label={`Start ${n} PB, ${name}`} onChange={(e) => onStart(n, { pb: e.target.value })} />
+        <TextInput check={check} k={k("pb")} value={s.pb} placeholder={unit} aria-label={`${label} PB, ${name}`} onChange={(e) => onStart(n, { pb: e.target.value })} />
       </Cell>
       <Cell check={check} k={k("diveTime")}>
         <TextInput
@@ -135,7 +142,7 @@ function StartCells({
           k={k("diveTime")}
           value={s.diveTime}
           placeholder="m:ss"
-          aria-label={`Start ${n} dive time, ${name}`}
+          aria-label={`${label} dive time, ${name}`}
           onChange={(e) => onStart(n, { diveTime: e.target.value })}
         />
       </Cell>
@@ -143,11 +150,12 @@ function StartCells({
   );
 }
 
-function Notes({ check }: { check: RowCheck }) {
+function Notes({ check, day }: { check: RowCheck; day?: 1 | 2 }) {
   const errors = Object.values(check.errors);
   const warnings = Object.values(check.warnings);
   return (
     <ul className="space-y-0.5 px-2 py-1 text-xs leading-snug">
+      {check.notEntered && <li className="text-muted">Not diving Day {day}. Fill in its columns to add a start.</li>}
       {errors.map((m) => (
         <li key={m} className="text-err-fg">
           {m}
@@ -162,15 +170,26 @@ function Notes({ check }: { check: RowCheck }) {
   );
 }
 
-const label = (key: CellKey) =>
-  key === "name" ? "Name" : key === "gender" ? "Gender" : key.replace(/^s(\d)\.(\w+)$/, (_, n, f) => `Start ${n} ${f === "diveTime" ? "dive time" : f.toUpperCase()}`);
+const setDayOff = (row: RegRow, day: 1 | 2, off: boolean): [boolean, boolean] => {
+  const dayOff: [boolean, boolean] = [...(row.dayOff ?? [false, false])];
+  dayOff[day - 1] = off;
+  return dayOff;
+};
+
+const label = (key: CellKey, start: string) =>
+  key === "name" ? "Name" : key === "gender" ? "Gender" : key.replace(/^s(\d)\.(\w+)$/, (_, n, f) => `${start} ${n} ${f === "diveTime" ? "dive time" : f.toUpperCase()}`);
 
 export function DataStep({ state, dispatch }: { state: AppState; dispatch(a: Action): void }) {
   const { registrations: rows, maxStarts } = state;
   const type = state.settings.type;
+  // A two-day form shows one day at a time: the athlete columns and that day's start.
+  const day = state.twoDay ? state.day : undefined;
+  const startGroups: (1 | 2)[] = day ? [day] : maxStarts > 1 ? [1, 2] : [1];
+  const startWord = day ? "Day" : "Start";
   const [filter, setFilter] = useState<"all" | "problems">("all");
-  const checks = useMemo(() => checkRows(rows, type, maxStarts), [rows, type, maxStarts]);
-  const included = rows.filter((r) => !r.excluded);
+  const checks = useMemo(() => checkRows(rows, type, maxStarts, day), [rows, type, maxStarts, day]);
+  const included = rows.filter((r) => onList(r, day) && !checks.get(r.id)!.notEntered);
+  const notDiving = day ? rows.filter((r) => checks.get(r.id)!.notEntered).length : 0;
   const withErrors = included.filter((r) => Object.keys(checks.get(r.id)!.errors).length);
   const withWarnings = included.filter((r) => Object.keys(checks.get(r.id)!.warnings).length);
   const startCount = included.reduce((n, r) => n + checks.get(r.id)!.starts.length, 0);
@@ -187,20 +206,22 @@ export function DataStep({ state, dispatch }: { state: AppState; dispatch(a: Act
     dispatch({ type: "generate" });
   };
 
-  const startHead = (n: 1 | 2) => (
-    <>
-      <th className={cx(headCell, "min-w-24", n === 1 && "border-l border-l-line-strong")}>Discipline</th>
+  const startHead = (n: 1 | 2, first: boolean) => (
+    <Fragment key={n}>
+      <th className={cx(headCell, "min-w-24", first && "border-l border-l-line-strong")}>Discipline</th>
       <th className={cx(headCell, "min-w-20")}>AP</th>
       <th className={cx(headCell, "min-w-20")}>PB</th>
       <th className={cx(headCell, "min-w-20")}>Dive time</th>
-    </>
+    </Fragment>
   );
 
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h2 className="text-xl">Athletes</h2>
+          <h2 className="flex items-center gap-2 text-xl">
+            Athletes {day && <DayBadge day={day} />}
+          </h2>
           <p className="text-sm text-muted">
             Fix the red cells: those starts stay off the list until they're fixed. Amber cells are only warnings. The Notes
             column says what's wrong.
@@ -222,28 +243,35 @@ export function DataStep({ state, dispatch }: { state: AppState; dispatch(a: Act
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
           <span>
             <strong className="tabular-nums">{included.length}</strong> athletes · <strong className="tabular-nums">{startCount}</strong> starts
+            {day && ` on Day ${day}`}
           </span>
+          {notDiving > 0 && <span className="text-muted">{notDiving} not diving Day {day}</span>}
           {withErrors.length > 0 && <Badge tone="red">{withErrors.length} with errors</Badge>}
           {withWarnings.length > 0 && <Badge tone="amber">{withWarnings.length} with warnings</Badge>}
           <label className="flex items-center gap-1.5">
             <input type="checkbox" checked={filter === "problems"} onChange={(e) => setFilter(e.target.checked ? "problems" : "all")} className="accent-accent" />
             Only rows with problems
           </label>
-          <label className="flex items-center gap-1.5">
-            <input
-              type="checkbox"
-              checked={maxStarts === 2}
-              onChange={(e) => dispatch({ type: "maxStarts", maxStarts: e.target.checked ? 2 : 1 })}
-              className="accent-accent"
-            />
-            Two starts per athlete
-          </label>
+          {!day && (
+            <label className="flex items-center gap-1.5">
+              <input
+                type="checkbox"
+                checked={maxStarts === 2}
+                onChange={(e) => dispatch({ type: "maxStarts", maxStarts: e.target.checked ? 2 : 1 })}
+                className="accent-accent"
+              />
+              Two starts per athlete
+            </label>
+          )}
           <span className="text-muted">{type === "POOL" ? "Pool" : "Depth"} competition</span>
         </div>
         {withErrors.length > 0 && (
           <Alert tone="error">
             {withErrors.length} athlete{withErrors.length === 1 ? " has" : "s have"} a problem that keeps a start off the list:{" "}
-            {[...new Set(withErrors.flatMap((r) => Object.keys(checks.get(r.id)!.errors) as CellKey[]))].map(label).join(", ")}.
+            {[...new Set(withErrors.flatMap((r) => Object.keys(checks.get(r.id)!.errors) as CellKey[]))]
+              .map((k) => label(k, startWord))
+              .join(", ")}
+            .
           </Alert>
         )}
       </Card>
@@ -259,15 +287,16 @@ export function DataStep({ state, dispatch }: { state: AppState; dispatch(a: Act
               <th colSpan={4} className={headCell}>
                 Athlete
               </th>
-              <th colSpan={4} className={cx(headCell, "border-l border-l-line-strong")}>
-                Start 1
-              </th>
-              {maxStarts > 1 && (
-                <th colSpan={4} className={cx(headCell, "border-l border-l-line-strong")}>
-                  Start 2
+              {startGroups.map((n) => (
+                <th key={n} colSpan={4} className={cx(headCell, "border-l border-l-line-strong")}>
+                  {startWord} {n}
                 </th>
-              )}
-              <th rowSpan={2} className={cx(headCell, "text-center")} title="Include this athlete on the start list">
+              ))}
+              <th
+                rowSpan={2}
+                className={cx(headCell, "text-center")}
+                title={day ? `Include this athlete on the Day ${day} start list` : "Include this athlete on the start list"}
+              >
                 On list
               </th>
               <th rowSpan={2} className={cx(headCell, "min-w-64")}>
@@ -282,8 +311,7 @@ export function DataStep({ state, dispatch }: { state: AppState; dispatch(a: Act
               <th className={cx(headCell, "min-w-36")}>Last name</th>
               <th className={cx(headCell, "min-w-16")}>Gender</th>
               <th className={cx(headCell, "min-w-28")}>Country</th>
-              {startHead(1)}
-              {maxStarts > 1 && startHead(2)}
+              {startGroups.map((n, i) => startHead(n, i === 0))}
             </tr>
           </thead>
           <tbody>
@@ -291,7 +319,7 @@ export function DataStep({ state, dispatch }: { state: AppState; dispatch(a: Act
               const check = checks.get(r.id)!;
               const name = `${r.firstName} ${r.lastName}`.trim() || "new athlete";
               return (
-                <tr key={r.id} className={cx(r.excluded && "text-muted")}>
+                <tr key={r.id} className={cx((!onList(r, day) || check.notEntered) && "text-muted")}>
                   <td className={cx(grid, "sticky left-0 z-10 w-10 max-w-10 min-w-10 bg-sunken text-center text-xs text-muted tabular-nums")}>
                     {r.rowNumber ?? "new"}
                   </td>
@@ -307,20 +335,22 @@ export function DataStep({ state, dispatch }: { state: AppState; dispatch(a: Act
                   <Cell>
                     <input className={inputClass} size={1} value={r.country} aria-label={`Country, ${name}`} onChange={(e) => update(r.id, { country: e.target.value })} />
                   </Cell>
-                  <StartCells row={r} n={1} check={check} type={type} onStart={updateStart(r)} />
-                  {maxStarts > 1 && <StartCells row={r} n={2} check={check} type={type} onStart={updateStart(r)} />}
+                  {startGroups.map((n, i) => (
+                    <StartCells key={n} row={r} n={n} label={`${startWord} ${n}`} first={i === 0} check={check} type={type} onStart={updateStart(r)} />
+                  ))}
                   <Cell className="text-center">
                     <input
                       type="checkbox"
-                      checked={!r.excluded}
-                      onChange={(e) => update(r.id, { excluded: !e.target.checked })}
-                      aria-label={`Include ${name}`}
-                      title="On the start list"
+                      checked={onList(r, day)}
+                      disabled={check.notEntered}
+                      onChange={(e) => update(r.id, day ? { dayOff: setDayOff(r, day, !e.target.checked) } : { excluded: !e.target.checked })}
+                      aria-label={day ? `Include ${name} on Day ${day}` : `Include ${name}`}
+                      title={check.notEntered ? `Not diving Day ${day}` : "On the start list"}
                       className="accent-accent"
                     />
                   </Cell>
                   <Cell>
-                    <Notes check={check} />
+                    <Notes check={check} day={day} />
                   </Cell>
                   <Cell className="text-center">
                     <button

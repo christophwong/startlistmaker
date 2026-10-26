@@ -7,7 +7,7 @@ import {
   type CompetitionType,
 } from "./disciplines";
 import type { FieldKey, Mapping } from "./import/columns";
-import { athleteKey, parseGender, type ParsedRow } from "./import/rows";
+import { athleteKey, parseGender, sameAthlete, type ParsedRow } from "./import/rows";
 import type { EngineStartWithAthlete } from "./startlist/types";
 import { formatDuration, parseDuration } from "./time";
 
@@ -37,7 +37,12 @@ export interface RegRow {
   starts: [RegStart, RegStart];
   /** Left out of the start list without deleting it. */
   excluded: boolean;
+  /** Two-day form: left off one day's list ("On list" on that day's tab). */
+  dayOff?: [boolean, boolean];
 }
+
+/** Which day of a two-day form a check or list is for; starts[0] is Day 1, starts[1] Day 2. */
+export type Day = 1 | 2;
 
 export type CellKey =
   | "name"
@@ -48,6 +53,8 @@ export interface RowCheck {
   errors: Partial<Record<CellKey, string>>;
   warnings: Partial<Record<CellKey, string>>;
   starts: EngineStartWithAthlete[];
+  /** Checked for one day and nothing is entered for it: not diving that day, not an error. */
+  notEntered?: boolean;
 }
 
 export const emptyStart = (): RegStart => ({ discipline: "", ap: "", pb: "", diveTime: "" });
@@ -70,10 +77,15 @@ const NO_START = /^(none|no|n\/?a|-+|no second start|just one|only one|0)$/i;
 
 const isBlank = (s: RegStart) => !s.discipline.trim() || NO_START.test(s.discipline.trim());
 
-export function checkRow(row: RegRow, type: CompetitionType, maxStarts: 1 | 2, order = 0): RowCheck {
+/**
+ * With `day`, only that day's start is checked (a two-day form) and a blank
+ * day means the athlete isn't diving it.
+ */
+export function checkRow(row: RegRow, type: CompetitionType, maxStarts: 1 | 2, order = 0, day?: Day): RowCheck {
   const errors: RowCheck["errors"] = {};
   const warnings: RowCheck["warnings"] = {};
   const starts: EngineStartWithAthlete[] = [];
+  const notEntered = day !== undefined && isBlank(row.starts[day - 1]) && !row.starts[day - 1].ap.trim();
 
   const firstName = row.firstName.trim();
   const lastName = row.lastName.trim();
@@ -82,13 +94,13 @@ export function checkRow(row: RegRow, type: CompetitionType, maxStarts: 1 | 2, o
   if (!gender) warnings.gender = row.gender.trim() ? `Gender "${row.gender}" isn't M or F.` : "Gender is missing.";
 
   const other = type === "POOL" ? "depth" : "pool";
-  for (const n of [1, 2] as const) {
-    if (n > maxStarts) break;
+  for (const n of day ? [day] : ([1, 2] as const)) {
+    if (!day && n > maxStarts) break;
     const s = row.starts[n - 1];
     const k = (f: keyof RegStart) => `s${n}.${f}` as CellKey;
-    const p = `Start ${n}`;
+    const p = day ? `Day ${n}` : `Start ${n}`;
     if (isBlank(s)) {
-      if (n === 1 && isBlank(row.starts[1])) errors[k("discipline")] = `${p}: discipline is missing.`;
+      if (!day && n === 1 && isBlank(row.starts[1])) errors[k("discipline")] = `${p}: discipline is missing.`;
       if (s.ap.trim()) warnings[k("ap")] = `${p}: AP given without a discipline. The AP is ignored.`;
       continue;
     }
@@ -115,7 +127,8 @@ export function checkRow(row: RegRow, type: CompetitionType, maxStarts: 1 | 2, o
     starts.push({
       id: `${row.id}-s${n}`,
       athleteId: row.id,
-      startNumber: n,
+      // One day of a two-day form is a first start, not a second round, whichever slot it's in.
+      startNumber: day ? 1 : n,
       discipline,
       ap,
       pb,
@@ -127,20 +140,23 @@ export function checkRow(row: RegRow, type: CompetitionType, maxStarts: 1 | 2, o
       order,
     });
   }
-  return { errors, warnings, starts };
+  return { errors, warnings, starts, ...(notEntered && { notEntered }) };
 }
+
+/** On that day's list: not unticked as a whole (one-day files) or for that day. */
+export const onList = (row: RegRow, day?: Day) => !row.excluded && !(day && row.dayOff?.[day - 1]);
 
 /**
  * `checkRow` for every row, plus a name warning on included rows that share a
  * name: two athletes, or one athlete twice. Resubmissions were merged at import,
  * so a pair left here is for the organizer to decide.
  */
-export function checkRows(rows: RegRow[], type: CompetitionType, maxStarts: 1 | 2): Map<string, RowCheck> {
-  const checks = new Map(rows.map((r, i) => [r.id, checkRow(r, type, maxStarts, i)]));
+export function checkRows(rows: RegRow[], type: CompetitionType, maxStarts: 1 | 2, day?: Day): Map<string, RowCheck> {
+  const checks = new Map(rows.map((r, i) => [r.id, checkRow(r, type, maxStarts, i, day)]));
   const byName = new Map<string, RegRow[]>();
   for (const r of rows) {
     const key = athleteKey(r);
-    if (r.excluded || !key) continue;
+    if (!onList(r, day) || checks.get(r.id)!.notEntered || !key) continue;
     byName.set(key, [...(byName.get(key) ?? []), r]);
   }
   for (const same of byName.values()) {
@@ -154,9 +170,46 @@ export function checkRows(rows: RegRow[], type: CompetitionType, maxStarts: 1 | 
   return checks;
 }
 
-/** Engine starts of every included row, in registration order. */
-export function rowsToStarts(rows: RegRow[], type: CompetitionType, maxStarts: 1 | 2): EngineStartWithAthlete[] {
-  return rows.flatMap((r, i) => (r.excluded ? [] : checkRow(r, type, maxStarts, i).starts));
+/** Engine starts of every included row, in registration order (one day's, with `day`). */
+export function rowsToStarts(rows: RegRow[], type: CompetitionType, maxStarts: 1 | 2, day?: Day): EngineStartWithAthlete[] {
+  return rows.flatMap((r, i) => (onList(r, day) ? checkRow(r, type, maxStarts, i, day).starts : []));
+}
+
+const entered = (r: RegRow) => r.starts.map((s) => !isBlank(s) || !!s.ap.trim());
+
+/**
+ * One row per athlete from the two days of a form, each imported on its own
+ * (`parsed[d]` read with day d's columns as start 1). Day 1 goes in starts[0]
+ * and Day 2 in starts[1]. Athlete fields come from a clean read when there is
+ * one. An athlete who sent one form per day (Day 1 only, then Day 2 only) is
+ * merged into the later row, as resubmissions are.
+ */
+export function rowsFromDays(parsed: [ParsedRow[], ParsedRow[]], table: string[][], mappings: [Mapping, Mapping]): RegRow[] {
+  const byRow = new Map<number, { row: RegRow; clean: boolean }>();
+  ([0, 1] as const).forEach((d) => {
+    const clean = new Set(parsed[d].filter((p) => p.draft).map((p) => p.rowNumber));
+    for (const r of rowsFromImport(parsed[d], table, mappings[d], 1)) {
+      const prev = byRow.get(r.rowNumber!);
+      const starts: [RegStart, RegStart] = d === 0 ? [r.starts[0], emptyStart()] : [emptyStart(), r.starts[0]];
+      if (!prev) byRow.set(r.rowNumber!, { row: { ...r, starts }, clean: clean.has(r.rowNumber!) });
+      else {
+        prev.row.starts[d] = r.starts[0];
+        if (!prev.clean && clean.has(r.rowNumber!)) prev.row = { ...r, starts: prev.row.starts };
+      }
+    }
+  });
+  const rows = [...byRow.values()].map((x) => x.row).sort((a, b) => a.rowNumber! - b.rowNumber!);
+  return rows.filter((r, i) => {
+    const [d1, d2] = entered(r);
+    if (d1 === d2) return true;
+    const later = rows.slice(i + 1).find((q) => {
+      const [q1, q2] = entered(q);
+      return q1 === d2 && q2 === d1 && sameAthlete(q, r);
+    });
+    if (!later) return true;
+    later.starts[d1 ? 0 : 1] = r.starts[d1 ? 0 : 1];
+    return false;
+  });
 }
 
 /**

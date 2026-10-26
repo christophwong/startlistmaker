@@ -1,7 +1,8 @@
+import { DayBadge, DayChip } from "~/components/day-tabs";
 import { Alert, Badge } from "~/components/ui";
 import { formatPerformance } from "~/lib/disciplines";
 import { FIELDS, type FieldKey, type Mapping } from "~/lib/import/columns";
-import type { ParsedRow } from "~/lib/import/rows";
+import { noEntry, type ParsedRow } from "~/lib/import/rows";
 
 /**
  * Column mapping and parsed-row preview, shared by the event import review
@@ -40,29 +41,87 @@ export function MissingColumns({ labels }: { labels: string[] }) {
   );
 }
 
-/** One select to choose which day of a two-day form to import. */
-export function DayPicker({
+/**
+ * A two-day form's rows, each read once per day: one card per row with a
+ * line per day. Messages both days share (name, gender, contact) are said
+ * once; warnings every athlete has (`common`) are left to the summary.
+ */
+export function DayRowList({
+  days,
   labels,
-  value,
-  onChange,
+  common,
 }: {
+  days: [ParsedRow[], ParsedRow[]];
   labels: [string, string];
-  value: 1 | 2;
-  onChange(n: 1 | 2): void;
+  common: string[];
 }) {
+  const byRow = new Map<number, (ParsedRow | undefined)[]>();
+  days.forEach((parsed, d) =>
+    parsed.forEach((p) => {
+      const pair = byRow.get(p.rowNumber) ?? [undefined, undefined];
+      pair[d] = p;
+      byRow.set(p.rowNumber, pair);
+    }),
+  );
   return (
-    <label className="flex flex-wrap items-center gap-2 text-sm">
-      <span className="font-medium">Build the list for</span>
-      <select
-        name="use"
-        value={value}
-        onChange={(e) => onChange(e.target.value === "2" ? 2 : 1)}
-        className="min-h-10 rounded-lg border-0 bg-field px-2 ring-1 ring-line-strong"
-      >
-        <option value={1}>{labels[0]}</option>
-        <option value={2}>{labels[1]}</option>
-      </select>
-    </label>
+    <ul className="space-y-2">
+      {[...byRow].map(([rowNumber, pair]) => {
+        const draft = pair[0]?.draft ?? pair[1]?.draft;
+        const statuses = pair.map((p) => (p ? rowStatus(p) : "skipped"));
+        const status: RowStatus = statuses.includes("error") ? "error" : statuses.includes("ready") ? "ready" : "skipped";
+        const shared = (pair[0]?.warnings ?? []).filter((w) => pair[1]?.warnings.includes(w) && !common.includes(w));
+        return (
+          <li key={rowNumber} className="rounded-xl bg-surface p-3 text-sm ring-1 ring-line">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs text-muted tabular-nums">Row {rowNumber}</span>
+              {statusBadge[status]}
+              {draft && (
+                <span className="font-medium">
+                  {draft.firstName} {draft.lastName}{" "}
+                  <span className="font-normal text-muted">{[draft.gender, draft.country].filter(Boolean).join(" · ")}</span>
+                </span>
+              )}
+            </div>
+            <ul className="mt-1 space-y-1">
+              {pair.map((p, d) => {
+                const day = (d + 1) as 1 | 2;
+                const notEntered = !p || p.warnings.includes(noEntry(labels[d]));
+                const own = (p?.warnings ?? []).filter((w) => !shared.includes(w) && !common.includes(w) && w !== noEntry(labels[d]));
+                return (
+                  <li key={d} className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                    <DayBadge day={day} className="!text-xs" />
+                    {notEntered ? (
+                      <span className="text-muted">Not entered</span>
+                    ) : (
+                      p.draft?.starts.map((s) => (
+                        <span key={s.startNumber} className="text-ink-2">
+                          <DayChip day={day}>{s.discipline}</DayChip> {formatPerformance(s.discipline, s.ap)}
+                        </span>
+                      ))
+                    )}
+                    {p?.errors.map((e) => (
+                      <span key={e} className="text-err-fg">
+                        {e}
+                      </span>
+                    ))}
+                    {own.map((w) => (
+                      <span key={w} className="text-warn-fg">
+                        {w}
+                      </span>
+                    ))}
+                  </li>
+                );
+              })}
+              {shared.map((w) => (
+                <li key={w} className="text-warn-fg">
+                  {w}
+                </li>
+              ))}
+            </ul>
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 

@@ -64,6 +64,44 @@ test("demo: sample depth list → finalize → CSV download; PDF is through Prin
   await expect(page.getByRole("button", { name: "Download PDF" })).toHaveCount(0);
 });
 
+test("a two-day form: both days on Columns, a tab per day after it", async ({ page }) => {
+  await page.goto("/#demo");
+  const tabs = page.getByRole("tablist", { name: "Competition day" });
+  const day1 = tabs.getByRole("tab", { name: /Day 1/ });
+  const day2 = tabs.getByRole("tab", { name: /Day 2/ });
+  await expect(day1).toHaveAttribute("aria-selected", "true");
+  const firstOt = page.getByRole("tabpanel").getByText(/^\d+:\d\d$/).first();
+  const day1Ot = await firstOt.textContent();
+
+  // Day 2 has its own list, settings and date; Day 1's come back unchanged.
+  await day2.click();
+  await expect(day2).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByRole("heading", { name: /Start list.*Day 2/ })).toBeVisible();
+  await page.getByText("Event").first().click();
+  await expect(page.getByLabel("Date of Day 2")).toHaveValue("2026-09-06");
+  await day1.focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(day1).toHaveAttribute("aria-selected", "true");
+  await expect(firstOt).toHaveText(day1Ot!);
+
+  // Columns reads both days at once: no day picker.
+  await page.getByRole("navigation", { name: "Steps" }).getByRole("button", { name: /Columns/ }).click();
+  await expect(page.getByText("Build the list for")).toHaveCount(0);
+  await expect(page.getByText(/start list for each day/)).toBeVisible();
+  await expect(tabs).toHaveCount(0);
+
+  // Athletes: one day's start columns at a time.
+  await page.getByRole("button", { name: "Continue to athletes" }).click();
+  await expect(page.getByRole("columnheader", { name: "Day 1" })).toBeVisible();
+  await day2.click();
+  await expect(page.getByRole("columnheader", { name: "Day 2" })).toBeVisible();
+  await expect(page.getByRole("columnheader", { name: "Day 1" })).toHaveCount(0);
+
+  // Print & export names the day on the sheet.
+  await page.getByRole("navigation", { name: "Steps" }).getByRole("button", { name: /Print & export/ }).click();
+  await expect(page.locator(".print-area").getByText("Sample Depth Challenge · Day 2")).toBeVisible();
+});
+
 test("#demo-pool link opens the pool sample with lanes", async ({ page }) => {
   await page.goto("/#demo-pool");
   await expect(page.getByRole("heading", { name: "Start list" })).toBeVisible();
