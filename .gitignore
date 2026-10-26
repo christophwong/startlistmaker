@@ -1,0 +1,10 @@
+.DS_Store
+/node_modules/
+/dist/
+/test-results/
+/playwright-report/
+# Real form exports (names, emails) never go in the repo.
+/tmp/
+/private/
+*.xlsx
+!tests/fixtures/*.xlsx

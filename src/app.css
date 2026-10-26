@@ -1,0 +1,47 @@
+@import "tailwindcss";
+
+@theme {
+  /* System fonts only: no third-party font requests. */
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --color-brand-50: oklch(0.97 0.02 230);
+  --color-brand-100: oklch(0.93 0.04 230);
+  --color-brand-600: oklch(0.52 0.13 235);
+  --color-brand-700: oklch(0.45 0.12 238);
+  --color-brand-800: oklch(0.38 0.1 240);
+}
+
+@layer base {
+  html {
+    @apply bg-slate-50 text-slate-900 antialiased dark:bg-slate-950 dark:text-slate-100;
+    color-scheme: light dark;
+  }
+  h1, h2, h3 {
+    @apply font-semibold tracking-tight;
+  }
+  input, select, textarea, button {
+    font: inherit;
+  }
+}
+
+@media print {
+  @page {
+    margin: 12mm;
+  }
+  html,
+  body {
+    background: white !important;
+    color: black;
+    color-scheme: light;
+  }
+  .no-print {
+    display: none !important;
+  }
+  /* Keep header colours and black BREAK rows when printing. */
+  .print-area {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  .print-break-after {
+    break-after: page;
+  }
+}

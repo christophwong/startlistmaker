@@ -1,0 +1,23 @@
+Timestamp,Email Address,First Name,Last Name,Gender,Country,Emergency Contact Name,Emergency Contact Phone Number,Start 1 - Discipline,Start 1 - Personal Best (PB),Start 1 - Announced Performance (AP),Start 1 - Dive Time (mm:ss),Would you like a second start?,Start 2 - Discipline,Start 2 - Personal Best (PB),Start 2 - Announced Performance (AP),Start 2 - Dive Time (mm:ss)
+8/28/2026 8:00:00,athlete01@example.com,Tess,Petrov,Female,Canada,Contact Petrov,+1 555 0100,Static (STA),0:15,0:17,0:15,Yes,Dynamic with Fins (DYN),16,11,0:29
+8/29/2026 9:07:00,athlete02@example.com,Hugo,Haddad,Male,USA,Contact Haddad,+1 555 0101,Static (STA),1:06,1:05,1:03,Yes,Dynamic No-Fins (DNF),52,50,1:06
+8/30/2026 10:14:00,athlete03@example.com,Nia,Tanaka,Female,Mexico,Contact Tanaka,+1 555 0102,Static (STA),1:35,1:34,1:25,Yes,Dynamic No-Fins (DNF),48,48,1:00
+8/28/2026 11:21:00,athlete04@example.com,Felix,Okafor,Male,Japan,Contact Okafor,+1 555 0103,Static (STA),2:09,2:20,2:05,Yes,Dynamic No-Fins (DNF),52,52,1:06
+8/29/2026 12:28:00,athlete05@example.com,Yuki,Weiss,Female,Japan,Contact Weiss,+1 555 0104,STA,2:59,3:02,2:58,Yes,Dynamic Bi-Fins (DYNB),84,78,1:45
+8/30/2026 13:35:00,athlete06@example.com,Jonah,Strand,Male,Canada,Contact Strand,+1 555 0105,Static (STA),4:03,3:53,4:03,Yes,Dynamic No-Fins (DNF),80,74,1:41
+8/28/2026 14:42:00,athlete07@example.com,Silas,Pike,Male,Japan,Contact Pike,+1 555 0106,Dynamic No-Fins (DNF),9,1,0:18,Yes,Dynamic with Fins (DYN),8,1,0:15
+8/29/2026 15:49:00,athlete08@example.com,Elsa,Tanaka,Female,Germany,Contact Tanaka,+1 555 0107,Dynamic No-Fins (DNF),58,47,1:07,Yes,Dynamic Bi-Fins (DYNB),82,74,1:38
+8/30/2026 16:56:00,athlete09@example.com,Theo,Marsh,Male,Canada,Contact Marsh,+1 555 0108,Dynamic No-Fins (DNF),65,59,1:14,Yes,Dynamic with Fins (DYN),80,69,1:37
+8/28/2026 17:03:00,athlete10@example.com,Wren,Tanaka,Female,Japan,Contact Tanaka,+1 555 0109,Dynamic No-Fins (DNF),85,82m,1:47,Yes,Dynamic Bi-Fins (DYNB),105,103,2:04
+8/29/2026 8:10:00,athlete11@example.com,Priya,Okafor,Female,New Zealand,Contact Okafor,+1 555 0110,Dynamic No-Fins (DNF),89,85,1:38,Yes,Dynamic Bi-Fins (DYNB),94,92,1:43
+8/30/2026 9:17:00,athlete12@example.com,Theo,Quinn,Male,Japan,Contact Quinn,+1 555 0111,Dynamic No-Fins (DNF),102,96,1:53,Yes,Dynamic Bi-Fins (DYNB),118,114,2:24
+8/28/2026 10:24:00,athlete13@example.com,Felix,Nakamura,Male,Canada,Contact Nakamura,+1 555 0112,Dynamic Bi-Fins (DYNB),11,3,0:31,Yes,Dynamic with Fins (DYN),13,6,0:17
+8/29/2026 11:31:00,athlete14@example.com,Ada,Novak,Female,Brazil,Contact Novak,+1 555 0113,Dynamic Bi-Fins (DYNB),7,5,0:33,No,,,,
+8/30/2026 12:38:00,athlete15@example.com,Noor,Petrov,Female,Japan,Contact Petrov,+1 555 0114,Dynamic Bi-Fins (DYNB),27,27,0:37,Yes,Dynamic No-Fins (DNF),30,27,0:39
+8/28/2026 13:45:00,athlete16@example.com,Ada,Holt,Female,Norway,Contact Holt,+1 555 0115,Dynamic Bi-Fins (DYNB),44,41,0:55,Yes,Dynamic No-Fins (DNF),29,28,0:48
+8/29/2026 14:52:00,athlete17@example.com,Milo,Ortiz,Male,France,Contact Ortiz,+1 555 0116,Dynamic Bi-Fins (DYNB),47,46,1:08,Yes,Dynamic with Fins (DYN),47,43,1:02
+8/30/2026 15:59:00,athlete18@example.com,Ezra,Holt,Male,Korea,Contact Holt,+1 555 0117,Dynamic with Fins (DYN),58,51,1:17,Yes,Dynamic No-Fins (DNF),57,49,1:01
+8/28/2026 16:06:00,athlete19@example.com,Lena,Delgado,Female,Canada,Contact Delgado,+1 555 0118,Dynamic with Fins (DYN),53,52,1:09,Yes,Dynamic No-Fins (DNF),52,52,1:12
+8/29/2026 17:13:00,athlete20@example.com,Felix,Larsen,Male,USA,Contact Larsen,+1 555 0119,Dynamic with Fins (DYN),97,93,1:44,Yes,Dynamic No-Fins (DNF),79,77,1:30
+8/30/2026 8:20:00,athlete21@example.com,Noor,Ortiz,Female,Mexico,Contact Ortiz,+1 555 0120,Dynamic with Fins (DYN),102,101,2:01,Yes,Dynamic No-Fins (DNF),79,73,1:38
+
