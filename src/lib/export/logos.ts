@@ -108,5 +108,35 @@ export function layoutStrip(boxes: Box[], width: number, gap = LOGO_GAP_PT): { p
   return { placed, h: rows.length ? y - gap : 0 };
 }
 
+/**
+ * The first-page header in the PDF, matching the print sheet: equal side
+ * columns (a quarter of `width` each) with the left logos from the left edge
+ * and the right ones up to the right edge, the title in the middle half.
+ * Everything is centred vertically in a header `h` tall. Positions are
+ * relative to the header's top left corner.
+ */
+export function headerLayout(
+  logos: Logo[],
+  width: number,
+  textH: number,
+): { logos: (Placed & { logo: Logo })[]; h: number; textY: number; titleWidth: number } {
+  const left = logosAt(logos, "HEADER_LEFT");
+  const right = logosAt(logos, "HEADER_RIGHT");
+  if (!left.length && !right.length) return { logos: [], h: textH, textY: 0, titleWidth: width };
+  const gap = 9;
+  const side = width / 4 - gap;
+  const rows = [left, right].map((ls) => ({ ls, ...fitRow(ls.map(logoBox), side, gap) }));
+  const h = Math.max(textH, ...rows.map((r) => r.h));
+  const placed: (Placed & { logo: Logo })[] = [];
+  rows.forEach((r, i) => {
+    let x = i === 0 ? 0 : width - r.w;
+    r.boxes.forEach((b, j) => {
+      placed.push({ ...b, x, y: (h - b.h) / 2, logo: r.ls[j] });
+      x += b.w + gap;
+    });
+  });
+  return { logos: placed, h, textY: (h - textH) / 2, titleWidth: width / 2 - gap };
+}
+
 /** jsPDF's format name for a logo's data URL. */
 export const imageFormat = (src: string) => (src.startsWith("data:image/png") ? "PNG" : "JPEG");

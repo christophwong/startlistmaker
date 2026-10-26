@@ -78,7 +78,7 @@ A light, client-only version of the pnwapnea start-list generator, hosted on Git
   - [x] State + `parseState` schema (data URL format and size bounded), kept across loads, cleared by reset
   - [x] Image reading (canvas re-encode) and the Logos card on Finalize
   - [x] Print sheet: header logos beside the title, sponsor strip after the list
-  - [ ] Download PDF: the same layout with jsPDF `addImage`
+  - [x] Download PDF: the same layout with jsPDF `addImage`
   - [ ] e2e: add logos, preview, PDF, project save/reopen; docs (DESIGN, Help)
 - [ ] **Usage monitoring: site visits, to watch usage and load** (feature branch `feature/monitoring`). This reverses a current rule ("no analytics", `connect-src 'none'`), so the branch must update every place that makes that promise:
   - Pick a cookieless, privacy-first service that doesn't track people across sites (e.g. GoatCounter or Plausible) and decide which tier and where it's hosted. Count page views only; never athlete data, file names or the contents of the app's state. GitHub Pages has no server logs or analytics of its own.

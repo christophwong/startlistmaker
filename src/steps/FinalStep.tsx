@@ -66,7 +66,7 @@ export function FinalStep({ state, dispatch }: { state: AppState; dispatch(a: Ac
             <Button
               variant="secondary"
               disabled={!!busy}
-              onClick={() => run("PDF", async () => downloadBlob(`${base}.pdf`, await toPdf(table, title, print)))}
+              onClick={() => run("PDF", async () => downloadBlob(`${base}.pdf`, await toPdf(table, title, print, state.logos)))}
             >
               {busy === "PDF" ? "Creating PDF…" : "Download PDF"}
             </Button>
