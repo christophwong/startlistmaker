@@ -1,10 +1,10 @@
 # Handoff
 
-Last updated: 2026-10-26
+Last updated: 2026-10-26 (custom domain live)
 
 ## State
 
-**Live at https://ctophw.xyz/startlistmaker/** (HTTPS enforced). The public repo is https://github.com/christophwong/startlistmaker. Phases 1 to 3 of `docs/PLAN.md`, two rounds of review feedback, and the launch are all done, and everything is pushed to `origin/main`. Every push to `main` runs the checks and then deploys to Pages (`.github/workflows/pages.yml`).
+**Live at https://startlistmaker.online** (HTTPS enforced; `www`, plain http and the old `ctophw.xyz/startlistmaker/` all redirect there). The public repo is https://github.com/christophwong/startlistmaker. Phases 1 to 3 of `docs/PLAN.md`, two rounds of review feedback, the launch and the custom domain are all done. Every push to `main` runs the checks and then deploys to Pages (`.github/workflows/pages.yml`); the deploy is skipped while the repo is private.
 
 Checks run on 2026-10-26:
 
@@ -35,8 +35,9 @@ These are recorded in PLAN.md → Decisions. Don't re-ask them.
   - The home page shows only the calls to action. The guidelines are in a Help dialog.
   - There's one prominent "Try a demo" button, which opens a picker: Depth or Pool, then 1 or 2 days/starts.
 - **Hosting, from the user:**
-  - The repo is public, and the site is served at the GitHub project URL for now. Don't set up DNS until the user asks.
+  - The repo is public, and the site is served at `startlistmaker.online` (the user asked for DNS on 2026-10-26).
   - Commits use `christophwong@users.noreply.github.com`, never the user's Gmail.
+  - No `Co-Authored-By: Claude` or "Generated with Claude Code" lines in commits or PRs.
 
 ## Changes vs pnwapnea's engine
 
@@ -60,21 +61,20 @@ These are recorded in PLAN.md → Decisions. Don't re-ask them.
 - **History rewrite.** Before going public, every commit was rewritten to use the no-reply email (they had used the Gmail), and force-pushed while the repo was still private. The trees are unchanged. The old hashes no longer exist.
 - **Pages.** The repo was made public and Pages turned on (build type: workflow), using `gh`, which is now installed and logged in on this machine.
 - **The URL is a sub-path.** The user's account site `christophwong.github.io` owns the custom domain `ctophw.xyz`, so this project is served at `ctophw.xyz/startlistmaker/`, and `christophwong.github.io/startlistmaker/` redirects there. `vite.config.ts` uses `base: "./"` (relative asset URLs), and the header logo uses `import.meta.env.BASE_URL`. The same build therefore works at the sub-path and at a domain root.
-- **Custom domain.** It's unset in Pages. `startlistmaker.online` was set briefly and then removed when the user said to skip DNS. `public/CNAME` is still in the repo; Actions deploys ignore it.
 - **HTTPS** is enforced on both this repo and `christophwong.github.io` (that one was done at the user's request). Plain http now redirects to https.
+
+## Domain and second history rewrite (2026-10-26)
+
+- **The repo had gone private** (Pages unpublished, the project URL 404'd). Before the user made it public again, every commit message was rewritten to drop the `Co-Authored-By: Claude` trailer (`git filter-branch --msg-filter`; trees, authors and dates unchanged) and force-pushed. All 12 old workflow runs and the 3 old Pages deployment records were deleted, since they linked to the old hashes (some from before the first rewrite, with the Gmail). The two Dependabot PRs had already been closed.
+- **Custom domain.** `startlistmaker.online` is verified on the account (TXT `_github-pages-challenge-christophwong`, keep it), Namecheap has the README's A/AAAA/`www` CNAME records (parking records removed), and it's set on the repo. The first Let's Encrypt request stalled for 30 minutes; removing and re-setting the custom domain fixed it. The certificate covers the apex and `www` and expires 2027-01-24 (GitHub renews it). `public/CNAME` matches but Actions deploys ignore it.
+- **Live smoke test** (desktop and Pixel 7): demo 18/18 scheduled, Download PDF works, CSP present, no console errors, no off-site requests.
 
 ## Next up
 
-1. **Custom domain**, when the user asks:
-   1. Verify `startlistmaker.online` under account Settings → Pages.
-   2. Replace Namecheap's parking records with the README's DNS records.
-   3. Set the custom domain: `gh api -X PUT repos/christophwong/startlistmaker/pages -f cname=startlistmaker.online`.
-   4. Enforce HTTPS once the certificate is issued.
-
-   No rebuild is needed, because the base is relative.
-2. **Form data:**
+1. **Form data:**
    - Ask the organizer to fix `Dicipline` → `Discipline` in the Google Form.
    - If there's a real **pool** export, anonymize it and replace `src/samples/pool.csv`, which currently comes from pnwapnea's synthetic fixture.
+2. **Try a real form export end to end** and compare against the organizer's sheet (PLAN.md TODO).
 3. **Backlog (PLAN.md):** a page per discipline block, a Unicode font for the jsPDF download, undo, and keyboard drag.
 
 ## Notes

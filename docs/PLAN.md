@@ -6,8 +6,9 @@ A light, client-only version of the pnwapnea start-list generator, hosted on Git
 
 | Topic | Decision |
 |---|---|
-| Hosting | GitHub Pages from a **public** repo, deployed by GitHub Actions. For now it's served at the GitHub project URL `ctophw.xyz/startlistmaker/` (no DNS yet, per the user). The custom domain `startlistmaker.online` comes later. `base: "./"` so one build works at both |
+| Hosting | GitHub Pages from a **public** repo, deployed by GitHub Actions, at **https://startlistmaker.online** (DNS at Namecheap, set up 2026-10-26 at the user's request). The old project URL `ctophw.xyz/startlistmaker/` redirects there. `base: "./"` so one build works at both |
 | Commit email | `christophwong@users.noreply.github.com` (history rewritten before going public, so the Gmail isn't exposed) |
+| Commit attribution | No `Co-Authored-By: Claude` / "Generated with Claude Code" lines in commits or PRs (history rewritten on 2026-10-26 to strip them) |
 | Architecture | Static SPA, no server, no accounts; all processing in the browser |
 | Stack | Vite + TypeScript + Tailwind v4; code written against React's API, **run on Preact** (`preact/compat`) for size |
 | Code reuse | pnwapnea's `app/lib/**` and shared components **copied** (forked), not shared as a package |
@@ -58,7 +59,7 @@ A light, client-only version of the pnwapnea start-list generator, hosted on Git
 - [x] GitHub Actions: checks + Pages deploy (actions pinned to SHAs), Dependabot
 - [x] Create the GitHub repo (private for review: christophwong/startlistmaker) and push
 - [x] Make it public, enable Pages (source: GitHub Actions); live at https://ctophw.xyz/startlistmaker/
-- [ ] Later: custom domain `startlistmaker.online` (verify on the account, DNS at Namecheap, set it in Pages, enforce HTTPS)
+- [x] Custom domain `startlistmaker.online` (verified on the account, DNS at Namecheap, set in Pages, HTTPS enforced)
 - [ ] Try a real form export end to end and compare against the organizer's sheet
 
 ### Backlog

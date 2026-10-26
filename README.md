@@ -36,14 +36,12 @@ Keep real exports outside the repo. The script exits with an error if any source
 
 The repo is public, and Pages (source: GitHub Actions) deploys every push to `main` through the `CI and deploy` workflow. A private repo would only run the checks, because Pages on the free plan needs a public repo.
 
-The build uses relative asset URLs (`base: "./"`), so the same build works at the project URL `https://ctophw.xyz/startlistmaker/` (the account's user site has the `ctophw.xyz` domain, so `christophwong.github.io/startlistmaker/` redirects there) and at a domain root.
+The site is served at **https://startlistmaker.online**. The old project URL `https://ctophw.xyz/startlistmaker/` and `www.startlistmaker.online` redirect there. The build uses relative asset URLs (`base: "./"`), so the same build works at a sub-path and at a domain root.
 
-To move to the custom domain later:
+How the custom domain is set up (in this order):
 
-1. Do steps 2 and 3 below (domain verification and DNS) first.
-2. **Settings → Pages → Custom domain:** `startlistmaker.online` (also in `public/CNAME`, which Actions deploys ignore). Tick **Enforce HTTPS** once the certificate is issued.
-3. **Verify the domain** under your GitHub account **Settings → Pages → Add a domain**, with the TXT record GitHub shows. This stops anyone else's repo from serving your domain.
-4. DNS at the registrar (today it's Namecheap's parking page):
+1. **Verify the domain** under your GitHub account **Settings → Pages → Add a domain**, with the TXT record GitHub shows. This stops anyone else's repo from serving your domain. Keep the TXT record; GitHub rechecks it.
+2. DNS at the registrar (Namecheap → Advanced DNS; Namecheap appends the domain to the host):
 
    | Type | Host | Value |
    |---|---|---|
@@ -56,6 +54,8 @@ To move to the custom domain later:
    | AAAA | @ | 2606:50c0:8002::153 |
    | AAAA | @ | 2606:50c0:8003::153 |
    | CNAME | www | `<your-github-username>.github.io` |
-   | TXT | `_github-pages-challenge-<username>` | (value from step 4) |
+   | TXT | `_github-pages-challenge-<username>` | (value from step 1) |
 
    Remove any parking or forwarding records the registrar added. Turn on DNSSEC if the registrar supports it.
+3. **Settings → Pages → Custom domain:** `startlistmaker.online` (also in `public/CNAME`, which Actions deploys ignore), or `gh api -X PUT repos/christophwong/startlistmaker/pages -f cname=startlistmaker.online`.
+4. **Enforce HTTPS** once GitHub's Let's Encrypt certificate is issued (it renews itself). If no certificate appears after about 30 minutes, remove the custom domain and set it again to retry.
