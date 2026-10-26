@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Start List Maker (startlistmaker.online) is a static, client-only single-page app that builds AIDA freediving start lists from a Google Forms sign-up sheet. It's a light fork of `../pnwapnea` (accounts, SQLite, SSR): it has no server and no accounts, and athlete data never leaves the browser. Product decisions and TODOs are in `docs/PLAN.md`, the design is in `docs/DESIGN.md`, and resume notes are in `docs/HANDOFF.md`. Read them before changing behavior.
+Start List Maker (startlistmaker.online) is a static, client-only single-page app that builds AIDA freediving start lists from a Google Forms sign-up sheet. It's a light fork of `../pnwapnea` (accounts, SQLite, SSR): it has no server and no accounts, and athlete data never leaves the browser. Product decisions and TODOs are in `tmp/docs/PLAN.md`, the design is in `tmp/docs/DESIGN.md`, resume notes are in `tmp/docs/HANDOFF.md`, and the QA report is in `tmp/docs/QA.md`. They're local only (`tmp/` is gitignored, because the repo is public). Read them before changing behavior.
 
 ## Commands
 
