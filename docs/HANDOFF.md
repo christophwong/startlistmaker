@@ -70,13 +70,30 @@ These are recorded in PLAN.md → Decisions. Don't re-ask them.
 - **Live smoke test** (desktop and Pixel 7): demo 18/18 scheduled, Download PDF works, CSP present, no console errors, no off-site requests.
 - **Demo video.** `npm run record-demo` (`scripts/record-demo.mjs [out-dir] [--mobile]`) builds, serves the build on :4174, and records upload → columns → athletes → start list → finalize as a ~40 s `.webm`, plus a screenshot per step, to `tmp/demo-video/` (gitignored). The mobile run skips the column sort (desktop only). There's no ffmpeg on this machine, so there's no `.mp4`.
 
+## Real export vs the organizer's sheet (2026-10-26)
+
+`tmp/Day2 Input.csv` (ECAC Day 2 depth, 18 responses) and `tmp/Day2 startlist.pdf` are real data, kept in gitignored `tmp/`. `tmp/record-day2.mjs` (also gitignored, since it lists the expected rows) drives the UI against `vite preview` on :4174, records `tmp/day2-video/day2-recreate.webm`, and diffs the exported CSV with the sheet: **all 17 divers, both breaks and every OT/WT/check-in match**. The steps a user needs:
+
+- Columns: map `Dicipline | Day 2` to Start 1 – discipline by hand (the known typo).
+- Athletes: fix the capitalization of one last name, drop a nickname in brackets from one first name, change "United States" to "USA", and untick the one athlete who isn't on the sheet.
+- Start list: event name, date and location. Settings: first OT 10:30, 10 min apart, half-time break 0, Group **Mixed**, sort AP **descending**. Add a break after the 6th and the 11th start, 10 min each. Then **one manual move**: at AP 25 the engine breaks ties by last name, but the sheet keeps registration order.
+
+The importer skips blank rows, which the organizer used as break markers. The second blank row wasn't where the final break went anyway.
+
+The remaining differences are presentation only: no logos or sponsor strip; the date is on one line ("Sun, Sep 6, 2026 · Seacrest Cove 1"); gender shows as M/F, not Male/Female; Discipline comes before AP (headed DISP on the sheet); and breaks are a black bar with the length and resume time, not a red "BREAK".
+
+Possible follow-ups, none agreed yet: a tie-break option (registration order vs name), and normalizing common country spellings (United States → USA).
+
 ## Next up
 
 1. **Form data:**
    - Ask the organizer to fix `Dicipline` → `Discipline` in the Google Form.
    - If there's a real **pool** export, anonymize it and replace `src/samples/pool.csv`, which currently comes from pnwapnea's synthetic fixture.
-2. **Try a real form export end to end** and compare against the organizer's sheet (PLAN.md TODO).
-3. **Backlog (PLAN.md):** a page per discipline block, a Unicode font for the jsPDF download, undo, and keyboard drag.
+2. **Ask the user** about the follow-ups from the Day 2 comparison: the AP tie-break option and country normalization. The user wants to keep the sheet design as it is (PLAN decision).
+3. **New backlog items, each on its own feature branch** (details in PLAN.md):
+   - `feature/sponsor-strip`: logos and a sponsor strip on the last page.
+   - `feature/monitoring`: counting site visits. This reverses the no-analytics rule, so the CSP, CLAUDE.md, the e2e check and the Help dialog's privacy claims all change with it.
+4. **Backlog (PLAN.md):** a page per discipline block, a Unicode font for the jsPDF download, undo, and keyboard drag.
 
 ## Notes
 
