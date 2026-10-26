@@ -34,8 +34,8 @@ Keep real exports outside the repo. The script exits with an error if any source
 
 ## Deploying to GitHub Pages
 
-1. Push to a GitHub repository with `main` as the default branch.
-2. **Settings → Pages → Build and deployment → Source: GitHub Actions.** The `CI and deploy` workflow builds, tests, and deploys every push to `main`.
+1. Push to a GitHub repository with `main` as the default branch. While the repo is **private**, the workflow only runs the checks; the deploy job is skipped, because Pages on the free plan needs a public repo.
+2. When ready to launch, make the repo public, then **Settings → Pages → Build and deployment → Source: GitHub Actions.** The `CI and deploy` workflow builds, tests, and deploys every push to `main` (re-run the latest workflow, or push, to trigger the first deploy).
 3. **Settings → Pages → Custom domain:** `startlistmaker.online` (also in `public/CNAME`). Tick **Enforce HTTPS** once the certificate is issued.
 4. **Verify the domain** under your GitHub account **Settings → Pages → Add a domain**, with the TXT record GitHub shows. This stops anyone else's repo from serving your domain.
 5. DNS at the registrar:
