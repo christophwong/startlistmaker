@@ -354,6 +354,10 @@ export function DataStep({ state, dispatch }: { state: AppState; dispatch(a: Act
               <th rowSpan={2} className={cx(headCell, "min-w-64")}>
                 Notes
               </th>
+              {/* After Notes, so the status columns stay in view at desktop widths. */}
+              <th rowSpan={2} className={cx(headCell, "min-w-48")} title="To tell athletes with the same name apart. Not printed or exported.">
+                Email
+              </th>
               <th rowSpan={2} className={cx(headCell, "w-10")}>
                 <span className="sr-only">Delete</span>
               </th>
@@ -403,6 +407,18 @@ export function DataStep({ state, dispatch }: { state: AppState; dispatch(a: Act
                   </Cell>
                   <Cell>
                     <Notes check={check} day={day} />
+                  </Cell>
+                  <Cell>
+                    <input
+                      className={cx(inputClass, "text-muted")}
+                      size={1}
+                      inputMode="email"
+                      autoComplete="off"
+                      spellCheck={false}
+                      value={r.email}
+                      aria-label={`Email, ${name}`}
+                      onChange={(e) => update(r.id, { email: e.target.value })}
+                    />
                   </Cell>
                   <Cell className="text-center">
                     <button

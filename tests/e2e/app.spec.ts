@@ -147,6 +147,7 @@ test("upload → fix a row → generate; reorder and sort", async ({ page }) => 
   await expect(page.getByText("1 to fix")).toBeVisible();
   await scope.getByLabel("First name").fill("Test");
   await scope.getByLabel("Last name").fill("Diver");
+  await scope.getByLabel("Email, Test Diver").fill("test.diver@example.com");
   await scope.getByLabel(/Start 1 discipline/).selectOption("CWT");
   await scope.getByLabel(/Start 1 AP/).fill("33");
 
