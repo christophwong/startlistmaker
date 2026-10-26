@@ -78,16 +78,25 @@ export function errorGroups(rows: ParsedRow[]): { message: string; count: number
   return [...counts].map(([message, count]) => ({ message, count })).sort((a, b) => b.count - a.count);
 }
 
-/** Why rows fail, so a blocker isn't mistaken for one of the warnings. */
-export function ErrorSummary({ rows }: { rows: ParsedRow[] }) {
+/**
+ * Why rows fail, so a blocker isn't mistaken for one of the warnings.
+ * Warnings every athlete shares (`common`) get one line here instead of one per row.
+ */
+export function ErrorSummary({ rows, common }: { rows: ParsedRow[]; common: string[] }) {
   const groups = errorGroups(rows);
-  const warned = rows.filter((r) => r.draft && r.warnings.length).length;
-  if (!groups.length && !warned) return null;
+  const ready = rows.filter((r) => r.draft).length;
+  const warned = rows.filter((r) => r.draft && r.warnings.some((w) => !common.includes(w))).length;
+  if (!groups.length && !warned && !common.length) return null;
   return (
     <div className="space-y-1 text-sm">
       {groups.map((g) => (
         <p key={g.message} className="text-red-600">
           <strong className="tabular-nums">{g.count}</strong> row{g.count === 1 ? "" : "s"}: {g.message}
+        </p>
+      ))}
+      {common.map((w) => (
+        <p key={w} className="text-amber-700 dark:text-amber-300">
+          All <strong className="tabular-nums">{ready}</strong> athletes: {w}
         </p>
       ))}
       {warned > 0 && (
@@ -136,10 +145,10 @@ export function MappingSelects({
   );
 }
 
-export function ImportRowList({ rows }: { rows: (ParsedRow & { status: RowStatus })[] }) {
+export function ImportRowList({ rows, common = [] }: { rows: (ParsedRow & { status: RowStatus })[]; common?: string[] }) {
   return (
     <ul className="space-y-2">
-      {rows.map((r) => (
+      {rows.map((row) => ({ ...row, warnings: row.warnings.filter((w) => !common.includes(w)) })).map((r) => (
         <li
           key={r.rowNumber}
           className="rounded-xl bg-white p-3 text-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800"

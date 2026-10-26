@@ -295,3 +295,14 @@ export function parseRows(rows: string[][], mapping: Mapping, ctx: ImportContext
   }
   return parsed;
 }
+
+/**
+ * Warnings that every imported athlete has, such as "No emergency contact."
+ * when the form has no such question. They're shown once, not on every row,
+ * so the row-specific ones stand out.
+ */
+export function commonWarnings(parsed: ParsedRow[]): string[] {
+  const ready = parsed.filter((p) => p.draft);
+  if (ready.length < 2) return [];
+  return ready[0].warnings.filter((w) => ready.every((p) => p.warnings.includes(w)));
+}

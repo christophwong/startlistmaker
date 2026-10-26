@@ -77,6 +77,9 @@ test("upload → fix a row → generate; reorder and sort", async ({ page }) => 
   await page.goto("/");
   await page.getByLabel("Google Forms export file").setInputFiles("tests/fixtures/ecac-depth-day1.csv");
   await expect(page.getByRole("heading", { name: "Match the columns" })).toBeVisible();
+  // The form has no emergency-contact question: said once, not on all 18 rows.
+  await expect(page.getByText("All 18 athletes: No emergency contact.")).toBeVisible();
+  await expect(page.getByText("No emergency contact.", { exact: true })).toHaveCount(0);
   await page.getByRole("button", { name: "Continue to athletes" }).click();
   await expect(page.getByRole("heading", { name: "Athletes" })).toBeVisible();
 

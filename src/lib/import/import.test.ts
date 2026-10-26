@@ -11,7 +11,7 @@ import {
 } from "./columns";
 import { detectCompetitionType } from "./detect";
 import { bestSheet, parseCsv, parsePasted, toWorkbook } from "./file";
-import { parseGender, parseRows, sameAthlete } from "./rows";
+import { commonWarnings, parseGender, parseRows, sameAthlete } from "./rows";
 
 const fixture = (name: string) =>
   parseCsv(fs.readFileSync(`tests/fixtures/${name}`, "utf8"));
@@ -240,6 +240,20 @@ describe("errors vs warnings", () => {
     expect(parse(["", "F", "CWT", "30", "1:00"]).errors).toEqual(["Name is missing."]);
     expect(parse(["Ana Lima", "F", "", "30", "1:00"]).errors).toEqual(["Start 1: discipline is missing."]);
     expect(parse(["Ana Lima", "F", "CWT", "", "1:00"]).errors).toEqual(["Start 1: AP is missing."]);
+  });
+
+  it("warnings every athlete shares are found once; row-specific ones aren't", () => {
+    const parsed = parseRows(
+      [
+        ["Ana Lima", "F", "CWT", "30", "1:00"],
+        ["Bo Chen", "", "FIM", "40", "1:30"],
+        ["Cy Diaz", "M", "CWT", "", "1:00"], // an error row doesn't count
+      ],
+      autoMap(headers),
+      { type: "DEPTH", maxStarts: 1 },
+    );
+    expect(commonWarnings(parsed)).toEqual(["No emergency contact."]);
+    expect(commonWarnings(parsed.slice(0, 1))).toEqual([]); // one athlete: nothing to fold
   });
 });
 

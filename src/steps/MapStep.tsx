@@ -12,6 +12,7 @@ import { Button, Card, RadioGroup } from "~/components/ui";
 import type { CompetitionType } from "~/lib/disciplines";
 import { missingRequired } from "~/lib/import/columns";
 import { detectMaxStarts } from "~/lib/import/detect";
+import { commonWarnings } from "~/lib/import/rows";
 import { dayImport, parsedRows, type Action, type AppState } from "~/state/store";
 
 export function MapStep({ state, dispatch }: { state: AppState; dispatch(a: Action): void }) {
@@ -25,6 +26,7 @@ export function MapStep({ state, dispatch }: { state: AppState; dispatch(a: Acti
     () => parsedRows(state).map((p) => ({ ...p, status: rowStatus(p) })),
     [state.source, state.mapping, state.use, state.settings.type],
   );
+  const common = useMemo(() => commonWarnings(rows), [rows]);
   const valid = rows.filter((r) => r.draft);
   const errors = rows.filter((r) => r.status === "error");
   const startCount = valid.reduce((n, r) => n + r.draft!.starts.length, 0);
@@ -116,10 +118,10 @@ export function MapStep({ state, dispatch }: { state: AppState; dispatch(a: Acti
             </>
           )}
         </p>
-        <ErrorSummary rows={rows} />
+        <ErrorSummary rows={rows} common={common} />
       </Card>
 
-      <ImportRowList rows={rows} />
+      <ImportRowList rows={rows} common={common} />
     </div>
   );
 }
