@@ -10,7 +10,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "anonymize": "node scripts/anonymize.mjs"
+    "anonymize": "node scripts/anonymize.mjs",
+    "record-demo": "node scripts/record-demo.mjs"
   },
   "dependencies": {
     "jspdf": "^4.2.1",

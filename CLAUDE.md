@@ -14,6 +14,7 @@ npx vitest run src/lib/startlist/startlist.test.ts   # one file
 npm run test:e2e     # Playwright on the production build (vite preview :4173), desktop + mobile
 npm run build        # → dist/, what GitHub Pages serves
 node scripts/anonymize.mjs <real.csv> <out.csv> [seed] [--fix-typos]   # make a shareable sample
+node scripts/record-demo.mjs [out-dir] [--mobile]   # video of the main flow → tmp/demo-video/ (builds, serves :4174)
 ```
 
 There is no linter. Done means `npm run typecheck && npm test` pass, plus `npm run test:e2e` when UI, the build, or the CSP changes.
