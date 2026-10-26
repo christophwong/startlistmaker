@@ -153,7 +153,7 @@ describe("parseRows", () => {
     ]);
     expect(byRow[6]).toBeUndefined(); // blank row skipped
     expect(byRow[7].errors).toEqual(['Start 1: AP "deep" isn\'t in meters.']);
-    expect(byRow[7].warnings).toContain('Gender "X" isn\'t male or female. It\'s left blank.');
+    expect(byRow[7].warnings.filter((w) => w.startsWith("Gender"))).toEqual([]); // "X" is a valid gender
   });
 });
 
@@ -231,8 +231,9 @@ describe("errors vs warnings", () => {
     expect(p.warnings).toEqual(["Gender is missing.", "No emergency contact.", "Start 1: dive time is missing."]);
     expect(p.draft).toMatchObject({ gender: null, starts: [{ ap: 30, diveTimeSec: null }] });
 
-    const bad = parse(["Ana Lima", "X", "CWT", "30", "soon"]);
+    const bad = parse(["Ana Lima", "Robot", "CWT", "30", "soon"]);
     expect(bad.errors).toEqual([]);
+    expect(bad.warnings).toContain('Gender "Robot" isn\'t male, female or other. It\'s left blank.');
     expect(bad.warnings).toContain('Start 1: dive time "soon" isn\'t m:ss. It\'s ignored.');
   });
 
@@ -321,7 +322,8 @@ describe("workbooks", () => {
 
 describe("parseGender", () => {
   it.each([
-    ["Male", "M"], ["m", "M"], ["Woman", "F"], ["F", "F"], ["other", null],
+    ["Male", "M"], ["m", "M"], ["Woman", "F"], ["F", "F"],
+    ["X", "X"], ["Other", "X"], ["Unspecified", "X"], ["non-binary", "X"], ["Prefer not to say", "X"], ["robot", null],
   ])("%s → %s", (raw, expected) => expect(parseGender(raw)).toBe(expected));
 });
 

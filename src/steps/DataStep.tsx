@@ -302,7 +302,7 @@ export function DataStep({ state, dispatch }: { state: AppState; dispatch(a: Act
                     <TextInput check={check} k="name" value={r.lastName} placeholder="Last" aria-label="Last name" onChange={(e) => update(r.id, { lastName: e.target.value })} />
                   </Cell>
                   <Cell check={check} k="gender">
-                    <OptionInput check={check} k="gender" value={r.gender} options={["F", "M"]} label={`Gender, ${name}`} onChange={(gender) => update(r.id, { gender })} />
+                    <OptionInput check={check} k="gender" value={r.gender} options={["F", "M", "X"]} label={`Gender, ${name}`} onChange={(gender) => update(r.id, { gender })} />
                   </Cell>
                   <Cell>
                     <input className={inputClass} size={1} value={r.country} aria-label={`Country, ${name}`} onChange={(e) => update(r.id, { country: e.target.value })} />

@@ -1,5 +1,8 @@
 import type { CompetitionType, Discipline } from "../disciplines";
 
+/** X = unspecified / other */
+export type Gender = "M" | "F" | "X";
+
 export interface EngineStart {
   id: string;
   athleteId: string;
@@ -12,14 +15,14 @@ export interface EngineStart {
   firstName: string;
   lastName: string;
   /** used by the gender grouping option; absent counts as unknown */
-  gender?: "M" | "F" | null;
+  gender?: Gender | null;
   /** registration (form row) order, for the REGISTRATION sort key */
   order?: number;
 }
 
 /** An engine start plus the athlete details shown on the start list. */
 export type EngineStartWithAthlete = EngineStart & {
-  gender: "M" | "F" | null;
+  gender: Gender | null;
   country: string;
   pb: number | null;
 };

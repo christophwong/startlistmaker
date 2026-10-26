@@ -34,7 +34,7 @@ describe("checkRow", () => {
     expect(checkRow(row({}, { ap: "" }), "DEPTH", 1).errors["s1.ap"]).toBe("Start 1: AP is missing.");
     expect(checkRow(row({}, { ap: "deep" }), "DEPTH", 1).starts).toEqual([]);
 
-    const w = checkRow(row({ gender: "x" }, { pb: "far", diveTime: "" }), "DEPTH", 1);
+    const w = checkRow(row({ gender: "?" }, { pb: "far", diveTime: "" }), "DEPTH", 1);
     expect(Object.keys(w.errors)).toEqual([]);
     expect(Object.keys(w.warnings).sort()).toEqual(["gender", "s1.diveTime", "s1.pb"]);
     expect(w.starts).toHaveLength(1);
