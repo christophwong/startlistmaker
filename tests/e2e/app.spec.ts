@@ -146,6 +146,16 @@ test("Excel export, and a saved project reopens where it left off", async ({ pag
   });
   await expect(page.getByRole("heading", { name: "Start list", exact: true })).toBeVisible();
   await expect(page.getByText("41 of 41 starts on the list")).toBeVisible();
+
+  // The Excel reader runs under the CSP too (it unzips without a worker; worker-src is 'none').
+  await page.getByRole("button", { name: "1. Upload" }).click();
+  await page.getByLabel("Google Forms export file").setInputFiles({
+    name: "start-list.xlsx",
+    mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    buffer: fs.readFileSync(await x.path()),
+  });
+  await expect(page.getByRole("heading", { name: "Match the columns" })).toBeVisible();
+  await expect(page.getByText(/start-list\.xlsx · \d+ rows/)).toBeVisible();
 });
 
 /** A PNG drawn in the page, so no binary fixtures are needed. */
