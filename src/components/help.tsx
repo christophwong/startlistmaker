@@ -75,7 +75,7 @@ export function HelpDialog({ open, onClose }: { open: boolean; onClose(): void }
           settings, the order and logos. To carry on later, choose that file on the Upload step.
         </p>
         <p>
-          Your work is kept in this tab until you close it. Tick “Remember on this device” to keep it after the tab closes, and
+          Your work is kept in this tab until you close it. Check “Remember on this device” to keep it after the tab closes, and
           use “Clear all data” to remove it at once.
         </p>
       </Section>
