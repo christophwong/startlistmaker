@@ -94,7 +94,7 @@ export default function App() {
     <div className="mx-auto max-w-6xl px-4 pb-16 sm:px-6">
       <header className="no-print flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 py-4 dark:border-slate-800">
         <button type="button" onClick={() => dispatch({ type: "step", step: "start" })} className="flex items-center gap-2 text-left">
-          <img src="/favicon.svg" alt="" width={28} height={28} />
+          <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" width={28} height={28} />
           <span className="text-lg font-semibold tracking-tight">Start List Maker</span>
         </button>
         <div className="flex flex-wrap items-center gap-3 text-sm">

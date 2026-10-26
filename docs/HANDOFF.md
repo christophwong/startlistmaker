@@ -33,7 +33,7 @@ These are recorded in PLAN.md → Decisions. Don't re-ask them.
 - New settings: `spacingMode` / `bufferMin` / `roundToMin` (dive time + buffer) and `halftimeBreakMin`.
 - New edits: `moveEntryTo` and `sortEntriesBy`. `EngineStart` gained optional `gender` and `order`.
 
-## Review round 1 (2026-10-25, pushed in aa7845c)
+## Review round 1 (2026-10-25, pushed)
 
 The user is testing the local preview before making the repo public (decided: public). Changes from their feedback:
 - The app opens light, with a ☾ Dark / ☀ Light header toggle (`src/theme.ts`).
@@ -46,13 +46,17 @@ The user is testing the local preview before making the repo public (decided: pu
 - The two demo buttons became one highlighted "▶ Try a demo" banner, which opens a picker for Depth/Pool and 1 or 2 days/starts (`src/components/demo-picker.tsx`, `loadSample(kind, starts)`). Help and the picker share `src/components/modal.tsx`.
 - Checks: typecheck clean, 167 unit tests, 21 e2e pass + 1 skipped.
 
+## Launch (2026-10-26)
+
+- Before going public, the history was rewritten so every commit uses `christophwong@users.noreply.github.com` (it had used the user's Gmail). The trees are unchanged, and the rewrite was force-pushed while the repo was still private. The hashes before that point (for example aa7845c) no longer exist.
+- The repo https://github.com/christophwong/startlistmaker is **public**, with Pages on and GitHub Actions as the source.
+- **Live at https://ctophw.xyz/startlistmaker/**. The user's account site owns the `ctophw.xyz` domain, so the project URL is a sub-path, and `vite.config.ts` uses `base: "./"`. The user said not to bother with DNS for now, so the Pages custom domain is unset. A local smoke test served `dist/` under `/startlistmaker/`, and the demo, PDF and Excel worked with no errors.
+
 ## Next up
 
-1. The repo is https://github.com/christophwong/startlistmaker and is **private** while the user reviews and tests it. CI runs the checks and skips the deploy while it's private (`!github.event.repository.private` in `pages.yml`).
-2. To launch: make the repo public, then Pages → Source: GitHub Actions and re-run the workflow. Set the custom domain, verify the domain on the account, set the DNS records (README), and enforce HTTPS.
-3. After the first deploy, open https://startlistmaker.online/#demo, check the console is clean, and print a PDF.
-4. Ask the organizer to fix `Dicipline` → `Discipline` in the Google Form. If there's a real **pool** export, anonymize it and replace `src/samples/pool.csv`, which is currently from pnwapnea's synthetic fixture.
-5. Backlog (PLAN.md): a page per discipline block, a Unicode font for the jsPDF download, undo, and keyboard drag.
+1. When the user wants the custom domain: verify `startlistmaker.online` on the account, replace Namecheap's parking records with the README's DNS records, set the Pages custom domain, and enforce HTTPS. No rebuild is needed (relative base).
+2. Ask the organizer to fix `Dicipline` → `Discipline` in the Google Form. If there's a real **pool** export, anonymize it and replace `src/samples/pool.csv`, which is currently from pnwapnea's synthetic fixture.
+3. Backlog (PLAN.md): a page per discipline block, a Unicode font for the jsPDF download, undo, and keyboard drag.
 
 ## Notes
 

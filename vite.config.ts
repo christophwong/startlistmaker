@@ -38,8 +38,9 @@ function csp(): Plugin {
 }
 
 export default defineConfig({
-  // Served from the domain root (startlistmaker.online), see public/CNAME.
-  base: "/",
+  // Relative asset URLs, so one build works at a sub-path (ctophw.xyz/startlistmaker/,
+  // the GitHub Pages project URL) and at a domain root (startlistmaker.online later).
+  base: "./",
   plugins: [tailwindcss(), react(), csp()],
   resolve: {
     tsconfigPaths: true,

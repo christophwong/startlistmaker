@@ -2,7 +2,7 @@
 
 Build freediving competition start lists (OT / WT / check-in, lanes and zones, breaks) from Google Form responses. It runs entirely in the browser, so athlete data never leaves the device.
 
-**https://startlistmaker.online** · try the demo: https://startlistmaker.online/#demo
+**https://ctophw.xyz/startlistmaker/** · try the demo: https://ctophw.xyz/startlistmaker/#demo (the custom domain `startlistmaker.online` comes later)
 
 ## Using it
 
@@ -34,11 +34,16 @@ Keep real exports outside the repo. The script exits with an error if any source
 
 ## Deploying to GitHub Pages
 
-1. Push to a GitHub repository with `main` as the default branch. While the repo is **private**, the workflow only runs the checks; the deploy job is skipped, because Pages on the free plan needs a public repo.
-2. When ready to launch, make the repo public, then **Settings → Pages → Build and deployment → Source: GitHub Actions.** The `CI and deploy` workflow builds, tests, and deploys every push to `main` (re-run the latest workflow, or push, to trigger the first deploy).
-3. **Settings → Pages → Custom domain:** `startlistmaker.online` (also in `public/CNAME`). Tick **Enforce HTTPS** once the certificate is issued.
-4. **Verify the domain** under your GitHub account **Settings → Pages → Add a domain**, with the TXT record GitHub shows. This stops anyone else's repo from serving your domain.
-5. DNS at the registrar:
+The repo is public, and Pages (source: GitHub Actions) deploys every push to `main` through the `CI and deploy` workflow. A private repo would only run the checks, because Pages on the free plan needs a public repo.
+
+The build uses relative asset URLs (`base: "./"`), so the same build works at the project URL `https://ctophw.xyz/startlistmaker/` (the account's user site has the `ctophw.xyz` domain, so `christophwong.github.io/startlistmaker/` redirects there) and at a domain root.
+
+To move to the custom domain later:
+
+1. Do steps 2 and 3 below (domain verification and DNS) first.
+2. **Settings → Pages → Custom domain:** `startlistmaker.online` (also in `public/CNAME`, which Actions deploys ignore). Tick **Enforce HTTPS** once the certificate is issued.
+3. **Verify the domain** under your GitHub account **Settings → Pages → Add a domain**, with the TXT record GitHub shows. This stops anyone else's repo from serving your domain.
+4. DNS at the registrar (today it's Namecheap's parking page):
 
    | Type | Host | Value |
    |---|---|---|
