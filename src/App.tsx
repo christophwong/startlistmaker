@@ -1,8 +1,10 @@
 import { useEffect, useReducer, useRef, useState } from "react";
 import { DAY_PANEL_ID, DayTabs, dayTabId } from "~/components/day-tabs";
 import { HelpDialog } from "~/components/help";
-import { LockIcon, MoonIcon, SunIcon } from "~/components/icons";
-import { Button, cx } from "~/components/ui";
+import { ChevronIcon, HelpIcon, LockIcon, MoonIcon, MoreIcon, SunIcon, TrashIcon } from "~/components/icons";
+import { Popover } from "~/components/popover";
+import { LogoMark, PrivacyText, Stepper } from "~/components/shell";
+import { Button, buttonClass, cx } from "~/components/ui";
 import { loadSample, type SampleKind } from "~/samples";
 import { clearStorage, getRemember, loadState, saveState, setRemember } from "~/state/persist";
 import { formatEventDate } from "~/lib/format";
@@ -21,28 +23,6 @@ const STEPS: [Step, string][] = [
   ["list", "Start list"],
   ["final", "Print & export"],
 ];
-
-function PrivacyNote() {
-  return (
-    <details className="text-sm">
-      <summary className="cursor-pointer font-medium text-ok-fg">
-        <LockIcon className="mr-1 inline align-[-2px]" />
-        Private: nothing leaves this browser
-      </summary>
-      <div className="mt-2 max-w-xl space-y-1 text-ink-2">
-        <p>
-          Files are read and start lists are built entirely on your device. There is no server, no account, no analytics,
-          and the page is set up so it cannot send data anywhere.
-        </p>
-        <p>
-          While you work, your data is kept in this tab only and is gone when you close it, unless you choose “Remember on
-          this device”. “Clear all data” removes it immediately.
-        </p>
-        <p>To check: open your browser's developer tools → Network. Using the app makes no requests.</p>
-      </div>
-    </details>
-  );
-}
 
 export default function App() {
   const [state, dispatch] = useReducer(reducer, initialState, () => loadState() ?? initialState);
@@ -97,96 +77,168 @@ export default function App() {
     setTheme(next);
   };
 
+  const themeLabel = theme === "dark" ? "Switch to light mode" : "Switch to dark mode";
+  const ThemeIcon = theme === "dark" ? SunIcon : MoonIcon;
+  const dataItems = (close: () => void) => (
+    <div className="space-y-3">
+      <label className="flex items-start gap-2">
+        <input
+          type="checkbox"
+          checked={remember}
+          onChange={(e) => toggleRemember(e.target.checked)}
+          className="mt-1 accent-accent"
+        />
+        <span>
+          <span className="block font-medium">Remember on this device</span>
+          <span className="block text-xs text-muted">
+            {remember ? "Your work is kept in this browser after the tab closes." : "Off: your work is gone when this tab closes."}
+          </span>
+        </span>
+      </label>
+      <Button
+        variant="secondary"
+        size="sm"
+        className="w-full text-err-fg"
+        onClick={() => {
+          close();
+          clearAll();
+        }}
+      >
+        <TrashIcon /> Clear all data
+      </Button>
+    </div>
+  );
+  const iconButton =
+    "inline-flex size-11 items-center justify-center rounded-lg text-ink-2 hover:bg-sunken focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:size-10";
+
   return (
-    <div className="mx-auto max-w-6xl px-4 pb-16 sm:px-6">
-      <header className="no-print flex flex-wrap items-center justify-between gap-3 border-b border-line py-4">
-        <button type="button" onClick={() => dispatch({ type: "step", step: "start" })} className="flex items-center gap-2 text-left">
-          <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" width={28} height={28} />
-          <span className="text-lg font-semibold tracking-tight">Start List Maker</span>
-        </button>
-        <div className="flex flex-wrap items-center gap-3 text-sm">
-          {hasData && (
-            <>
-              <label className="flex items-center gap-1.5" title="Keep your work after the tab closes (stored only in this browser)">
-                <input type="checkbox" checked={remember} onChange={(e) => toggleRemember(e.target.checked)} className="accent-accent" />
-                Remember on this device
-              </label>
-              <Button variant="ghost" size="sm" onClick={clearAll}>
-                Clear all data
-              </Button>
-            </>
-          )}
-          <Button variant="ghost" size="sm" onClick={() => setHelp(true)} aria-haspopup="dialog">
-            Help
-          </Button>
-          <Button variant="ghost" size="sm" onClick={toggleTheme} aria-pressed={theme === "dark"} title="Switch between light and dark">
-            {theme === "dark" ? (
-              <>
-                <SunIcon /> Light
-              </>
-            ) : (
-              <>
-                <MoonIcon /> Dark
-              </>
+    <div className="pb-16">
+      <header className="no-print border-b border-line bg-surface">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
+          <button
+            type="button"
+            onClick={() => dispatch({ type: "step", step: "start" })}
+            className="flex min-w-0 items-center gap-2.5 text-left"
+          >
+            <LogoMark />
+            <span className="truncate text-lg font-semibold tracking-tight">Start List Maker</span>
+          </button>
+
+          <div className="hidden items-center gap-1 text-sm sm:flex">
+            <Popover
+              className="mr-2 inline-flex min-h-8 items-center gap-1.5 rounded-full bg-ok-bg px-3 text-xs font-medium text-ok-fg ring-1 ring-inset ring-ok-line"
+              label={
+                <>
+                  <LockIcon className="size-3.5" /> Local only · nothing leaves this browser
+                </>
+              }
+              panelClassName="w-80"
+            >
+              {() => <PrivacyText />}
+            </Popover>
+            <button type="button" onClick={toggleTheme} aria-label={themeLabel} title={themeLabel} className={iconButton}>
+              <ThemeIcon />
+            </button>
+            <Button variant="ghost" size="sm" onClick={() => setHelp(true)} aria-haspopup="dialog">
+              Help
+            </Button>
+            {hasData && (
+              <Popover
+                className={buttonClass("ghost", "sm")}
+                label={
+                  <>
+                    Your data{" "}
+                    <span className="font-normal text-muted">· {remember ? "remembered" : "this tab only"}</span>
+                    <ChevronIcon dir="down" className="size-3.5" />
+                  </>
+                }
+              >
+                {dataItems}
+              </Popover>
             )}
-          </Button>
+          </div>
+
+          <div className="flex items-center gap-1 sm:hidden">
+            <Popover
+              ariaLabel="Local only: nothing leaves this browser"
+              className={cx(iconButton, "text-ok-fg")}
+              label={<LockIcon />}
+              panelClassName="w-80"
+            >
+              {() => <PrivacyText />}
+            </Popover>
+            <Popover ariaLabel="Menu" className={iconButton} label={<MoreIcon />}>
+              {(close) => (
+                <div className="space-y-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      close();
+                      setHelp(true);
+                    }}
+                    aria-haspopup="dialog"
+                    className="flex min-h-11 w-full items-center gap-2 rounded-lg px-2 font-medium hover:bg-sunken"
+                  >
+                    <HelpIcon /> Help
+                  </button>
+                  <button
+                    type="button"
+                    onClick={toggleTheme}
+                    className="flex min-h-11 w-full items-center gap-2 rounded-lg px-2 font-medium hover:bg-sunken"
+                  >
+                    <ThemeIcon /> {themeLabel}
+                  </button>
+                  {hasData && (
+                    <div className="mt-1 border-t border-line-soft px-2 pt-3">
+                      <p className="mb-2 text-xs font-semibold tracking-wide text-muted uppercase">Your data</p>
+                      {dataItems(close)}
+                    </div>
+                  )}
+                </div>
+              )}
+            </Popover>
+          </div>
         </div>
       </header>
 
-      <nav className="no-print my-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between" aria-label="Steps">
-        <ol className="flex flex-wrap gap-1.5 text-sm">
-          {STEPS.map(([s, label], i) => (
-            <li key={s}>
-              <button
-                type="button"
-                disabled={!reachable(state, s)}
-                aria-current={state.step === s ? "step" : undefined}
-                onClick={() => dispatch({ type: "step", step: s })}
-                className={cx(
-                  "rounded-full px-3 py-1.5 font-medium ring-1 ring-inset",
-                  state.step === s
-                    ? "bg-accent text-on-accent ring-accent"
-                    : "ring-line-strong enabled:hover:bg-sunken disabled:text-muted disabled:opacity-60",
-                )}
-              >
-                {i + 1}. {label}
-              </button>
-            </li>
-          ))}
-        </ol>
-        <PrivacyNote />
-      </nav>
-
-      {showDayTabs && (
-        <DayTabs
-          value={state.day}
-          onChange={(day) => dispatch({ type: "day", day })}
-          tabs={([1, 2] as const).map((day) => {
-            const date = dayList(state, day)?.date;
-            return { day, date: date ? formatEventDate(date) : "", starts: startsOf({ ...state, day }).length };
-          })}
+      <div className="mx-auto max-w-6xl px-4 sm:px-6">
+        <Stepper
+          current={state.step}
+          onStep={(step) => dispatch({ type: "step", step })}
+          steps={STEPS.map(([step, label]) => ({ step, label, enabled: reachable(state, step) }))}
         />
-      )}
 
-      <main
-        ref={mainRef}
-        tabIndex={-1}
-        className="outline-none"
-        {...(showDayTabs && { id: DAY_PANEL_ID, role: "tabpanel", "aria-labelledby": dayTabId(state.day) })}
-      >
-        {state.step === "start" && <StartStep dispatch={dispatch} onHelp={() => setHelp(true)} />}
-        {state.step === "map" && state.source && <MapStep state={state} dispatch={dispatch} />}
-        {/* Keyed by day: a day's sort column and open panels aren't the other day's. */}
-        {state.step === "data" && <DataStep key={state.day} state={state} dispatch={dispatch} />}
-        {state.step === "list" && <ListStep key={state.day} state={state} dispatch={dispatch} />}
-        {state.step === "final" && <FinalStep key={state.day} state={state} dispatch={dispatch} />}
-      </main>
+        {showDayTabs && (
+          <DayTabs
+            value={state.day}
+            onChange={(day) => dispatch({ type: "day", day })}
+            tabs={([1, 2] as const).map((day) => {
+              const date = dayList(state, day)?.date;
+              return { day, date: date ? formatEventDate(date) : "", starts: startsOf({ ...state, day }).length };
+            })}
+          />
+        )}
 
-      <HelpDialog open={help} onClose={() => setHelp(false)} />
+        <main
+          ref={mainRef}
+          tabIndex={-1}
+          className="outline-none"
+          {...(showDayTabs && { id: DAY_PANEL_ID, role: "tabpanel", "aria-labelledby": dayTabId(state.day) })}
+        >
+          {state.step === "start" && <StartStep dispatch={dispatch} onHelp={() => setHelp(true)} />}
+          {state.step === "map" && state.source && <MapStep state={state} dispatch={dispatch} />}
+          {/* Keyed by day: a day's sort column and open panels aren't the other day's. */}
+          {state.step === "data" && <DataStep key={state.day} state={state} dispatch={dispatch} />}
+          {state.step === "list" && <ListStep key={state.day} state={state} dispatch={dispatch} />}
+          {state.step === "final" && <FinalStep key={state.day} state={state} dispatch={dispatch} />}
+        </main>
 
-      <footer className="no-print mt-16 border-t border-line pt-4 text-xs text-muted">
-        Start List Maker · for AIDA-style freediving competitions · runs entirely in your browser
-      </footer>
+        <HelpDialog open={help} onClose={() => setHelp(false)} />
+
+        <footer className="no-print mt-16 border-t border-line pt-4 text-xs text-muted">
+          Start List Maker · for AIDA-style freediving competitions · runs entirely in your browser
+        </footer>
+      </div>
     </div>
   );
 }

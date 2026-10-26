@@ -117,7 +117,7 @@ export function ListStep({ state, dispatch }: { state: AppState; dispatch(a: Act
 
       {state.demo && (
         <Alert>
-          This is a demo with made-up athletes, so try anything. To use your own file, go to 1. Upload.
+          This is a demo with made-up athletes, so try anything. To use your own file, go to Upload (step 1).
         </Alert>
       )}
 

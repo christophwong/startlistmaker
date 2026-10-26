@@ -9,6 +9,25 @@ import { expect, test, type Page } from "@playwright/test";
 
 const isMobile = (page: Page) => (page.viewportSize()?.width ?? 1280) < 768;
 
+// The header keeps Help, the theme and "Your data" in menus on a phone, and
+// the stepper lists the steps under "All steps" there.
+async function openMenu(page: Page, desktop: "Your data" | null) {
+  if (isMobile(page)) await page.getByRole("button", { name: "Menu" }).click();
+  else if (desktop) await page.getByRole("button", { name: /^Your data/ }).click();
+}
+
+async function clearAllData(page: Page) {
+  await openMenu(page, "Your data");
+  page.once("dialog", (d) => d.accept());
+  await page.getByRole("button", { name: "Clear all data" }).click();
+}
+
+async function goToStep(page: Page, name: RegExp) {
+  const steps = page.getByRole("navigation", { name: "Steps" });
+  if (isMobile(page)) await steps.getByRole("button", { name: "All steps" }).click();
+  await steps.getByRole("button", { name }).click();
+}
+
 test.beforeEach(async ({ page, baseURL }) => {
   const external: string[] = [];
   const errors: string[] = [];
@@ -85,7 +104,7 @@ test("a two-day form: both days on Columns, a tab per day after it", async ({ pa
   await expect(firstOt).toHaveText(day1Ot!);
 
   // Columns reads both days at once: no day picker.
-  await page.getByRole("navigation", { name: "Steps" }).getByRole("button", { name: /Columns/ }).click();
+  await goToStep(page, /Columns/);
   await expect(page.getByText("Build the list for")).toHaveCount(0);
   await expect(page.getByText(/start list for each day/)).toBeVisible();
   await expect(tabs).toHaveCount(0);
@@ -98,7 +117,7 @@ test("a two-day form: both days on Columns, a tab per day after it", async ({ pa
   await expect(page.getByRole("columnheader", { name: "Day 1" })).toHaveCount(0);
 
   // Print & export names the day on the sheet.
-  await page.getByRole("navigation", { name: "Steps" }).getByRole("button", { name: /Print & export/ }).click();
+  await goToStep(page, /Print & export/);
   await expect(page.locator(".print-area").getByText("Sample Depth Challenge · Day 2")).toBeVisible();
 });
 
@@ -160,14 +179,13 @@ test("revisiting Columns keeps athlete edits; a changed import asks before repla
   await expect(kept()).toHaveCount(1);
 
   // Same columns: Continue goes straight back, edits intact, no question.
-  const columns = page.getByRole("navigation", { name: "Steps" }).getByRole("button", { name: "2. Columns" });
-  await columns.click();
+  await goToStep(page, /^2 Columns$/);
   await page.getByRole("button", { name: "Continue to athletes" }).click();
   await expect(page.getByRole("heading", { name: "Athletes" })).toBeVisible();
   await expect(kept()).toHaveCount(1);
 
   // Changed columns: asks first; cancelling stays on Columns.
-  await columns.click();
+  await goToStep(page, /^2 Columns$/);
   await page.getByText("Column mapping").click();
   await page.locator('select[name="m.country"]').selectOption("");
   const messages: string[] = [];
@@ -208,8 +226,7 @@ test("Excel export, and a saved project reopens where it left off", async ({ pag
   await page.getByRole("button", { name: "Save project" }).click();
   const projectPath = await (await json).path();
 
-  page.once("dialog", (d) => d.accept());
-  await page.getByRole("button", { name: "Clear all data" }).click();
+  await clearAllData(page);
   await page.getByLabel("Google Forms export file").setInputFiles({
     name: "event.startlist.json",
     mimeType: "application/json",
@@ -219,7 +236,7 @@ test("Excel export, and a saved project reopens where it left off", async ({ pag
   await expect(page.getByText("41 of 41 starts on the list")).toBeVisible();
 
   // The Excel reader runs under the CSP too (it unzips without a worker; worker-src is 'none').
-  await page.getByRole("button", { name: "1. Upload" }).click();
+  await goToStep(page, /^1 Upload$/);
   await page.getByLabel("Google Forms export file").setInputFiles({
     name: "start-list.xlsx",
     mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -280,8 +297,7 @@ test("logos: header and sponsors on the sheet and in a saved project", async ({ 
   const json = page.waitForEvent("download");
   await page.getByRole("button", { name: "Save project" }).click();
   const projectPath = await (await json).path();
-  page.once("dialog", (d) => d.accept());
-  await page.getByRole("button", { name: "Clear all data" }).click();
+  await clearAllData(page);
   await page.getByLabel("Google Forms export file").setInputFiles({
     name: "event.startlist.json",
     mimeType: "application/json",
@@ -308,8 +324,7 @@ test("work survives a reload in the same tab, and Clear all data removes it", as
   await expect(page.getByRole("heading", { name: "Start list" })).toBeVisible();
   await page.reload();
   await expect(page.getByRole("heading", { name: "Start list" })).toBeVisible();
-  page.once("dialog", (d) => d.accept());
-  await page.getByRole("button", { name: "Clear all data" }).click();
+  await clearAllData(page);
   await expect(page.getByRole("heading", { name: /Freediving start lists/ })).toBeVisible();
   const stored = await page.evaluate(() => [sessionStorage.length, localStorage.length]);
   expect(stored).toEqual([0, 0]);
@@ -346,6 +361,7 @@ test("the home page shows what the file needs with an example; the full how-to i
   expect((await download).suggestedFilename()).toBe("sample-pool.csv");
   await page.keyboard.press("Escape");
   await expect(help).toBeHidden();
+  await openMenu(page, null);
   await page.getByRole("button", { name: "Help", exact: true }).click();
   await expect(help).toBeVisible();
   await help.getByRole("button", { name: "Close help" }).click();
@@ -357,11 +373,31 @@ test("opens light; the dark toggle sticks across reloads until Clear all data", 
   await expect(page.getByRole("heading", { name: "Start list" })).toBeVisible();
   const html = page.locator("html");
   await expect(html).not.toHaveClass(/dark/);
-  await page.getByRole("button", { name: /Dark/ }).click();
+  await openMenu(page, null);
+  await page.getByRole("button", { name: "Switch to dark mode" }).click();
   await expect(html).toHaveClass(/dark/);
   await page.reload();
   await expect(html).toHaveClass(/dark/);
-  page.once("dialog", (d) => d.accept());
-  await page.getByRole("button", { name: "Clear all data" }).click();
+  await clearAllData(page);
   expect(await page.evaluate(() => localStorage.length)).toBe(0);
+});
+
+test("header: the privacy note and Your data menu open and close", async ({ page }) => {
+  await page.goto("/#demo");
+  await expect(page.getByRole("heading", { name: "Start list" })).toBeVisible();
+  const lock = page.getByRole("button", { name: /^Local only/ });
+  const note = page.getByText("Nothing leaves this browser", { exact: true });
+  await lock.click();
+  await expect(note).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(note).toBeHidden();
+  await expect(lock).toBeFocused();
+
+  if (!isMobile(page)) await expect(page.getByRole("button", { name: "Your data · this tab only" })).toBeVisible();
+  await openMenu(page, "Your data");
+  await page.getByLabel("Remember on this device").check();
+  expect(await page.evaluate(() => localStorage.length)).toBeGreaterThan(0);
+  await page.getByRole("contentinfo").click(); // a click outside closes it
+  await expect(page.getByLabel("Remember on this device")).toBeHidden();
+  if (!isMobile(page)) await expect(page.getByRole("button", { name: "Your data · remembered" })).toBeVisible();
 });
