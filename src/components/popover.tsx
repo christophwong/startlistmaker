@@ -18,8 +18,11 @@ export function Popover({
   ariaLabel?: string;
   className?: string;
   panelClassName?: string;
-  /** Which edge of the button the panel lines up with. */
-  align?: "left" | "right";
+  /**
+   * Below the button, lined up with its left or right edge, or beside it on
+   * the left ("beside"), which stays inside a scrolling table.
+   */
+  align?: "left" | "right" | "beside";
   children(close: () => void): ReactNode;
 }) {
   const [open, setOpen] = useState(false);
@@ -66,8 +69,10 @@ export function Popover({
         <div
           id={id}
           className={cx(
-            "absolute top-full z-40 mt-2 w-72 max-w-[calc(100vw-2rem)] rounded-xl bg-surface p-3 text-left text-sm text-ink shadow-lg ring-1 ring-line",
-            align === "right" ? "right-0" : "left-0",
+            "absolute z-40 w-72 max-w-[calc(100vw-2rem)] rounded-xl bg-surface p-3 text-left text-sm font-normal text-ink normal-case shadow-lg ring-1 ring-line",
+            align === "beside" ? "top-1/2 right-full mr-1 -translate-y-1/2" : "top-full mt-2",
+            align === "right" && "right-0",
+            align === "left" && "left-0",
             panelClassName,
           )}
         >

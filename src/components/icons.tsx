@@ -120,6 +120,20 @@ export const TrashIcon = (p: IconProps) => (
   </Svg>
 );
 
+/** Up and down chevrons: "move this start". */
+export const MoveIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="m7 9 5-5 5 5M7 15l5 5 5-5" />
+  </Svg>
+);
+
+/** Lines getting shorter, with a down arrow: "re-sort". */
+export const SortIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M3 7h13M3 12h9M3 17h5M18 8v12M15 17l3 3 3-3" />
+  </Svg>
+);
+
 export const UploadIcon = (p: IconProps) => (
   <Svg {...p}>
     <path d="M12 15V4M7 9l5-5 5 5M4 15v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4" />

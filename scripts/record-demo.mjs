@@ -71,11 +71,16 @@ async function record() {
   await smoothScroll(400);
   await page.getByRole("button", { name: /Generate start list/ }).click();
 
-  // 4. Start list: move a start, then sort by athlete (the sort headers are desktop only).
+  // 4. Start list: move a start (on a phone, from its move menu), then sort by
+  // athlete (the sort headers are desktop only).
   await page.getByRole("heading", { name: "Start list" }).waitFor();
   await pause(1500);
   await smoothScroll(600);
-  await page.getByRole("button", { name: "Move down" }).filter({ visible: true }).first().click();
+  if (mobile) {
+    await page.getByRole("button", { name: /^Move (?!break )/ }).first().click();
+    await pause(800);
+  }
+  await page.getByRole("button", { name: "Move down" }).first().click();
   await pause();
   if (!mobile) {
     page.once("dialog", (d) => d.accept());
@@ -86,7 +91,7 @@ async function record() {
   await smoothScroll(0);
 
   // 5. Print & export: preview the sheet.
-  await page.getByRole("button", { name: "Print & export →" }).click();
+  await page.getByRole("button", { name: "Print & export", exact: true }).click();
   await page.locator(".print-area tbody tr").first().waitFor();
   await pause(1500);
   await smoothScroll(500);

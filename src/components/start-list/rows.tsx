@@ -1,7 +1,9 @@
-import { useState, type DragEvent, type FormEvent } from "react";
-import { ArrowIcon, ChevronIcon, GripIcon } from "~/components/icons";
-import { Alert, Badge, Button, cx } from "~/components/ui";
-import { formatPerformance } from "~/lib/disciplines";
+import { useState, type DragEvent, type FormEvent, type ReactNode } from "react";
+import { DisciplineChip } from "~/components/discipline-chip";
+import { ArrowIcon, ChevronIcon, ClockIcon, GripIcon, MoreIcon, MoveIcon, WarningIcon } from "~/components/icons";
+import { Popover } from "~/components/popover";
+import { cx } from "~/components/ui";
+import { DISCIPLINE_NAMES, formatPerformance, type Discipline } from "~/lib/disciplines";
 import type { ColumnKey, EngineStartWithAthlete, Issue, ScheduledRow, StartListSettings } from "~/lib/startlist";
 import { formatClock, formatDuration, toTimeInput, type TimeFormat } from "~/lib/time";
 import type { FieldErrors } from "~/lib/validation";
@@ -52,15 +54,26 @@ export const SORT_COLUMNS: { key: ColumnKey; label: string }[] = [
   { key: "startNumber", label: "Start #" },
 ];
 
+const fullName = (s: EngineStartWithAthlete) => `${s.firstName} ${s.lastName}`;
+
+/** Where a start's row is on screen (table row or phone card), for "Show" links. */
+export function showStart(startId: string) {
+  const el = [...document.querySelectorAll<HTMLElement>("[data-start]")].find(
+    (e) => e.dataset.start === startId && e.offsetParent !== null,
+  );
+  el?.scrollIntoView({ block: "center", behavior: "smooth" });
+  el?.focus({ preventScroll: true });
+}
+
 function SortHeader({ column, label, sort, className }: { column: ColumnKey; label: string; sort?: SortState; className?: string }) {
-  if (!sort) return <th className={cx("px-2 py-2", className)}>{label}</th>;
+  if (!sort) return <th className={cx("px-2 py-2.5", className)}>{label}</th>;
   const active = sort.column === column;
   return (
-    <th className={cx("px-2 py-2", className)} aria-sort={active ? (sort.dir === "ASC" ? "ascending" : "descending") : undefined}>
+    <th className={cx("px-2 py-2.5", className)} aria-sort={active ? (sort.dir === "ASC" ? "ascending" : "descending") : undefined}>
       <button
         type="button"
         onClick={() => sort.onSort(column)}
-        className="inline-flex items-center gap-0.5 uppercase hover:text-ink"
+        className={cx("inline-flex items-center gap-0.5 uppercase hover:text-ink", active && "text-ink")}
         title={`Sort by ${label.toLowerCase()} (within each section between breaks)`}
       >
         {label}
@@ -70,32 +83,40 @@ function SortHeader({ column, label, sort, className }: { column: ColumnKey; lab
   );
 }
 
-/** The start number; click to type a new position. */
+/** The start's position; click it (or "Move to position…") to type a new one. */
 function PositionInput({
   n,
   count,
+  editing,
+  onEditing,
   onMove,
+  className,
+  prefix = "",
 }: {
   n: number;
   count: number;
+  editing: boolean;
+  onEditing(editing: boolean): void;
   onMove(position: number): void;
+  className?: string;
+  prefix?: string;
 }) {
-  const [editing, setEditing] = useState(false);
   if (!editing) {
     return (
       <button
         type="button"
-        onClick={() => setEditing(true)}
-        className="min-w-7 rounded px-1 text-muted tabular-nums hover:bg-sunken hover:text-ink"
+        onClick={() => onEditing(true)}
+        className={cx("min-w-7 rounded px-1 text-left text-muted tabular-nums hover:bg-sunken hover:text-ink", className)}
         title="Move to position…"
         aria-label={`Position ${n}, move to…`}
       >
+        {prefix}
         {n}
       </button>
     );
   }
   const commit = (value: string) => {
-    setEditing(false);
+    onEditing(false);
     const p = Number(value);
     if (Number.isInteger(p) && p >= 1 && p <= count && p !== n) onMove(p);
   };
@@ -111,52 +132,27 @@ function PositionInput({
       onBlur={(e) => commit(e.target.value)}
       onKeyDown={(e) => {
         if (e.key === "Enter") commit(e.currentTarget.value);
-        if (e.key === "Escape") setEditing(false);
+        if (e.key === "Escape") onEditing(false);
       }}
     />
   );
 }
 
-function MoveButtons({ row, first, last, actions, busy }: Shared & { row: EditorRow; first: boolean; last: boolean }) {
+const menuItem =
+  "flex min-h-10 w-full items-center gap-2 rounded-lg px-2.5 text-left font-medium enabled:hover:bg-sunken disabled:text-muted";
+
+function MenuItem({ onClick, disabled, children }: { onClick(): void; disabled?: boolean; children: ReactNode }) {
   return (
-    <span className="inline-flex gap-1">
-      <Button
-        variant="secondary"
-        size="sm"
-        disabled={first || busy}
-        aria-label="Move up"
-        onClick={() => actions.move(row.entryId, "up")}
-      >
-        <ArrowIcon dir="up" />
-      </Button>
-      <Button
-        variant="secondary"
-        size="sm"
-        disabled={last || busy}
-        aria-label="Move down"
-        onClick={() => actions.move(row.entryId, "down")}
-      >
-        <ArrowIcon dir="down" />
-      </Button>
-    </span>
+    <button type="button" className={menuItem} disabled={disabled} onClick={onClick}>
+      {children}
+    </button>
   );
 }
 
-function AddBreakButton({ row, actions, busy }: Shared & { row: EditorRow }) {
-  return (
-    <Button
-      variant="ghost"
-      size="sm"
-      disabled={busy}
-      title="Insert a break after this start"
-      onClick={() => actions.addBreak(row.entryId)}
-    >
-      + Break
-    </Button>
-  );
-}
+const iconButton =
+  "inline-flex items-center justify-center rounded-md text-muted enabled:hover:bg-sunken enabled:hover:text-ink disabled:opacity-30";
 
-function BreakEditor({
+function BreakBar({
   row,
   timeFormat,
   first,
@@ -171,103 +167,202 @@ function BreakEditor({
   last: boolean;
   errors?: FieldErrors;
 }) {
+  const [editing, setEditing] = useState(false);
+  const fmt = (t: number) => formatClock(t, timeFormat);
+  const minutes = row.naturalOt === null ? row.breakMin : row.nextOt - row.naturalOt;
+  const meta =
+    row.naturalOt === null
+      ? `resumes ${fmt(row.nextOt)}`
+      : `${minutes} min · ${fmt(row.naturalOt)}–${fmt(row.nextOt)}${row.resumeAt !== null ? " (fixed)" : ""}`;
+  const error = errors?.breakMin ?? errors?.resumeAt;
+  const open = editing || !!error;
   const submit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     actions.saveBreak(row.entryId, new FormData(e.currentTarget));
+    setEditing(false);
   };
+  const barButton =
+    "min-h-9 rounded-md px-2.5 text-sm font-medium ring-1 ring-break-fg/30 hover:bg-break-fg/15 disabled:opacity-50 sm:min-h-8";
+  const breakIcon = "size-8 rounded-md text-break-fg/70 enabled:hover:bg-break-fg/15 enabled:hover:text-break-fg disabled:opacity-30";
+
   return (
-    <div className="flex flex-col gap-2 rounded-lg bg-break-bg px-3 py-2 text-break-fg sm:flex-row sm:items-center sm:justify-between">
-      <div className="flex items-center gap-3">
-        <MoveButtons row={row} first={first} last={last} actions={actions} busy={busy} />
-        <span className="font-semibold tracking-widest">BREAK</span>
-        <span className="text-sm opacity-80">
-          next OT {formatClock(row.nextOt, timeFormat)}
+    <div className="rounded-lg bg-break-bg px-3 py-2 text-break-fg tabular-nums">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <span className="inline-flex">
+          <button type="button" aria-label="Move break up" disabled={first || busy} onClick={() => actions.move(row.entryId, "up")} className={cx(iconButton, breakIcon)}>
+            <ChevronIcon dir="up" />
+          </button>
+          <button type="button" aria-label="Move break down" disabled={last || busy} onClick={() => actions.move(row.entryId, "down")} className={cx(iconButton, breakIcon)}>
+            <ChevronIcon dir="down" />
+          </button>
+        </span>
+        <ClockIcon />
+        <span className="font-bold tracking-widest">BREAK</span>
+        <span className="text-sm text-break-fg/75">{meta}</span>
+        <span className="ml-auto flex gap-2">
+          {!open && (
+            <button type="button" disabled={busy} onClick={() => setEditing(true)} className={barButton}>
+              Edit
+            </button>
+          )}
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => actions.removeBreak(row.entryId)}
+            aria-label="Remove break"
+            className={cx(barButton, "text-break-err ring-break-err/40 hover:bg-break-err/15")}
+          >
+            Remove
+          </button>
         </span>
       </div>
-      <form onSubmit={submit} className="flex flex-wrap items-center gap-2 text-sm" key={`${row.breakMin}-${row.resumeAt}`}>
-        <label className="flex items-center gap-1">
-          <input
-            name="breakMin"
-            type="number"
-            min={0}
-            max={600}
-            defaultValue={row.breakMin ?? ""}
-            className="h-9 w-16 rounded-md border-0 bg-break-fg/10 px-2 text-break-fg ring-1 ring-break-fg/30"
-            aria-label="Break length in minutes"
-          />
-          min
-        </label>
-        <label className="flex items-center gap-1">
-          or resume at
-          <input
-            name="resumeAt"
-            type="time"
-            defaultValue={toTimeInput(row.resumeAt)}
-            className="h-9 rounded-md border-0 bg-break-fg/10 px-2 text-break-fg ring-1 ring-break-fg/30"
-            aria-label="Resume at (fixed OT)"
-          />
-        </label>
-        <button
-          type="submit"
-          disabled={busy}
-          className="min-h-9 rounded-lg bg-break-fg/15 px-2.5 text-sm font-medium hover:bg-break-fg/25 sm:min-h-8"
-        >
-          Save
-        </button>
-        <button
-          type="button"
-          disabled={busy}
-          onClick={() => actions.removeBreak(row.entryId)}
-          className="min-h-9 rounded-lg px-2.5 text-sm font-medium text-break-err ring-1 ring-break-err/40 hover:bg-break-err/15 sm:min-h-8"
-        >
-          Remove
-        </button>
-        {(errors?.breakMin || errors?.resumeAt) && (
-          <span className="text-break-err">{errors.breakMin ?? errors.resumeAt}</span>
-        )}
-      </form>
+      {open && (
+        <form onSubmit={submit} className="mt-2 flex flex-wrap items-center gap-2 border-t border-break-fg/15 pt-2 text-sm" key={`${row.breakMin}-${row.resumeAt}`}>
+          <label className="flex items-center gap-1">
+            <input
+              name="breakMin"
+              type="number"
+              min={0}
+              max={600}
+              defaultValue={row.breakMin ?? ""}
+              autoFocus
+              className="h-9 w-16 rounded-md border-0 bg-break-fg/10 px-2 text-break-fg ring-1 ring-break-fg/30"
+              aria-label="Break length in minutes"
+            />
+            min
+          </label>
+          <label className="flex items-center gap-1">
+            or resume at
+            <input
+              name="resumeAt"
+              type="time"
+              defaultValue={toTimeInput(row.resumeAt)}
+              className="h-9 rounded-md border-0 bg-break-fg/10 px-2 text-break-fg ring-1 ring-break-fg/30"
+              aria-label="Resume at (fixed OT)"
+            />
+          </label>
+          <button type="submit" disabled={busy} className={cx(barButton, "bg-break-fg/15")}>
+            Save
+          </button>
+          <button type="button" onClick={() => setEditing(false)} className={barButton}>
+            Cancel
+          </button>
+          {error && <span className="text-break-err">{error}</span>}
+        </form>
+      )}
     </div>
   );
 }
 
-export function IssueList({ issues }: { issues: Issue[] }) {
+/** Issues on the list, as one banner; "Show" scrolls to the start it's about. */
+export function IssueBanner({ issues, extra }: { issues: Issue[]; extra?: (issue: Issue) => ReactNode }) {
   if (!issues.length) return null;
+  const error = issues.some((i) => i.severity === "error");
+  const warn = issues.some((i) => i.severity === "warning");
+  const tone = error ? "bg-err-bg text-err-fg ring-err-line" : warn ? "bg-warn-bg text-warn-fg ring-warn-line" : "bg-accent-soft text-ink ring-line";
   return (
-    <div className="space-y-2">
-      {issues.map((i, n) => (
-        <Alert key={n} tone={i.severity === "error" ? "error" : i.severity === "warning" ? "warning" : "info"}>
-          {i.message}
-        </Alert>
-      ))}
+    <div role={error ? "alert" : "status"} className={cx("flex gap-3 rounded-xl p-3 text-sm ring-1", tone)}>
+      <WarningIcon className="mt-0.5 size-[18px]" />
+      <div className="min-w-0 space-y-1">
+        <p className="font-semibold">
+          {issues.length === 1 ? "1 thing to check." : `${issues.length} things to check.`}
+        </p>
+        <ul className="space-y-1">
+          {issues.map((i, n) => (
+            <li key={n}>
+              {i.message}{" "}
+              {i.code !== "UNSCHEDULED" && i.startIds[0] && (
+                <button type="button" onClick={() => showStart(i.startIds[0])} className="font-semibold underline underline-offset-2">
+                  Show
+                </button>
+              )}
+              {extra?.(i)}
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
+}
+
+interface Block {
+  discipline: Discipline;
+  count: number;
+  first: number;
+  last: number;
+}
+
+/** Runs of starts with the same discipline (breaks don't end a run), keyed by the run's first row. */
+function disciplineBlocks(rows: EditorRow[]): Map<number, Block> {
+  const blocks = new Map<number, Block>();
+  let current: Block | null = null;
+  rows.forEach((r, i) => {
+    if (r.kind !== "START") return;
+    if (current?.discipline === r.start.discipline) {
+      current.count++;
+      current.last = r.ot;
+    } else {
+      current = { discipline: r.start.discipline, count: 1, first: r.ot, last: r.ot };
+      blocks.set(i, current);
+    }
+  });
+  return blocks;
 }
 
 export function StartListRows({
+  wide,
   rows,
   issues,
   timeFormat: tf,
   showLane,
   laneLabel: laneName = "Lane",
+  showBlocks,
   sort,
   breakErrors = {},
   actions,
   busy,
 }: Shared & {
+  /** The table (md and up) rather than a card per start. */
+  wide: boolean;
   rows: EditorRow[];
   issues: Issue[];
   timeFormat: TimeFormat;
   showLane: boolean;
   laneLabel?: string;
+  /** A header row before each run of one discipline (when the list is grouped by discipline). */
+  showBlocks: boolean;
   sort?: SortState;
   /** Validation errors per break entry id. */
   breakErrors?: Record<string, FieldErrors>;
 }) {
   const fmt = (t: number) => formatClock(t, tf);
-  const flagged = new Set(issues.filter((i) => i.severity !== "info").flatMap((i) => i.startIds));
+  const flagged = new Map<string, string[]>();
+  for (const i of issues) {
+    if (i.severity === "info") continue;
+    for (const id of i.startIds) flagged.set(id, [...(flagged.get(id) ?? []), i.message]);
+  }
   const shared = { actions, busy };
   const startIds = rows.filter((r) => r.kind === "START").map((r) => r.entryId);
-  const moveToPosition = (entryId: string, position: number) => actions.moveTo(entryId, startIds[position - 1]);
+  const position = (r: StartRow) => startIds.indexOf(r.entryId) + 1;
+  const moveToPosition = (entryId: string, p: number) => actions.moveTo(entryId, startIds[p - 1]);
+  const blocks = showBlocks ? disciplineBlocks(rows) : new Map<number, Block>();
+  const blockMeta = (b: Block) =>
+    `${b.count} start${b.count === 1 ? "" : "s"} · ${fmt(b.first)}${b.last !== b.first ? `–${fmt(b.last)}` : ""}`;
+  const cols = showLane ? 12 : 11;
+
+  // "Move to position…": the start whose position is being typed.
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const positionInput = (r: StartRow, className?: string, prefix?: string) => (
+    <PositionInput
+      n={position(r)}
+      count={startIds.length}
+      editing={editingId === r.entryId}
+      onEditing={(on) => setEditingId(on ? r.entryId : null)}
+      onMove={(p) => moveToPosition(r.entryId, p)}
+      className={className}
+      prefix={prefix}
+    />
+  );
 
   // Desktop drag and drop: drop a row onto another to take its place.
   const [dragId, setDragId] = useState<string | null>(null);
@@ -297,175 +392,220 @@ export function StartListRows({
   });
   const dropTint = (r: EditorRow) =>
     overId === r.entryId && dragId !== r.entryId && "outline-2 -outline-offset-2 outline-accent";
+  // Starts in parallel (zones / lanes) share an OT; alternate groups are tinted.
+  const groupTint = (r: StartRow) => showLane && r.group % 2 === 0 && "bg-page";
 
-  // Consecutive starts sharing an OT form one group (one card on mobile).
-  type Segment =
-    | { kind: "BREAK"; row: BreakRow; i: number }
-    | { kind: "GROUP"; items: { r: StartRow; i: number }[] };
-  const segments: Segment[] = [];
-  rows.forEach((r, i) => {
-    const prev = segments.at(-1);
-    if (r.kind === "BREAK") segments.push({ kind: "BREAK", row: r, i });
-    else if (prev?.kind === "GROUP" && prev.items[0].r.group === r.group) prev.items.push({ r, i });
-    else segments.push({ kind: "GROUP", items: [{ r, i }] });
-  });
-  const isGroupStart = (i: number) => {
-    const r = rows[i], prev = rows[i - 1];
-    return r.kind === "START" && prev?.kind === "START" && prev.group !== r.group;
+  const warnDot = (r: StartRow) => {
+    const messages = flagged.get(r.start.id);
+    if (!messages) return null;
+    return (
+      <span title={messages.join(" ")} className="inline-block size-2 shrink-0 rounded-full bg-warn-fg">
+        <span className="sr-only">Check: {messages.join(" ")}</span>
+      </span>
+    );
   };
-  const groupTint = (r: StartRow) => (r.group % 2 ? "" : "bg-page");
+  const breakBar = (r: BreakRow, i: number) => (
+    <BreakBar row={r} timeFormat={tf} first={i === 0} last={i === rows.length - 1} errors={breakErrors[r.entryId]} {...shared} />
+  );
+  const secondStart = (r: StartRow) => r.start.startNumber === 2 && <span className="ml-1 text-xs font-normal text-muted">(2nd)</span>;
 
-  return (
-    <>
-      {/* Mobile: one card per OT group */}
-      <ol className="space-y-2 md:hidden">
-        {segments.map((seg) =>
-          seg.kind === "BREAK" ? (
-            <li key={seg.row.entryId}>
-              <BreakEditor
-                row={seg.row}
-                timeFormat={tf}
-                first={seg.i === 0}
-                last={seg.i === rows.length - 1}
-                errors={breakErrors[seg.row.entryId]}
-                {...shared}
-              />
-            </li>
-          ) : (
-            <li
-              key={seg.items[0].r.entryId}
-              className="rounded-xl bg-surface ring-1 ring-line"
-            >
-              <div className="flex items-baseline justify-between gap-2 border-b border-line-soft px-3 py-2">
-                <span className="text-lg font-semibold tabular-nums">OT {fmt(seg.items[0].r.ot)}</span>
-                <span className="text-xs text-muted tabular-nums">
-                  WT {fmt(seg.items[0].r.wt)} · Check-in {fmt(seg.items[0].r.checkIn)}
-                </span>
+  // Phone: a card per start.
+  if (!wide) {
+    return (
+      <ol className="space-y-2">
+        {rows.map((r, i) => {
+          if (r.kind === "BREAK") return <li key={r.entryId}>{breakBar(r, i)}</li>;
+          const block = blocks.get(i);
+          const name = fullName(r.start);
+          return (
+            <li key={r.entryId} className="space-y-2">
+              {block && (
+                <div className="flex items-center gap-2 px-0.5 pt-1.5">
+                  <DisciplineChip discipline={block.discipline} />
+                  <span className="text-[13px] text-muted tabular-nums">{blockMeta(block)}</span>
+                </div>
+              )}
+              <div
+                data-start={r.start.id}
+                tabIndex={-1}
+                className={cx(
+                  "flex items-center gap-3 rounded-xl bg-surface py-2.5 pr-1.5 pl-3 ring-1 ring-line tabular-nums outline-accent focus-visible:outline-2",
+                  flagged.has(r.start.id) && "bg-warn-tint ring-warn-line",
+                )}
+              >
+                <div className="flex w-16 shrink-0 flex-col items-start">
+                  <span className="text-lg font-bold tracking-tight">{fmt(r.ot)}</span>
+                  {positionInput(r, "-ml-1 text-xs", "#")}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="flex items-center gap-1.5 font-semibold">
+                    <span className="truncate">{name}</span>
+                    {secondStart(r)}
+                    {warnDot(r)}
+                  </p>
+                  <p className="text-[13px] text-muted">
+                    {[showLane && `${laneName[0]}${r.lane}`, r.start.gender, r.start.country].filter(Boolean).join(" · ")}
+                    {(showLane || r.start.gender || r.start.country) && " · "}
+                    {/* The block header names the discipline; without blocks, a chip does. */}
+                    {!showBlocks && <DisciplineChip discipline={r.start.discipline} className="mr-1 py-0 text-[11px]" />}
+                    AP <strong className="font-semibold text-ink">{formatPerformance(r.start.discipline, r.start.ap)}</strong>
+                    {r.start.diveTimeSec !== null && ` · ${formatDuration(r.start.diveTimeSec)}`}
+                  </p>
+                </div>
+                <Popover
+                  ariaLabel={`Move ${name}`}
+                  className={cx(iconButton, "size-11")}
+                  panelClassName="w-56 p-1.5"
+                  label={<MoveIcon className="size-5" />}
+                >
+                  {(close) => (
+                    <>
+                      <MenuItem disabled={i === 0 || busy} onClick={() => (close(), actions.move(r.entryId, "up"))}>
+                        <ArrowIcon dir="up" /> Move up
+                      </MenuItem>
+                      <MenuItem disabled={i === rows.length - 1 || busy} onClick={() => (close(), actions.move(r.entryId, "down"))}>
+                        <ArrowIcon dir="down" /> Move down
+                      </MenuItem>
+                      <MenuItem onClick={() => (close(), setEditingId(r.entryId))}>Move to position…</MenuItem>
+                      <MenuItem disabled={busy} onClick={() => (close(), actions.addBreak(r.entryId))}>
+                        Add break after
+                      </MenuItem>
+                    </>
+                  )}
+                </Popover>
               </div>
-              <ul className="divide-y divide-line-soft">
-                {seg.items.map(({ r, i }) => (
-                  <li
-                    key={r.entryId}
-                    className={cx("flex items-center gap-2 px-3 py-2", flagged.has(r.start.id) && "bg-warn-tint")}
-                  >
-                    <PositionInput
-                      n={startIds.indexOf(r.entryId) + 1}
-                      count={startIds.length}
-                      onMove={(p) => moveToPosition(r.entryId, p)}
-                    />
-                    {showLane && (
-                      <span className="w-6 shrink-0 text-center text-xs font-semibold text-muted tabular-nums" title={laneName}>
-                        {laneName[0]}{r.lane}
-                      </span>
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate font-medium">
-                        {r.start.firstName} {r.start.lastName}{" "}
-                        <span className="text-sm font-normal text-muted">
-                          {[r.start.gender, r.start.country].filter(Boolean).join(" · ")}
-                        </span>
-                      </p>
-                      <p className="text-sm">
-                        <Badge tone="brand">{r.start.discipline}</Badge> AP{" "}
-                        {formatPerformance(r.start.discipline, r.start.ap)}
-                        {r.start.diveTimeSec !== null && ` · ${formatDuration(r.start.diveTimeSec)}`}
-                      </p>
-                    </div>
-                    <MoveButtons row={r} first={i === 0} last={i === rows.length - 1} {...shared} />
-                  </li>
-                ))}
-              </ul>
-              <div className="border-t border-line-soft px-1 py-1">
-                <AddBreakButton row={seg.items[seg.items.length - 1].r} {...shared} />
-              </div>
             </li>
-          ),
-        )}
+          );
+        })}
       </ol>
+    );
+  }
 
-      {/* Desktop: table */}
-      <div className="hidden overflow-x-auto rounded-xl bg-surface ring-1 ring-line md:block">
-        <table className="w-full text-left text-sm">
-          <thead className="bg-sunken text-xs text-muted uppercase">
-            <tr>
-              <th className="px-2 py-2">#</th>
-              <SortHeader column="name" label="Athlete" sort={sort} />
-              <SortHeader column="gender" label="G" sort={sort} />
-              <SortHeader column="country" label="Country" sort={sort} />
-              <SortHeader column="discipline" label="Disc." sort={sort} />
-              <SortHeader column="ap" label="AP" sort={sort} className="text-right" />
-              <SortHeader column="diveTime" label="Time" sort={sort} className="text-right" />
-              <th className="px-2 py-2 text-right">OT</th>
-              <th className="px-2 py-2 text-right">WT</th>
-              <th className="px-2 py-2 text-right">Check-in</th>
-              {showLane && <th className="px-2 py-2 text-center">{laneName}</th>}
-              <th className="px-2 py-2">
-                <span className="sr-only">Actions</span>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {(() => {
-              let n = 0;
-              return rows.map((r, i) =>
-                r.kind === "BREAK" ? (
-                  <tr key={r.entryId} {...dragProps(r)} className={cx(dropTint(r))}>
-                    <td colSpan={showLane ? 12 : 11} className="p-1">
-                      <BreakEditor
-                        row={r}
-                        timeFormat={tf}
-                        first={i === 0}
-                        last={i === rows.length - 1}
-                        errors={breakErrors[r.entryId]}
-                        {...shared}
-                      />
-                    </td>
-                  </tr>
-                ) : (
-                  <tr
-                    key={r.entryId}
-                    {...dragProps(r)}
-                    className={cx(
-                      "cursor-grab active:cursor-grabbing",
-                      groupTint(r),
-                      isGroupStart(i) && "border-t border-line",
-                      flagged.has(r.start.id) && "bg-warn-tint",
-                      dragId === r.entryId && "opacity-40",
-                      dropTint(r),
-                    )}
-                  >
-                    <td className="px-2 py-1.5 whitespace-nowrap">
-                      <span className="mr-1 inline-flex align-middle text-muted/60 select-none" title="Drag to move">
-                        <GripIcon />
-                      </span>
-                      <PositionInput n={++n} count={startIds.length} onMove={(p) => moveToPosition(r.entryId, p)} />
-                    </td>
-                    <td className="px-2 py-1.5 font-medium">
-                      {r.start.firstName} {r.start.lastName}
-                      {r.start.startNumber === 2 && <span className="ml-1 text-xs text-muted">(2nd)</span>}
-                    </td>
-                    <td className="px-2 py-1.5">{r.start.gender}</td>
-                    <td className="px-2 py-1.5">{r.start.country}</td>
-                    <td className="px-2 py-1.5">{r.start.discipline}</td>
-                    <td className="px-2 py-1.5 text-right tabular-nums">
-                      {formatPerformance(r.start.discipline, r.start.ap, { unit: false })}
-                    </td>
-                    <td className="px-2 py-1.5 text-right tabular-nums">{formatDuration(r.start.diveTimeSec)}</td>
-                    <td className="px-2 py-1.5 text-right font-semibold tabular-nums">{fmt(r.ot)}</td>
-                    <td className="px-2 py-1.5 text-right tabular-nums">{fmt(r.wt)}</td>
-                    <td className="px-2 py-1.5 text-right tabular-nums">{fmt(r.checkIn)}</td>
-                    {showLane && <td className="px-2 py-1.5 text-center tabular-nums">{r.lane}</td>}
-                    <td className="px-2 py-1.5 text-right whitespace-nowrap">
-                      <MoveButtons row={r} first={i === 0} last={i === rows.length - 1} {...shared} />
-                      <AddBreakButton row={r} {...shared} />
-                    </td>
-                  </tr>
-                ),
+  // Desktop: a table.
+  return (
+    <div className="overflow-x-auto rounded-xl bg-surface ring-1 ring-line">
+      <table className="w-full min-w-[44rem] text-left text-sm">
+        <thead className="border-b border-line text-xs font-semibold tracking-wide whitespace-nowrap text-muted uppercase">
+          <tr>
+            <th className="w-6 py-2.5 pl-3">
+              <span className="sr-only">Drag</span>
+            </th>
+            <th className="px-2 py-2.5">#</th>
+            <th className="px-2 py-2.5">OT</th>
+            <SortHeader column="name" label="Athlete" sort={sort} />
+            <SortHeader column="gender" label="G" sort={sort} />
+            <SortHeader column="country" label="Ctry" sort={sort} />
+            <SortHeader column="discipline" label="Disc." sort={sort} />
+            <SortHeader column="ap" label="AP" sort={sort} className="text-right" />
+            <SortHeader column="diveTime" label="Time" sort={sort} className="text-right" />
+            <th className="px-2 py-2.5 text-right">Check-in</th>
+            {showLane && <th className="px-2 py-2.5 text-center">{laneName}</th>}
+            <th className="px-2 py-2.5">
+              <span className="sr-only">Actions</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r, i) => {
+            if (r.kind === "BREAK") {
+              return (
+                <tr key={r.entryId} {...dragProps(r)} className={cx(dropTint(r))}>
+                  <td colSpan={cols} className="px-3 py-2">
+                    {breakBar(r, i)}
+                  </td>
+                </tr>
               );
-            })()}
-          </tbody>
-        </table>
-      </div>
-    </>
+            }
+            const block = blocks.get(i);
+            return [
+              block && (
+                <tr key={`${r.entryId}-block`} className="border-b border-line-soft">
+                  <td colSpan={cols} className="pt-3.5 pr-3 pb-2 pl-14">
+                    <span className="flex items-baseline gap-2.5">
+                      <DisciplineChip discipline={block.discipline} className="text-[13px]" />
+                      <span className="font-semibold">{DISCIPLINE_NAMES[block.discipline]}</span>
+                      <span className="text-[13px] text-muted tabular-nums">{blockMeta(block)}</span>
+                    </span>
+                  </td>
+                </tr>
+              ),
+              <tr
+                key={r.entryId}
+                {...dragProps(r)}
+                data-start={r.start.id}
+                tabIndex={-1}
+                className={cx(
+                  "cursor-grab border-b border-line-soft tabular-nums outline-accent focus-visible:outline-2 active:cursor-grabbing",
+                  groupTint(r),
+                  flagged.has(r.start.id) && "bg-warn-tint",
+                  dragId === r.entryId && "opacity-40",
+                  dropTint(r),
+                )}
+              >
+                <td className="py-1.5 pl-3 text-muted/60 select-none" title="Drag to move">
+                  <GripIcon />
+                </td>
+                <td className="px-2 py-1.5 whitespace-nowrap">{positionInput(r, "text-[13px]")}</td>
+                <td className="px-2 py-1.5 text-[17px] font-bold tracking-tight">{fmt(r.ot)}</td>
+                <td className="px-2 py-1.5 font-semibold">
+                  <span className="flex items-center gap-1.5">
+                    {fullName(r.start)}
+                    {secondStart(r)}
+                    {warnDot(r)}
+                  </span>
+                </td>
+                <td className="px-2 py-1.5 text-ink-2">{r.start.gender}</td>
+                <td className="px-2 py-1.5 text-ink-2">{r.start.country}</td>
+                <td className="px-2 py-1.5">
+                  <DisciplineChip discipline={r.start.discipline} />
+                </td>
+                <td className="px-2 py-1.5 text-right font-semibold">{formatPerformance(r.start.discipline, r.start.ap)}</td>
+                <td className="px-2 py-1.5 text-right text-ink-2">{formatDuration(r.start.diveTimeSec)}</td>
+                <td className="px-2 py-1.5 text-right text-ink-2">{fmt(r.checkIn)}</td>
+                {showLane && <td className="px-2 py-1.5 text-center">{r.lane}</td>}
+                <td className="py-1 pr-2 pl-1">
+                  <span className="flex justify-end">
+                    <button
+                      type="button"
+                      aria-label="Move up"
+                      disabled={i === 0 || busy}
+                      onClick={() => actions.move(r.entryId, "up")}
+                      className={cx(iconButton, "size-9")}
+                    >
+                      <ChevronIcon dir="up" />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="Move down"
+                      disabled={i === rows.length - 1 || busy}
+                      onClick={() => actions.move(r.entryId, "down")}
+                      className={cx(iconButton, "size-9")}
+                    >
+                      <ChevronIcon dir="down" />
+                    </button>
+                    <Popover
+                      align="beside"
+                      ariaLabel={`More actions for ${fullName(r.start)}`}
+                      className={cx(iconButton, "size-9")}
+                      panelClassName="w-52 p-1.5"
+                      label={<MoreIcon />}
+                    >
+                      {(close) => (
+                        <>
+                          <MenuItem onClick={() => (close(), setEditingId(r.entryId))}>Move to position…</MenuItem>
+                          <MenuItem disabled={busy} onClick={() => (close(), actions.addBreak(r.entryId))}>
+                            Add break after
+                          </MenuItem>
+                        </>
+                      )}
+                    </Popover>
+                  </span>
+                </td>
+              </tr>,
+            ];
+          })}
+        </tbody>
+      </table>
+    </div>
   );
 }

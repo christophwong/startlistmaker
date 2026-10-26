@@ -106,6 +106,7 @@ export function RadioGroup({
   options,
   defaultValue,
   hint,
+  stacked,
   onChange,
 }: {
   label: string;
@@ -113,12 +114,14 @@ export function RadioGroup({
   options: { value: string; label: string; description?: string }[];
   defaultValue?: string;
   hint?: string;
+  /** One option per line, for a narrow column. */
+  stacked?: boolean;
   onChange?: (value: string) => void;
 }) {
   return (
     <fieldset>
       <legend className="mb-1 text-sm font-medium">{label}</legend>
-      <div className="grid gap-2 sm:grid-cols-2">
+      <div className={cx("grid gap-2", !stacked && "sm:grid-cols-2")}>
         {options.map((o) => (
           <label
             key={o.value}
@@ -142,6 +145,45 @@ export function RadioGroup({
         ))}
       </div>
       {hint && <p className="mt-1 text-xs text-muted">{hint}</p>}
+    </fieldset>
+  );
+}
+
+/** Radio buttons drawn as a segmented control (two or three short choices). */
+export function Segmented({
+  label,
+  name,
+  options,
+  defaultValue,
+  onChange,
+}: {
+  label: string;
+  name: string;
+  options: { value: string; label: string }[];
+  defaultValue?: string;
+  onChange?: (value: string) => void;
+}) {
+  return (
+    <fieldset>
+      <legend className="mb-1 text-sm font-medium">{label}</legend>
+      <div className="grid auto-cols-fr grid-flow-col gap-1 rounded-[9px] bg-sunken p-1">
+        {options.map((o) => (
+          <label
+            key={o.value}
+            className="flex min-h-9 cursor-pointer items-center justify-center rounded-md px-2 text-center text-sm text-ink-2 has-checked:bg-surface has-checked:font-semibold has-checked:text-ink has-checked:shadow-sm has-focus-visible:outline-2 has-focus-visible:outline-accent"
+          >
+            <input
+              type="radio"
+              name={name}
+              value={o.value}
+              defaultChecked={defaultValue === o.value}
+              onChange={onChange && ((e) => onChange(e.target.value))}
+              className="sr-only"
+            />
+            {o.label}
+          </label>
+        ))}
+      </div>
     </fieldset>
   );
 }

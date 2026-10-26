@@ -65,7 +65,7 @@ test("demo: sample depth list → finalize → CSV download; PDF is through Prin
   await page.getByRole("dialog", { name: "Try a demo" }).getByRole("button", { name: "Open the demo" }).click();
   await expect(page.getByRole("heading", { name: "Start list" })).toBeVisible();
   await expect(page.getByText(/This is a demo with made-up athletes/)).toBeVisible();
-  await expect(page.getByText(/(\d+) of \1 starts on the list/)).toBeVisible();
+  await expect(page.getByText(/^\d+ starts · \d+ disciplines · first OT/)).toBeVisible();
 
   await page.getByRole("button", { name: "Print & export", exact: true }).click();
   await expect(page.getByText("Sample Depth Challenge · Day 1")).toBeVisible();
@@ -96,8 +96,10 @@ test("a two-day form: both days on Columns, a tab per day after it", async ({ pa
   await day2.click();
   await expect(day2).toHaveAttribute("aria-selected", "true");
   await expect(page.getByRole("heading", { name: /Start list.*Day 2/ })).toBeVisible();
-  await page.getByText("Event").first().click();
+  if (isMobile(page)) await page.getByRole("button", { name: "Settings" }).click();
+  await page.getByRole("button", { name: "Edit details" }).click();
   await expect(page.getByLabel("Date of Day 2")).toHaveValue("2026-09-06");
+  if (isMobile(page)) await page.getByRole("button", { name: "Close settings" }).click();
   await day1.focus();
   await page.keyboard.press("ArrowRight");
   await expect(day1).toHaveAttribute("aria-selected", "true");
@@ -150,7 +152,8 @@ test("upload → fix a row → generate; reorder and sort", async ({ page }) => 
   await expect(page.getByRole("heading", { name: "Start list" })).toBeVisible();
   await expect(page.getByText("Test Diver").filter({ visible: true }).first()).toBeVisible();
 
-  // Move the first start down one place.
+  // Move the first start down one place (on a phone, from the start's move menu).
+  if (isMobile(page)) await page.getByRole("button", { name: /^Move / }).first().click();
   const firstMove = page.getByRole("button", { name: "Move down" }).filter({ visible: true }).first();
   await firstMove.click();
 
@@ -160,7 +163,7 @@ test("upload → fix a row → generate; reorder and sort", async ({ page }) => 
     const header = page.getByRole("button", { name: /^Athlete/ });
     await header.click();
     await expect(page.getByRole("columnheader", { name: /Athlete/ })).toHaveAttribute("aria-sort", "ascending");
-    const names = () => page.locator("tbody tr td:nth-child(2)").allInnerTexts();
+    const names = () => page.locator("tbody tr[draggable=true] td:nth-child(4)").allInnerTexts();
     const asc = await names();
     await header.click();
     await expect(page.getByRole("columnheader", { name: /Athlete/ })).toHaveAttribute("aria-sort", "descending");
@@ -209,7 +212,7 @@ test("paste from Google Sheets", async ({ page }) => {
   await page.getByRole("button", { name: "Read pasted data" }).click();
   await page.getByRole("button", { name: "Continue to athletes" }).click();
   await page.getByRole("button", { name: /Generate start list/ }).click();
-  await expect(page.getByText("2 of 2 starts on the list")).toBeVisible();
+  await expect(page.getByText(/^2 starts · \d+ discipline/)).toBeVisible();
 });
 
 test("Excel export, and a saved project reopens where it left off", async ({ page }) => {
@@ -233,7 +236,7 @@ test("Excel export, and a saved project reopens where it left off", async ({ pag
     buffer: fs.readFileSync(projectPath),
   });
   await expect(page.getByRole("heading", { name: "Start list", exact: true })).toBeVisible();
-  await expect(page.getByText("41 of 41 starts on the list")).toBeVisible();
+  await expect(page.getByText(/^41 starts · \d+ discipline/)).toBeVisible();
 
   // The Excel reader runs under the CSP too (it unzips without a worker; worker-src is 'none').
   await goToStep(page, /^1 Upload$/);
@@ -314,9 +317,10 @@ test("drag a start onto another row to move it", async ({ page }) => {
   test.skip(isMobile(page), "drag and drop is the desktop table; mobile uses ↑ ↓ and position numbers");
   await page.goto("/#demo");
   const rows = page.locator("tbody tr[draggable=true]");
-  const first = await rows.nth(0).locator("td").nth(1).innerText();
+  const athlete = (n: number) => rows.nth(n).locator("td").nth(3);
+  const first = await athlete(0).innerText();
   await rows.nth(0).dragTo(rows.nth(3));
-  await expect(rows.nth(3).locator("td").nth(1)).toHaveText(first);
+  await expect(athlete(3)).toHaveText(first);
 });
 
 test("work survives a reload in the same tab, and Clear all data removes it", async ({ page }) => {
@@ -339,8 +343,13 @@ test("demo picker: pool with one start per athlete", async ({ page }) => {
   await picker.getByText("1 start", { exact: true }).click();
   await picker.getByRole("button", { name: "Open the demo" }).click();
   await expect(page.getByRole("heading", { name: "Start list", exact: true })).toBeVisible();
+  // The event card is in the Settings dialog on a phone.
+  if (isMobile(page)) await page.getByRole("button", { name: "Settings" }).click();
   await expect(page.getByText("Sample Pool Classic").first()).toBeVisible();
-  await expect(page.getByText(/(\d+) of \1 starts on the list/)).toBeVisible();
+  if (isMobile(page)) await page.getByRole("button", { name: "Close settings" }).click();
+  await expect(page.getByText(/^\d+ starts · \d+ disciplines/)).toBeVisible();
+  // Pool is grouped by discipline: a header before each block.
+  await expect(page.getByText(/^\d+ starts · \d+:\d\d–\d+:\d\d$/).first()).toBeVisible();
   await expect(page.getByText("BREAK", { exact: true }).filter({ visible: true })).toHaveCount(0);
 });
 
@@ -380,6 +389,32 @@ test("opens light; the dark toggle sticks across reloads until Clear all data", 
   await expect(html).toHaveClass(/dark/);
   await clearAllData(page);
   expect(await page.evaluate(() => localStorage.length)).toBe(0);
+});
+
+test("start list: a start's menu moves it to a position and adds a break; the break bar edits and removes it", async ({ page }) => {
+  await page.goto("/#demo");
+  await expect(page.getByRole("heading", { name: "Start list" })).toBeVisible();
+  // ⋯ on the table, the move button on a phone card; their names carry the athlete.
+  const menus = page.getByRole("button", { name: isMobile(page) ? /^Move (?!break )/ : /^More actions for / });
+  const label = (await menus.first().getAttribute("aria-label"))!;
+
+  await menus.first().click();
+  await page.getByRole("button", { name: "Move to position…" }).click();
+  await page.getByLabel("Move to position").fill("3");
+  await page.getByLabel("Move to position").press("Enter");
+  await expect(menus.nth(2)).toHaveAttribute("aria-label", label);
+
+  const bars = page.getByText("BREAK", { exact: true }).filter({ visible: true });
+  const before = await bars.count();
+  await menus.first().click();
+  await page.getByRole("button", { name: "Add break after" }).click();
+  await expect(bars).toHaveCount(before + 1);
+  await page.getByRole("button", { name: "Edit", exact: true }).filter({ visible: true }).first().click();
+  await page.getByLabel("Break length in minutes").fill("20");
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(page.getByText(/^20 min · /).filter({ visible: true })).toBeVisible();
+  await page.getByRole("button", { name: "Remove break" }).filter({ visible: true }).first().click();
+  await expect(bars).toHaveCount(before);
 });
 
 test("header: the privacy note and Your data menu open and close", async ({ page }) => {
