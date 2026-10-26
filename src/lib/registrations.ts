@@ -191,7 +191,7 @@ export function checkRows(rows: RegRow[], type: CompetitionType, maxStarts: 1 | 
       const others = same.filter((o) => o !== r).map((o) => (o.rowNumber ? `row ${o.rowNumber}` : "an added athlete"));
       if (!others.length) continue;
       checks.get(r.id)!.warnings.name ??=
-        `Possible duplicate of ${others.join(", ")} (same name). If it's the same athlete, delete one or untick "On list".`;
+        `Possible duplicate of ${others.join(", ")} (same name). If it's the same athlete, delete one or uncheck "On list".`;
     }
   }
   return checks;

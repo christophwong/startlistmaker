@@ -4,7 +4,7 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /*
- * Colour tokens (DESIGN §7a). Each is a CSS variable that html.dark
+ * Colour tokens (DESIGN §7). Each is a CSS variable that html.dark
  * overrides, so `bg-surface` or `text-ink` switch with the theme and need no
  * dark: pair. Every text/background pair passes 4.5:1 in both themes.
  */

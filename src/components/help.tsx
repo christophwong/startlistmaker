@@ -20,11 +20,11 @@ export function HelpDialog({ open, onClose }: { open: boolean; onClose(): void }
       <Section title="How it works">
         <ol className="list-decimal space-y-1 pl-5">
           <li>
-            <strong>Upload:</strong> choose or drop your Google Forms export, paste it from Google Sheets, or enter athletes by
-            hand.
+            <strong>Upload:</strong> choose or drop your Google Forms export, paste it from Google Sheets, open a saved project,
+            or enter athletes by hand.
           </li>
           <li>
-            <strong>Columns:</strong> check which column holds what. Fix any match the app got wrong.
+            <strong>Columns:</strong> check which column holds what, and fix any match the app got wrong under “Use as”.
           </li>
           <li>
             <strong>Athletes:</strong> fix the data in the spreadsheet. Red cells keep a start off the list, and amber ones are
@@ -32,7 +32,8 @@ export function HelpDialog({ open, onClose }: { open: boolean; onClose(): void }
           </li>
           <li>
             <strong>Start list:</strong> set the event, first OT, interval or dive time + buffer, lanes or zones, breaks and
-            order. Drag rows or sort by a column.
+            order. Drag rows or sort by a column. A start's ⋯ menu (Move on a phone) moves it to a position, adds a break after
+            it, or removes this start only. “Put back” on the Athletes step returns it to its place.
           </li>
           <li>
             <strong>Print & export:</strong> add logos if you like (competition and AIDA beside the title, sponsors after the list),
@@ -48,7 +49,7 @@ export function HelpDialog({ open, onClose }: { open: boolean; onClose(): void }
         </p>
         <p>
           <strong>Google Sheets:</strong> in the form's linked sheet, select everything (Ctrl/⌘ + A), copy, and use “Paste
-          from Google Sheets”.
+          from Sheets”.
         </p>
       </Section>
 
@@ -72,11 +73,11 @@ export function HelpDialog({ open, onClose }: { open: boolean; onClose(): void }
       <Section title="Saving your work">
         <p>
           <strong>Save project</strong> on the Print & export step downloads a .json file with everything: athletes,
-          settings, the order and logos. To carry on later, choose that file on the Upload step.
+          settings, the order and logos. To carry on later, use “Open a project” on the Upload step.
         </p>
         <p>
-          Your work is kept in this tab until you close it. Check “Remember on this device” to keep it after the tab closes, and
-          use “Clear all data” to remove it at once.
+          Your work is kept in this tab until you close it. In the “Your data” menu, check “Remember on this device” to keep it
+          after the tab closes, and use “Clear all data” to remove it at once.
         </p>
       </Section>
 
