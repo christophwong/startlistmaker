@@ -70,3 +70,7 @@ node scripts/anonymize.mjs path/to/real-responses.csv src/samples/new-sample.csv
 ```
 
 The script replaces names, emails and contact details, and exits with an error if any original name or email would end up in the output. Never commit real sign-up exports.
+
+## License
+
+[MIT](LICENSE)
