@@ -14,6 +14,7 @@ import {
   sortStarts,
   validateStartList,
   type EngineStart,
+  type Gender,
   type EntryInput,
   type ScheduledStart,
   type StartListSettings,
@@ -85,14 +86,15 @@ describe("sortStarts", () => {
   });
 
   it("gender order and sort direction", () => {
-    const mk = (id: string, ap: number, gender: "M" | "F" | null): EngineStart => ({
+    const mk = (id: string, ap: number, gender: Gender | null): EngineStart => ({
       id, athleteId: id, startNumber: 1, discipline: "CWT", ap, diveTimeSec: 60,
       firstName: id, lastName: id, gender,
     });
-    const starts = [mk("a", 30, "M"), mk("b", 40, "F"), mk("c", 20, "F"), mk("d", 50, null)];
+    const starts = [mk("a", 30, "M"), mk("b", 40, "F"), mk("c", 20, "F"), mk("d", 50, null), mk("e", 60, "X")];
     const s = { ...depthSettings, genderOrder: "F_FIRST" } as const;
-    expect(sortStarts(starts, s).map((x) => x.id)).toEqual(["b", "c", "a", "d"]);
-    expect(sortStarts(starts, { ...s, sortDir: "ASC" }).map((x) => x.id)).toEqual(["c", "b", "a", "d"]);
+    expect(sortStarts(starts, s).map((x) => x.id)).toEqual(["b", "c", "a", "e", "d"]);
+    expect(sortStarts(starts, { ...s, sortDir: "ASC" }).map((x) => x.id)).toEqual(["c", "b", "a", "e", "d"]);
+    expect(sortStarts(starts, { ...s, genderOrder: "M_FIRST" }).map((x) => x.id)).toEqual(["a", "b", "c", "e", "d"]);
   });
 
   it("NAME and REGISTRATION sort keys", () => {

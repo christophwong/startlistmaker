@@ -27,8 +27,9 @@ export function blockRank(s: EngineStart, settings: StartListSettings): number {
 
 function genderRank(s: EngineStart, settings: StartListSettings): number {
   if (settings.genderOrder === "NONE") return 0;
-  const first = settings.genderOrder === "F_FIRST" ? "F" : "M";
-  return s.gender === first ? 0 : s.gender ? 1 : 2;
+  const [first, second] = settings.genderOrder === "F_FIRST" ? ["F", "M"] : ["M", "F"];
+  // Then X (unspecified / other), then blank.
+  return s.gender === first ? 0 : s.gender === second ? 1 : s.gender ? 2 : 3;
 }
 
 /** Unknown dive times always sort after known ones. */

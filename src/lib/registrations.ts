@@ -95,7 +95,7 @@ export function checkRow(row: RegRow, type: CompetitionType, maxStarts: 1 | 2, o
   const lastName = row.lastName.trim();
   if (!firstName && !lastName) errors.name = "Name is missing.";
   const gender = parseGender(row.gender);
-  if (!gender) warnings.gender = row.gender.trim() ? `Gender "${row.gender}" isn't M or F.` : "Gender is missing.";
+  if (!gender) warnings.gender = row.gender.trim() ? `Gender "${row.gender}" isn't M, F or X.` : "Gender is missing.";
 
   const other = type === "POOL" ? "depth" : "pool";
   const off: (1 | 2)[] = [];

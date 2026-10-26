@@ -7,6 +7,7 @@ import {
   type Discipline,
 } from "../disciplines";
 import { parseDuration } from "../time";
+import type { Gender } from "../startlist/types";
 import type { FieldKey, Mapping } from "./columns";
 
 export interface StartDraft {
@@ -20,7 +21,7 @@ export interface StartDraft {
 export interface RegistrationDraft {
   firstName: string;
   lastName: string;
-  gender: "M" | "F" | null;
+  gender: Gender | null;
   country: string;
   email: string;
   emergencyName: string;
@@ -57,10 +58,11 @@ const NO_START = /^(none|no|n\/?a|-+|no second start|just one|only one|0)$/i;
 /** The note on a row with nothing in one day's columns ("Day 2"). */
 export const noEntry = (label: string) => `No ${label} entry. This row is skipped.`;
 
-export function parseGender(raw: string): "M" | "F" | null {
+export function parseGender(raw: string): Gender | null {
   const s = raw.trim().toLowerCase();
   if (/^(m|male|man|men|masculin[oe]?)$/.test(s)) return "M";
   if (/^(f|female|woman|women|feminin[oe]?)$/.test(s)) return "F";
+  if (/^(x|other|unspecified|non-?binary|nb|diverse|prefer not to say)$/.test(s)) return "X";
   return null;
 }
 
@@ -172,7 +174,7 @@ export function parseRow(
   const rawGender = get("gender");
   const gender = parseGender(rawGender);
   if (!gender) {
-    warnings.push(rawGender ? `Gender "${rawGender}" isn't male or female. It's left blank.` : "Gender is missing.");
+    warnings.push(rawGender ? `Gender "${rawGender}" isn't male, female or other. It's left blank.` : "Gender is missing.");
   }
 
   let emergencyName = get("emergencyName");
