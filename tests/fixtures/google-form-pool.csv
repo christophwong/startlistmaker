@@ -1,0 +1,22 @@
+Timestamp,Email Address,First Name,Last Name,Gender,Country,Emergency Contact Name,Emergency Contact Phone Number,Start 1 - Discipline,Start 1 - Personal Best (PB),Start 1 - Announced Performance (AP),Start 1 - Dive Time (mm:ss),Would you like a second start?,Start 2 - Discipline,Start 2 - Personal Best (PB),Start 2 - Announced Performance (AP),Start 2 - Dive Time (mm:ss)
+3/1/2026 10:10:00,maya.okafor@example.com,Maya,Okafor,Female,CAN,Contact Okafor,+1 555 0101,Static (STA),0:15,0:15,0:15,Yes,Dynamic with Fins (DYN),15,10,0:30
+3/2/2026 10:11:00,lucas.brandt@example.com,Lucas,Brandt,Male,GER,Contact Brandt,+1 555 0102,Static (STA),1:00,1:00,1:00,Yes,Dynamic No-Fins (DNF),55,50,1:10
+3/3/2026 10:12:00,aiko.tanaka@example.com,Aiko,Tanaka,Female,JPN,Contact Tanaka,+1 555 0103,Static (STA),1:30,1:30,1:30,Yes,Dynamic No-Fins (DNF),51,46,1:06
+3/4/2026 10:13:00,tom.reyes@example.com,Tom,Reyes,Male,USA,Contact Reyes,+1 555 0104,Static (STA),2:10,2:10,2:10,Yes,Dynamic No-Fins (DNF),55,50,1:10
+3/5/2026 10:14:00,sofia.marin@example.com,Sofia,Marin,Female,USA,Contact Marin,+1 555 0105,STA,3:04,3:04,3:04,Yes,Dynamic Bi-Fins (DYNB),82,77,1:37
+3/6/2026 10:15:00,ethan.clarke@example.com,Ethan,Clarke,Male,CAN,Contact Clarke,+1 555 0106,Static (STA),4:00,4:00,4:00,Yes,Dynamic No-Fins (DNF),80,75,1:35
+3/7/2026 10:16:00,noah.fischer@example.com,Noah,Fischer,Male,USA,Contact Fischer,+1 555 0107,Dynamic No-Fins (DNF),6,1,0:21,Yes,Dynamic with Fins (DYN),6,1,0:21
+3/8/2026 10:17:00,lena.novak@example.com,Lena,Novak,Female,CZE,Contact Novak,+1 555 0108,Dynamic No-Fins (DNF),55,50,1:10,Yes,Dynamic Bi-Fins (DYNB),80,75,1:35
+3/9/2026 10:18:00,omar.haddad@example.com,Omar,Haddad,Male,CAN,Contact Haddad,+1 555 0109,Dynamic No-Fins (DNF),64,59,1:19,Yes,Dynamic with Fins (DYN),77,72,1:32
+3/10/2026 10:19:00,grace.halvorsen@example.com,Grace,Halvorsen,Female,USA,Contact Halvorsen,+1 555 0110,Dynamic No-Fins (DNF),85,80m,1:40,Yes,Dynamic Bi-Fins (DYNB),105,100,2:00
+3/11/2026 10:20:00,ines.duarte@example.com,Ines,Duarte,Female,POR,Contact Duarte,+1 555 0111,Dynamic No-Fins (DNF),90,85,1:45,Yes,Dynamic Bi-Fins (DYNB),95,90,1:50
+3/12/2026 10:21:00,kai.mahoe@example.com,Kai,Mahoe,Male,USA,Contact Mahoe,+1 555 0112,Dynamic No-Fins (DNF),100,95,1:55,Yes,Dynamic Bi-Fins (DYNB),120,115,2:15
+3/13/2026 10:22:00,ben.walsh@example.com,Ben,Walsh,Male,CAN,Contact Walsh,+1 555 0113,Dynamic Bi-Fins (DYNB),10,5,0:25,Yes,Dynamic with Fins (DYN),10,5,0:25
+3/14/2026 10:23:00,mei.torvane@example.com,Mei,Torvane,Female,CHN,Contact Torvane,+1 555 0114,Dynamic Bi-Fins (DYNB),10,5,0:25,No,,,,
+3/15/2026 10:24:00,ruth.adler@example.com,Ruth,Adler,Female,USA,Contact Adler,+1 555 0115,Dynamic Bi-Fins (DYNB),30,25,0:45,Yes,Dynamic No-Fins (DNF),30,25,0:45
+3/16/2026 10:25:00,clara.moreau@example.com,Clara,Moreau,Female,FRA,Contact Moreau,+1 555 0116,Dynamic Bi-Fins (DYNB),45,40,1:00,Yes,Dynamic No-Fins (DNF),30,25,0:45
+3/17/2026 10:26:00,sam.ortiz@example.com,Sam,Ortiz,Male,MEX,Contact Ortiz,+1 555 0117,Dynamic Bi-Fins (DYNB),50,45,1:05,Yes,Dynamic with Fins (DYN),50,45,1:05
+3/18/2026 10:27:00,jonas.berg@example.com,Jonas,Berg,Male,NOR,Contact Berg,+1 555 0118,Dynamic with Fins (DYN),55,50,1:10,Yes,Dynamic No-Fins (DNF),55,50,1:10
+3/19/2026 10:28:00,ava.rossi@example.com,Ava,Rossi,Female,ITA,Contact Rossi,+1 555 0119,Dynamic with Fins (DYN),55,50,1:10,Yes,Dynamic No-Fins (DNF),55,50,1:10
+3/20/2026 10:29:00,leo.kim@example.com,Leo,Kim,Male,KOR,Contact Kim,+1 555 0120,Dynamic with Fins (DYN),95,90,1:50,Yes,Dynamic No-Fins (DNF),80,75,1:35
+3/1/2026 10:30:00,zoe.patel@example.com,Zoe,Patel,Female,GBR,Contact Patel,+1 555 0121,Dynamic with Fins (DYN),105,100,2:00,Yes,Dynamic No-Fins (DNF),80,75,1:35

@@ -1,0 +1,24 @@
+Timestamp,Email Address,Name,Gender,Country,Discipline | Day 1,Personal Best (M),Personal Best Date,"Conditions of Personal Best ",DAY 1 Announcement Depth (M),Total Dive Time (00:0M:SS),Discipline | Day 2,Personal Best (M),Personal Best Date,Conditions of Personal Best,DAY 2 Announcement Depth (M),Total Dive Time (00:0M:SS)
+8/28/2026 8:00:00,athlete01@example.com,Jonah Ibarra,Male,Canada,CWTB,47,5/24/2026,Cold Water,42,0:01:27,FIM,45,5/13/2026,Cold Water,46,0:01:49
+8/29/2026 9:07:00,athlete02@example.com,Yuki Castell,Female,USA,CWTB,26,2/5/2026,Cold Water,24,0:00:48,CWT,24,5/4/2026,Cold Water,26,0:00:52
+8/30/2026 10:14:00,athlete03@example.com,"Milo Mbeki ",Male,Canada,CNF,52,7/9/2026,Cold Water,51,0:01:55,FIM,47,6/28/2026,Cold Water,49,0:01:43
+8/28/2026 11:21:00,athlete04@example.com,Clara Varga,Female,Mexico,FIM,28,5/24/2026,Cold Water,24,0:01:37,CWTB,28,4/1/2026,Cold Water,23,0:01:22
+8/29/2026 12:28:00,athlete05@example.com,Felix Ibarra,Male,Canada,CWTB,31,1/19/2026,Cold Water,27,0:01:09,CWTB,31,8/12/2026,Cold Water,33,0:01:12
+8/30/2026 13:35:00,athlete06@example.com,"Rowan Ortiz ",Male,Japan,CWTB,23.3,7/9/2026,Cold Water,15,0:00:31,CWTB,25.3,2/4/2026,Cold Water,21,0:00:47
+8/28/2026 14:42:00,athlete07@example.com,Ines Ferreira,Female,Mexico,CWTB,9,8/24/2026,Cold Water,11,0:00:43,CWTB,13,5/13/2026,Cold Water,9,0:00:45
+8/29/2026 15:49:00,athlete08@example.com,Rowan Larsen,Male,Canada,CNF,41,4/4/2026,Cold Water,42,0:01:50,FIM,41,5/3/2026,Cold Water,42,0:02:02
+8/30/2026 16:56:00,athlete09@example.com,Hugo Oyelaran,Male,Germany,FIM,51,5/17/2026,Cold Water,50,0:01:32,CNF,48,6/28/2026,Cold Water,51,0:01:41
+8/28/2026 17:03:00,athlete10@example.com,Lena Holt,Female,Canada,CWTB,45,3/26/2026,Cold Water,42,0:01:35,FIM,43,1/9/2026,Cold Water,47,0:01:45
+8/29/2026 8:10:00,athlete11@example.com,Hana Haddad,Female,Japan,FIM,21,3/3/2026,Cold Water,23,0:00:43,CWTB,19,7/27/2026,Cold Water,25,0:00:35
+8/30/2026 9:17:00,athlete12@example.com,Luca Nakamura,Male,New Zealand,FIM,31,1/14/2026,Cold Water,32,0:01:11,CWTB,31,1/3/2026,Cold Water,37,0:01:07
+8/28/2026 10:24:00,athlete13@example.com,"Ravi Mbeki ",Male,Mexico,FIM,43,8/2/2026,Cold Water,18,0:01:32,CWTB,39,4/15/2026,Cold Water,17,0:01:21
+8/29/2026 11:31:00,athlete14@example.com,Milo Tanaka,Male,Germany,CWTB,22,6/12/2026,Cold Water,19,0:00:44,CWTB,21,8/9/2026,Cold Water,22,0:00:41
+8/30/2026 12:38:00,athlete15@example.com,Ravi Quinn,Male,Brazil,CWTB,26,6/1/2026,Cold Water,18,0:00:53,FIM,22,2/23/2026,Cold Water,18,0:01:13
+8/28/2026 13:45:00,athlete16@example.com,ELSA ORTIZ,Female,Canada,CNF,14,1/3/2026,Cold Water,11,0:00:39,FIM,13,3/3/2026,Cold Water,14,0:01:03
+8/29/2026 14:52:00,athlete17@example.com,Tess Reyes,Female,Japan,FIM,37,6/11/2026,Cold Water,32,0:01:30,FIM,33,2/18/2026,Cold Water,27,0:01:21
+8/30/2026 15:59:00,athlete18@example.com,Lior Mbeki,Male,Germany,FIM,44,8/2/2026,Cold Water,45,0:120:05,CWTB,35,8/4/2026,Cold Water,42,0:104:59
+8/28/2026 16:06:00,athlete13@example.com,Ravi Mbeki,Male,Mexico,,,,,,,CWT,44,8/11/2026,Cold Water,35,0:01:24
+8/29/2026 17:13:00,athlete11@example.com,Hana Haddad,Female,Japan,,,,,,,CWTB,19,2/3/2026,Cold Water,23,0:00:59
+8/30/2026 8:20:00,athlete18@example.com,Lior Mbeki,Male,Germany,,,,,,,CWTB,44,5/7/2026,Cold Water,48,0:104:52
+8/28/2026 9:27:00,athlete16@example.com,Elsa Ortiz,Female,Canada,,,,,,,CWT,17,3/2/2026,Cold Water,15,0:01:08
+8/29/2026 10:34:00,athlete15@example.com,Ravi Quinn,Male,"Brazil ",,,,,,,CWTB,24.7,3/4/2026,Cold Water,27,0:01:12

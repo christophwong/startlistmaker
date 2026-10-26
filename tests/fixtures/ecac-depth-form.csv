@@ -1,0 +1,24 @@
+Timestamp,Email Address,Name,Gender,Country,Discipline | Day 1,Personal Best (M),Personal Best Date,Conditions of Personal Best ,DAY 1 Announcement Depth (M),Total Dive Time (00:0M:SS),Discipline | Day 2,Personal Best (M),Personal Best Date,Conditions of Personal Best,DAY 2 Announcement Depth (M),Total Dive Time (00:0M:SS)
+8/31/2026 8:18:06,athlete01@example.com,Rowan Pike,Male,Canada,CWTB,46,8/8/2026,Cold Water,42,0:01:35,FIM,45,8/5/2026,Cold Water,46,0:01:42
+8/31/2026 8:31:06,athlete02@example.com,Mara Delgado,Female,ALASKA,CWTB,25,7/24/2026,Cold Water,25,0:00:50,CWT,25,7/24/2026,Cold Water,25,0:00:50
+8/31/2026 8:36:59,athlete03@example.com,Dana Wells ,Male,Canada,CNF,50,7/12/2026,Cold Water,50,0:02:00,FIM,50,5/31/2026,Cold Water,50,0:01:50
+8/31/2026 8:59:52,athlete04@example.com,Mei Lin,Female,China,FIM,28,8/19/2026,Cold Water,26,0:01:30,CWTB,26,8/19/2026,Cold Water,26,0:01:15
+8/31/2026 9:07:44,athlete05@example.com,Arun Das,Male,Canada,CWTB,30,8/1/2026,Cold Water,30,0:01:10,CWTB,30,8/1/2026,Cold Water,33,0:01:15
+8/31/2026 9:25:12,athlete06@example.com,Jake Grant ,Male,United States,CWTB,22.8,8/1/2026,Cold Water,15,0:00:34,CWTB,22.8,8/1/2026,Cold Water,20,0:00:45
+8/31/2026 9:44:27,athlete07@example.com,Hui Tan,Female,China,CWTB,10,8/30/2026,Cold Water,10,0:00:45,CWTB,10,8/30/2026,Cold Water,10,0:00:45
+9/5/2026 16:31:08,athlete08@example.com,Owen Marsh,Male,Canada,CNF,42,8/9/0026,Cold Water,45,0:01:45,FIM,41,8/3/2026,Cold Water,42,0:02:00
+9/5/2026 14:52:03,athlete09@example.com,Sean Porter,Male,USA,FIM,50,7/26/2026,Cold Water,50,0:01:40,CNF,47,9/3/2026,Cold Water,50,0:01:48
+8/31/2026 12:37:21,athlete10@example.com,Lena Moreau,Female,Canada,CWTB,42,8/30/2026,Cold Water,43,0:01:30,FIM,42,8/3/2026,Cold Water,46,0:01:45
+8/31/2026 17:07:35,athlete11@example.com,Laura Stone,Female,United States,FIM,20,7/14/2026,Cold Water,23,0:00:45,CWTB,21,7/14/2026,Cold Water,23,0:00:45
+8/31/2026 18:04:13,athlete12@example.com,Alex Ka Ho Chan,Male,Germany,FIM,30,8/1/2026,Cold Water,32,0:01:18,CWTB,29,8/1/2026,Cold Water,34,0:01:05
+8/31/2026 22:02:02,athlete13@example.com,Teodorvaskel ,Male,China,FIM,40,8/10/2026,Cold Water,20,0:01:30,CWTB,40,8/1/2026,Cold Water,20,0:01:30
+9/1/2026 4:32:17,athlete14@example.com,Bo Yang,Male,USA,CWTB,22,8/25/2026,Cold Water,20,0:00:42,CWTB,22,8/26/2026,Cold Water,22,0:00:46
+9/1/2026 12:53:30,athlete15@example.com,Milo Morgan,Male,Australia,CWTB,26,1/1/2023,Cold Water,20,0:01:00,FIM,20,2/1/2026,Cold Water,20,0:01:10
+9/1/2026 13:52:16,athlete16@example.com,MEIHUA (MAY) WU,Female,Canada,CNF,12,7/25/2026,Cold Water,10,0:00:45,FIM,15,7/25/2026,Cold Water,12,0:01:00
+9/5/2026 17:17:30,athlete17@example.com,Hana Ward,Female,United States,FIM,35,8/28/2026,Cold Water,30,0:01:35,FIM,35,8/28/2026,Cold Water,30,0:01:20
+9/1/2026 20:00:00,athlete18@example.com,Brannick,Male,Usa,FIM,44,8/22/2026,Cold Water,45,2:00:00,CWTB,36,7/25/2026,Cold Water,40,1:45:00
+9/5/2026 14:31:06,athlete13@example.com,Teodor vaskel,Male,China,,,,,,,CWT,41,8/2/2026,Cold Water,35,0:01:25
+9/5/2026 14:51:34,athlete11@example.com,Laura Stone,Female,United States,,,,,,,CWTB,21,7/14/2026,Cold Water,25,0:00:50
+9/5/2026 16:29:39,athlete18@example.com,Rolf Brannick,Male,USA,,,,,,,CWTB,44,8/16/2026,Cold Water,45,1:45:00
+9/5/2026 17:23:55,athlete16@example.com,Meihua (May) Wu,Female,Canada,,,,,,,CWT,15,7/25/2026,Cold Water,15,0:01:10
+9/5/2026 17:47:04,athlete15@example.com,Milo Morgan,Male,Australia ,,,,,,,CWTB,26.2,1/7/2023,Cold Water,25,0:01:10

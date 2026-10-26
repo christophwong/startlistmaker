@@ -1,0 +1,100 @@
+# Design
+
+## 1. What it does
+
+An organizer goes through five steps, and can jump back to any step they've reached:
+
+1. **Input**: upload a CSV/XLSX of Google Form responses, paste cells from Google Sheets, open a saved project (`.json`), enter athletes by hand, or open a demo.
+2. **Columns**: confirm the header → field mapping (auto-mapped, editable), pool vs depth (auto-detected), which day of a two-day form, and which sheet of a workbook.
+3. **Athletes**: an editable table of registrations. Red cells keep a start off the list (name, discipline, AP), and amber cells are warnings. Rows can be added, deleted, or left off the list.
+4. **Start list**: event details, settings, then the generated list. Starts can be reordered with ↑↓, by dragging, or by typing a position. Column headers sort it. Breaks can be inserted, edited, or removed. Issues (recovery time, same OT) are listed.
+5. **Finalize**: the print sheet as a preview, Print / Save as PDF, Download PDF, CSV, Excel, and Save project.
+
+## 2. Architecture
+
+```
+index.html (CSP meta, injected at build)
+src/main.tsx → App.tsx (header, stepper, storage controls, #demo)
+  state/store.ts     one reducer: source table, mapping, registrations, settings, entries, event, print options
+  state/derived.ts   useStartList: starts → schedule() → issues, export table
+  state/persist.ts   session/local storage + project files, validated with zod/mini
+  steps/*            Input, Columns, Athletes, Start list, Finalize
+  components/*       shared UI from pnwapnea (callback-driven)
+  lib/               pure logic: import/, startlist/, registrations.ts, export/
+  samples/           anonymized CSVs, bundled as text, loaded on demand
+```
+
+Pure logic has no DOM or I/O and is unit-tested. Preact runs the React-API code (aliases in `vite.config.ts`).
+
+### State and derivation
+
+- `source.table` holds the uploaded headers and rows, kept so the mapping can change.
+- `registrations: RegRow[]` holds editable rows built once by **Continue** from the parsed rows. Clean rows are stored as normalized values, rows with errors as their raw cells, and superseded or "no entry for this day" rows are dropped. **They are the source of truth after that.**
+- Starts are derived: `rowsToStarts(registrations, type, maxStarts)`, with ids `${rowId}-s1|s2`.
+- `entries` hold the order and breaks only. `schedule()` computes OT / WT / check-in and lanes on every render.
+- `manualOrder` is set by hand edits. Sort, generate, and settings with regenerate ask for confirmation before replacing it.
+
+## 3. Engine (extends pnwapnea §4)
+
+| Setting | Default pool / depth | Effect |
+|---|---|---|
+| `startTime` | 09:00 | First OT |
+| `spacingMode` | FIXED | FIXED: `intervalMin` (STA `staIntervalMin`). DIVE_TIME: ⌈longest dive time in the group⌉ + `bufferMin`, rounded up to `roundToMin`; fixed when the group has no dive time |
+| `lanes` / `staLanes` | 3 / 1, STA 2 | Parallel starts per OT. "Lane" in pool, "Zone" in depth |
+| `scheduleMode`, `round2Order`, `minRecoveryMin`, `roundBreakMin` | as pnwapnea | Two-start events |
+| `halftimeBreakMin` | 0 | Break at the OT-group boundary nearest the middle (ties: earlier), only if the list has no other break |
+| `groupBy` | DISCIPLINE / MIXED | DISCIPLINE: blocks in `blockOrder`. MIXED: one block (pool static stays its own segment, first or last as it sits in `blockOrder`) |
+| `blockOrder` | STA, DNF, DYNB, DYN, CWT, CWTB, CNF, FIM | Editable with ↑↓; only the current type's disciplines are shown |
+| `genderOrder` | NONE | Women or men first within a block |
+| `sortBy` / `sortDir` | AP ↑ / AP ↓ | AP, dive time (unknown last), last name, or registration order. AP ties go by dive time (pool), then name |
+
+**Column sort** (`sortEntriesBy`) reorders starts within each stretch between breaks and leaves the breaks where they are. **Drag and drop** (`moveEntryTo`) puts the dragged entry where the target was.
+
+## 4. Input formats
+
+- **CSV**, the Google Forms "Download responses" export. Recommended.
+- **Paste** cells copied from Google Sheets (tab-separated; CSV if there are no tabs). This skips the download.
+- **XLSX** reads every sheet and starts on the one that maps the most fields.
+- **Project JSON** is the app's own save file (`app: "startlistmaker"`, `version: 1`).
+- Limits are 5 MB and 2,000 rows per file and 20 MB per project file.
+
+Header mapping, value parsing, resubmission merging and the Day 1 / Day 2 picker are exactly pnwapnea's (its DESIGN.md §5).
+
+## 5. Exports
+
+`lib/export/table.ts` builds one table (columns: [#], Diver Name, Gender, Country, Discipline, AP, Time, OT, [WT], [Check-in], [Lane/Zone]; BREAK rows carry "BREAK · n min · resumes hh:mm"). It's used by:
+
+- **Print / Save as PDF**: the Finalize preview, with a print stylesheet (`no-print`, `print-area`, optional page break after each BREAK). It handles every script.
+- **Download PDF**: jsPDF + autotable, loaded on click. Letter, header colour per type (pool blue, depth green), page numbers and a legend. The standard fonts are Latin-1 only.
+- **CSV**: UTF-8 with BOM. Cells starting with `= + - @ tab CR` get a `'` prefix.
+- **XLSX**: write-excel-file, loaded on click, with the same escaping.
+- **Project JSON**: the full state.
+
+## 6. Security and privacy
+
+GitHub Pages serves static files and can't set response headers, so:
+
+- **CSP meta** (production builds): `default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; font-src 'self'; connect-src 'none'; worker-src 'self' blob:; manifest-src 'self'; form-action 'none'; base-uri 'none'; object-src 'none'`. `connect-src 'none'` means the page cannot send data anywhere. Samples are bundled rather than fetched. The build has no inline scripts (`modulePreload.polyfill: false`).
+- `<meta name="referrer" content="no-referrer">`. No analytics, CDNs or web fonts. Every dependency is bundled from the lockfile. CI runs `npm audit` and Dependabot is on.
+- **Can't be done with a meta tag:** `frame-ancestors` / `X-Frame-Options` (clickjacking) and HSTS headers. Risk is low because there's no login, no secrets, and no state-changing request. HTTPS is enforced in the Pages settings.
+- **Untrusted input:** uploaded files are parsed in memory with size and row limits. Stored state and project files are validated (`parseState`, zod/mini, bounded sizes) before use. Rendering goes through Preact only, with no `dangerouslySetInnerHTML`. Exported spreadsheets are formula-escaped.
+- **Storage:** `sessionStorage` by default, and `localStorage` only after "Remember on this device". "Clear all data" removes both. Nothing else is stored.
+- **Domain:** verify `startlistmaker.online` in GitHub account settings, which prevents another repo claiming it if Pages is ever turned off. Actions are pinned to SHAs and the deploy job has only `pages: write` + `id-token: write`.
+- **Sample data:** `scripts/anonymize.mjs` replaces names, emails, contacts, timestamps and PB dates, remaps countries, and jitters performances. It refuses to write if any source name word or email survives. Real exports stay out of the repo.
+
+## 7. Screens
+
+The layout is mobile-first: 16 px gutters, cards below `md`, tables from `md` up, 44 px touch targets. Light and dark mode follow the system. The style is copied from pnwapnea: slate surfaces, ocean-blue accent, amber and red for warnings and errors.
+
+- **Start list (desktop):** a table with drag handle + position number, sortable headers (Athlete, G, Country, Disc., AP, Time), OT/WT/Check-in, Lane, ↑↓ and + Break. Rows are tinted per OT group, and BREAK rows are dark with inline editing.
+- **Start list (mobile):** one card per OT group, position numbers to move, and a Sort select.
+- **Athletes:** a spreadsheet-like table (desktop) or one card per athlete (mobile). Messages appear under each row, with a "Only rows with problems" filter.
+- **Finalize:** export buttons and column toggles, then the sheet preview (ECAC layout: title, date · location, coloured header row, black BREAK rows, legend).
+
+## 8. Testing
+
+| Layer | Tool | What |
+|---|---|---|
+| Engine and import | Vitest | ported pnwapnea tests (ECAC layouts), spacing modes, half-time, block order, gender, sort keys, column sort, moveTo |
+| App logic | Vitest | registrations validation/import, reducer flows (demo, edits, append, sort, type switch), project round-trip and tampered-file rejection, export table / CSV escaping / filenames, anonymizer |
+| E2E | Playwright on the production build, desktop 1280 + Pixel 7 | CSP present and `fetch` blocked, demo → PDF/CSV, `#demo-pool`, upload → add athlete → generate → move → sort, drag and drop, paste, XLSX, project save/reopen, reload + Clear all data. Every test fails on an off-origin request or console error |
