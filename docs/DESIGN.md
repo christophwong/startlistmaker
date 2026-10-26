@@ -84,11 +84,11 @@ GitHub Pages serves static files and can't set response headers, so:
 
 ## 7. Screens
 
-The layout is mobile-first: 16 px gutters, cards below `md`, tables from `md` up, 44 px touch targets. Light and dark mode follow the system. The style is copied from pnwapnea: slate surfaces, ocean-blue accent, amber and red for warnings and errors.
+The layout is mobile-first: 16 px gutters, cards below `md`, tables from `md` up, 44 px touch targets. The app opens **light** (white page) whatever the OS setting; a header toggle switches to dark (`html.dark`, Tailwind `@custom-variant dark`), saved in localStorage only once toggled and removed by "Clear all data". The style is copied from pnwapnea: slate surfaces, ocean-blue accent, amber and red for warnings and errors.
 
 - **Start list (desktop):** a table with drag handle + position number, sortable headers (Athlete, G, Country, Disc., AP, Time), OT/WT/Check-in, Lane, ↑↓ and + Break. Rows are tinted per OT group, and BREAK rows are dark with inline editing.
 - **Start list (mobile):** one card per OT group, position numbers to move, and a Sort select.
-- **Athletes:** a spreadsheet-like table (desktop) or one card per athlete (mobile). Messages appear under each row, with a "Only rows with problems" filter.
+- **Athletes:** one spreadsheet at every width: a gridded white sheet with borderless inputs, grouped headers (Athlete / Start 1 / Start 2), a grey row-number gutter, and the row number and first name pinned while scrolling sideways (and the header while scrolling down, inside a 70vh box). Error cells are tinted red and warning cells amber, each with a corner marker like a spreadsheet comment. Hovering shows the message, and every message is also listed in the Notes column. "On list" and delete are on the right, and an "Only rows with problems" filter is above.
 - **Finalize:** export buttons and column toggles, then the sheet preview (ECAC layout: title, date · location, coloured header row, black BREAK rows, legend).
 
 ## 8. Testing

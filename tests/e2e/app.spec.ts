@@ -80,7 +80,7 @@ test("upload → fix a row → generate; reorder and sort", async ({ page }) => 
 
   // Add an athlete by hand.
   await page.getByRole("button", { name: "+ Add athlete" }).click();
-  const scope = isMobile(page) ? page.locator("ul.md\\:hidden > li").last() : page.locator("table tbody tr").filter({ has: page.locator('input[aria-label="First name"]') }).last();
+  const scope = page.locator("table tbody tr").filter({ has: page.locator('input[aria-label="First name"]') }).last();
   await scope.getByLabel("First name").fill("Test");
   await scope.getByLabel("Last name").fill("Diver");
   await scope.getByLabel(/Start 1 discipline/).selectOption("CWT");
@@ -164,4 +164,18 @@ test("work survives a reload in the same tab, and Clear all data removes it", as
   await expect(page.getByRole("heading", { name: /Freediving start lists/ })).toBeVisible();
   const stored = await page.evaluate(() => [sessionStorage.length, localStorage.length]);
   expect(stored).toEqual([0, 0]);
+});
+
+test("opens light; the dark toggle sticks across reloads until Clear all data", async ({ page }) => {
+  await page.goto("/#demo");
+  await expect(page.getByRole("heading", { name: "Start list" })).toBeVisible();
+  const html = page.locator("html");
+  await expect(html).not.toHaveClass(/dark/);
+  await page.getByRole("button", { name: /Dark/ }).click();
+  await expect(html).toHaveClass(/dark/);
+  await page.reload();
+  await expect(html).toHaveClass(/dark/);
+  page.once("dialog", (d) => d.accept());
+  await page.getByRole("button", { name: "Clear all data" }).click();
+  expect(await page.evaluate(() => localStorage.length)).toBe(0);
 });

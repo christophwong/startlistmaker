@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Dark mode follows the header toggle (html.dark), not the OS setting. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   /* System fonts only: no third-party font requests. */
   --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
@@ -12,8 +15,11 @@
 
 @layer base {
   html {
-    @apply bg-slate-50 text-slate-900 antialiased dark:bg-slate-950 dark:text-slate-100;
-    color-scheme: light dark;
+    @apply bg-white text-slate-900 antialiased dark:bg-slate-950 dark:text-slate-100;
+    color-scheme: light;
+  }
+  html.dark {
+    color-scheme: dark;
   }
   h1, h2, h3 {
     @apply font-semibold tracking-tight;

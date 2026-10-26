@@ -8,6 +8,7 @@ import { FinalStep } from "~/steps/FinalStep";
 import { ListStep } from "~/steps/ListStep";
 import { MapStep } from "~/steps/MapStep";
 import { StartStep } from "~/steps/StartStep";
+import { applyTheme, getTheme } from "~/theme";
 
 const STEPS: [Step, string][] = [
   ["start", "Input"],
@@ -39,6 +40,7 @@ function PrivacyNote() {
 export default function App() {
   const [state, dispatch] = useReducer(reducer, initialState, () => loadState() ?? initialState);
   const [remember, setRememberState] = useState(getRemember);
+  const [theme, setTheme] = useState(getTheme);
   const mainRef = useRef<HTMLElement>(null);
 
   useEffect(() => saveState(state, remember), [state, remember]);
@@ -80,6 +82,11 @@ export default function App() {
     dispatch({ type: "reset" });
   };
   const hasData = !!state.source || state.registrations.length > 0;
+  const toggleTheme = () => {
+    const next = theme === "dark" ? "light" : "dark";
+    applyTheme(next, true);
+    setTheme(next);
+  };
 
   return (
     <div className="mx-auto max-w-6xl px-4 pb-16 sm:px-6">
@@ -100,6 +107,9 @@ export default function App() {
               </Button>
             </>
           )}
+          <Button variant="ghost" size="sm" onClick={toggleTheme} aria-pressed={theme === "dark"} title="Switch between light and dark">
+            {theme === "dark" ? "☀ Light" : "☾ Dark"}
+          </Button>
         </div>
       </header>
 

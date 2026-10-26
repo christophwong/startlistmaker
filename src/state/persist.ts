@@ -1,6 +1,7 @@
 import * as z from "zod/mini";
 import { DEPTH_DISCIPLINES, POOL_DISCIPLINES } from "~/lib/disciplines";
 import { MAX_ROWS } from "~/lib/import/file";
+import { THEME_KEY } from "~/theme";
 import { initialState, type AppState } from "./store";
 
 /**
@@ -176,6 +177,7 @@ export function clearStorage() {
     try {
       storage(kind)?.removeItem(STATE_KEY);
       storage(kind)?.removeItem(REMEMBER_KEY);
+      storage(kind)?.removeItem(THEME_KEY);
     } catch {
       // ignore
     }

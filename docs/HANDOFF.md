@@ -33,6 +33,13 @@ These are recorded in PLAN.md → Decisions. Don't re-ask them.
 - New settings: `spacingMode` / `bufferMin` / `roundToMin` (dive time + buffer) and `halftimeBreakMin`.
 - New edits: `moveEntryTo` and `sortEntriesBy`. `EngineStart` gained optional `gender` and `order`.
 
+## Review round 1 (2026-10-25, uncommitted)
+
+The user is testing the local preview before making the repo public (decided: public). Changes from their feedback:
+- The app opens light, with a ☾ Dark / ☀ Light header toggle (`src/theme.ts`).
+- The Athletes step is a spreadsheet (`src/steps/DataStep.tsx`), and the mobile cards are gone.
+- Checks: typecheck clean, 165 unit tests, 17 e2e pass + 1 skipped (a new theme test).
+
 ## Next up
 
 1. The repo is https://github.com/christophwong/startlistmaker and is **private** while the user reviews and tests it. CI runs the checks and skips the deploy while it's private (`!github.event.repository.private` in `pages.yml`).

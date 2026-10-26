@@ -1,4 +1,4 @@
-import { useMemo, useState, type ComponentProps } from "react";
+import { useMemo, useState, type ComponentProps, type ReactNode } from "react";
 import { Alert, Badge, Button, Card, cx } from "~/components/ui";
 import { disciplinesFor, isTimedDiscipline, normalizeDiscipline, type CompetitionType } from "~/lib/disciplines";
 import { checkRow, type CellKey, type RegRow, type RegStart, type RowCheck } from "~/lib/registrations";
@@ -8,29 +8,55 @@ import type { Action, AppState } from "~/state/store";
  * Editable registrations: fix what the import couldn't read, fill in gaps,
  * add or leave out athletes. Starts are derived from these rows, so a
  * regenerate (or "Append unscheduled") picks the changes up.
+ *
+ * Laid out as a spreadsheet: borderless inputs in a gridded table, problem
+ * cells tinted with a corner marker, and the messages in a Notes column.
  */
 
-const cellClass =
-  "block h-9 w-full min-w-0 rounded-md border-0 bg-white px-2 text-sm ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-brand-600 dark:bg-slate-900 dark:ring-slate-700";
+// Separate borders (right/bottom per cell) so the sticky header and columns keep their grid lines.
+const grid = "border-r border-b border-slate-200 dark:border-slate-700";
+const headCell = cx(grid, "bg-slate-100 px-2 py-1.5 text-left text-xs font-medium whitespace-nowrap text-slate-600 dark:bg-slate-800 dark:text-slate-300");
+const plain = "bg-white dark:bg-slate-900";
+const inputClass =
+  "block h-8 w-full min-w-0 border-0 bg-transparent px-2 text-sm text-inherit outline-none placeholder:text-slate-300 focus:bg-white focus:ring-2 focus:ring-brand-600 focus:ring-inset dark:placeholder:text-slate-600 dark:focus:bg-slate-950";
+const corner = "after:pointer-events-none after:absolute after:top-0 after:right-0 after:border-[5px] after:border-transparent";
 
-function tone(check: RowCheck, key: CellKey) {
-  if (check.errors[key]) return "ring-2 ring-red-500 dark:ring-red-500";
-  if (check.warnings[key]) return "ring-amber-400 dark:ring-amber-500";
-  return "";
+/** Cell background: red for an error, amber for a warning, white otherwise. */
+function tone(check: RowCheck | undefined, key: CellKey | undefined) {
+  if (check && key && check.errors[key]) return cx("bg-red-50 dark:bg-red-950/60", corner, "after:border-t-red-500 after:border-r-red-500");
+  if (check && key && check.warnings[key]) return cx("bg-amber-50 dark:bg-amber-950/40", corner, "after:border-t-amber-400 after:border-r-amber-400");
+  return plain;
 }
 
-function TextCell({ check, k, ...input }: ComponentProps<"input"> & { check: RowCheck; k: CellKey }) {
+/** Pinned next to the row number so the athlete stays in view when scrolling sideways. */
+const pinned = "sticky left-10 z-10 shadow-[inset_-1px_0_0_var(--color-slate-300)] dark:shadow-[inset_-1px_0_0_var(--color-slate-600)]";
+
+function Cell({
+  check,
+  k,
+  pin,
+  className,
+  children,
+}: {
+  check?: RowCheck;
+  k?: CellKey;
+  pin?: boolean;
+  className?: string;
+  children: ReactNode;
+}) {
   return (
-    <input
-      className={cx(cellClass, tone(check, k))}
-      aria-invalid={check.errors[k] ? true : undefined}
-      title={check.errors[k] ?? check.warnings[k]}
-      {...input}
-    />
+    <td className={cx(grid, "p-0", pin ? pinned : "relative", tone(check, k), className)} title={k && (check?.errors[k] ?? check?.warnings[k])}>
+      {children}
+    </td>
   );
 }
 
-function OptionCell({
+function TextInput({ check, k, ...input }: ComponentProps<"input"> & { check: RowCheck; k: CellKey }) {
+  // size={1}: drop the input's built-in ~20ch width so the column header sets it.
+  return <input className={inputClass} size={1} aria-invalid={check.errors[k] ? true : undefined} {...input} />;
+}
+
+function OptionInput({
   check,
   k,
   value,
@@ -53,8 +79,7 @@ function OptionCell({
       onChange={(e) => onChange(e.target.value)}
       aria-label={label}
       aria-invalid={check.errors[k] ? true : undefined}
-      title={check.errors[k] ?? check.warnings[k]}
-      className={cx(cellClass, "px-1", tone(check, k))}
+      className={cx(inputClass, "cursor-pointer px-1")}
     >
       <option value="">—</option>
       {!known && <option value={value}>{value} (?)</option>}
@@ -87,8 +112,8 @@ function StartCells({
   const unit = timed ? "m:ss" : "m";
   return (
     <>
-      <td className="min-w-[5.5rem] p-0.5">
-        <OptionCell
+      <Cell check={check} k={k("discipline")} className={n === 1 ? "border-l border-l-slate-300 dark:border-l-slate-600" : undefined}>
+        <OptionInput
           check={check}
           k={k("discipline")}
           value={s.discipline}
@@ -96,15 +121,15 @@ function StartCells({
           label={`Start ${n} discipline, ${name}`}
           onChange={(discipline) => onStart(n, { discipline })}
         />
-      </td>
-      <td className="p-0.5">
-        <TextCell check={check} k={k("ap")} value={s.ap} placeholder={unit} aria-label={`Start ${n} AP, ${name}`} onChange={(e) => onStart(n, { ap: e.target.value })} />
-      </td>
-      <td className="p-0.5">
-        <TextCell check={check} k={k("pb")} value={s.pb} placeholder={unit} aria-label={`Start ${n} PB, ${name}`} onChange={(e) => onStart(n, { pb: e.target.value })} />
-      </td>
-      <td className="p-0.5">
-        <TextCell
+      </Cell>
+      <Cell check={check} k={k("ap")}>
+        <TextInput check={check} k={k("ap")} value={s.ap} placeholder={unit} aria-label={`Start ${n} AP, ${name}`} onChange={(e) => onStart(n, { ap: e.target.value })} />
+      </Cell>
+      <Cell check={check} k={k("pb")}>
+        <TextInput check={check} k={k("pb")} value={s.pb} placeholder={unit} aria-label={`Start ${n} PB, ${name}`} onChange={(e) => onStart(n, { pb: e.target.value })} />
+      </Cell>
+      <Cell check={check} k={k("diveTime")}>
+        <TextInput
           check={check}
           k={k("diveTime")}
           value={s.diveTime}
@@ -112,28 +137,27 @@ function StartCells({
           aria-label={`Start ${n} dive time, ${name}`}
           onChange={(e) => onStart(n, { diveTime: e.target.value })}
         />
-      </td>
+      </Cell>
     </>
   );
 }
 
-function Messages({ check }: { check: RowCheck }) {
+function Notes({ check }: { check: RowCheck }) {
   const errors = Object.values(check.errors);
   const warnings = Object.values(check.warnings);
-  if (!errors.length && !warnings.length) return null;
   return (
-    <p className="text-xs">
+    <ul className="space-y-0.5 px-2 py-1 text-xs leading-snug">
       {errors.map((m) => (
-        <span key={m} className="mr-3 text-red-600 dark:text-red-400">
+        <li key={m} className="text-red-700 dark:text-red-400">
           {m}
-        </span>
+        </li>
       ))}
       {warnings.map((m) => (
-        <span key={m} className="mr-3 text-amber-700 dark:text-amber-300">
+        <li key={m} className="text-amber-700 dark:text-amber-300">
           {m}
-        </span>
+        </li>
       ))}
-    </p>
+    </ul>
   );
 }
 
@@ -167,10 +191,10 @@ export function DataStep({ state, dispatch }: { state: AppState; dispatch(a: Act
 
   const startHead = (n: 1 | 2) => (
     <>
-      <th className="px-1 py-1">S{n} disc.</th>
-      <th className="px-1 py-1">AP</th>
-      <th className="px-1 py-1">PB</th>
-      <th className="px-1 py-1">Time</th>
+      <th className={cx(headCell, "min-w-24", n === 1 && "border-l border-l-slate-300 dark:border-l-slate-600")}>Discipline</th>
+      <th className={cx(headCell, "min-w-20")}>AP</th>
+      <th className={cx(headCell, "min-w-20")}>PB</th>
+      <th className={cx(headCell, "min-w-20")}>Dive time</th>
     </>
   );
 
@@ -180,7 +204,8 @@ export function DataStep({ state, dispatch }: { state: AppState; dispatch(a: Act
         <div>
           <h2 className="text-xl">Athletes</h2>
           <p className="text-sm text-slate-500">
-            Fix anything the file got wrong. Red cells block a start; amber ones are fine to leave.
+            Click a cell to edit it. Red cells keep a start off the list; amber ones are fine to leave. Hover a marked cell, or
+            read the Notes column, for what's wrong.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -225,116 +250,93 @@ export function DataStep({ state, dispatch }: { state: AppState; dispatch(a: Act
         )}
       </Card>
 
-      {/* Mobile: one card per athlete */}
-      <ul className="space-y-3 md:hidden">
-        {shown.map((r) => {
-          const check = checks.get(r.id)!;
-          return (
-            <li key={r.id} className={cx("space-y-2 rounded-xl bg-white p-3 ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800", r.excluded && "opacity-50")}>
-              <div className="flex items-center justify-between text-xs text-slate-500">
-                <span>{r.rowNumber ? `Row ${r.rowNumber}` : "Added"}</span>
-                <span className="flex items-center gap-3">
-                  <label className="flex items-center gap-1">
-                    <input type="checkbox" checked={!r.excluded} onChange={(e) => update(r.id, { excluded: !e.target.checked })} className="accent-brand-700" />
-                    On list
-                  </label>
-                  <button type="button" className="text-red-600" onClick={() => confirm("Delete this athlete?") && dispatch({ type: "deleteRow", id: r.id })}>
-                    Delete
-                  </button>
-                </span>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <TextCell check={check} k="name" value={r.firstName} placeholder="First name" aria-label="First name" onChange={(e) => update(r.id, { firstName: e.target.value })} />
-                <TextCell check={check} k="name" value={r.lastName} placeholder="Last name" aria-label="Last name" onChange={(e) => update(r.id, { lastName: e.target.value })} />
-                <OptionCell check={check} k="gender" value={r.gender} options={["F", "M"]} label="Gender" onChange={(gender) => update(r.id, { gender })} />
-                <input className={cellClass} value={r.country} placeholder="Country" aria-label="Country" onChange={(e) => update(r.id, { country: e.target.value })} />
-              </div>
-              {([1, 2] as const).slice(0, maxStarts).map((n) => (
-                <table key={n} className="w-full table-fixed">
-                  <thead className="text-left text-xs text-slate-500">
-                    <tr>{startHead(n)}</tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <StartCells row={r} n={n} check={check} type={type} onStart={updateStart(r)} />
-                    </tr>
-                  </tbody>
-                </table>
-              ))}
-              <Messages check={check} />
-            </li>
-          );
-        })}
-      </ul>
-
-      {/* Desktop: spreadsheet-like table */}
-      <div className="hidden overflow-x-auto rounded-xl bg-white ring-1 ring-slate-200 md:block dark:bg-slate-900 dark:ring-slate-800">
-        <table className="w-full min-w-[60rem] text-left text-sm">
-          <thead className="bg-slate-50 text-xs text-slate-500 uppercase dark:bg-slate-800/50">
+      <p className="text-xs text-slate-500 md:hidden">Scroll sideways for the start columns.</p>
+      <div className="max-h-[70vh] overflow-auto border-t border-l border-slate-300 dark:border-slate-700">
+        <table className="w-max min-w-full border-separate border-spacing-0 text-sm">
+          <thead className="sticky top-0 z-20">
             <tr>
-              <th className="px-2 py-2" title="On the start list">On</th>
-              <th className="px-1 py-1">Row</th>
-              <th className="px-1 py-1">First name</th>
-              <th className="px-1 py-1">Last name</th>
-              <th className="w-14 px-1 py-1">G</th>
-              <th className="px-1 py-1">Country</th>
-              {startHead(1)}
-              {maxStarts > 1 && startHead(2)}
-              <th className="px-1 py-1">
+              <th rowSpan={2} className={cx(headCell, "sticky left-0 z-10 w-10 max-w-10 min-w-10 text-center")} title="Row in the file">
+                #
+              </th>
+              <th colSpan={4} className={headCell}>
+                Athlete
+              </th>
+              <th colSpan={4} className={cx(headCell, "border-l border-l-slate-300 dark:border-l-slate-600")}>
+                Start 1
+              </th>
+              {maxStarts > 1 && (
+                <th colSpan={4} className={cx(headCell, "border-l border-l-slate-300 dark:border-l-slate-600")}>
+                  Start 2
+                </th>
+              )}
+              <th rowSpan={2} className={cx(headCell, "text-center")} title="Include this athlete on the start list">
+                On list
+              </th>
+              <th rowSpan={2} className={cx(headCell, "min-w-64")}>
+                Notes
+              </th>
+              <th rowSpan={2} className={cx(headCell, "w-10")}>
                 <span className="sr-only">Delete</span>
               </th>
+            </tr>
+            <tr>
+              <th className={cx(headCell, pinned, "min-w-36")}>First name</th>
+              <th className={cx(headCell, "min-w-36")}>Last name</th>
+              <th className={cx(headCell, "min-w-16")}>Gender</th>
+              <th className={cx(headCell, "min-w-28")}>Country</th>
+              {startHead(1)}
+              {maxStarts > 1 && startHead(2)}
             </tr>
           </thead>
           <tbody>
             {shown.map((r) => {
               const check = checks.get(r.id)!;
-              const hasMessages = Object.keys(check.errors).length + Object.keys(check.warnings).length > 0;
-              return [
-                <tr key={r.id} className={cx("border-t border-slate-100 dark:border-slate-800", r.excluded && "opacity-50")}>
-                  <td className="px-2">
+              const name = `${r.firstName} ${r.lastName}`.trim() || "new athlete";
+              return (
+                <tr key={r.id} className={cx(r.excluded && "text-slate-400 dark:text-slate-500")}>
+                  <td className={cx(grid, "sticky left-0 z-10 w-10 max-w-10 min-w-10 bg-slate-50 text-center text-xs text-slate-400 tabular-nums dark:bg-slate-800")}>
+                    {r.rowNumber ?? "new"}
+                  </td>
+                  <Cell check={check} k="name" pin>
+                    <TextInput check={check} k="name" value={r.firstName} placeholder="First" aria-label="First name" onChange={(e) => update(r.id, { firstName: e.target.value })} />
+                  </Cell>
+                  <Cell check={check} k="name">
+                    <TextInput check={check} k="name" value={r.lastName} placeholder="Last" aria-label="Last name" onChange={(e) => update(r.id, { lastName: e.target.value })} />
+                  </Cell>
+                  <Cell check={check} k="gender">
+                    <OptionInput check={check} k="gender" value={r.gender} options={["F", "M"]} label={`Gender, ${name}`} onChange={(gender) => update(r.id, { gender })} />
+                  </Cell>
+                  <Cell>
+                    <input className={inputClass} size={1} value={r.country} aria-label={`Country, ${name}`} onChange={(e) => update(r.id, { country: e.target.value })} />
+                  </Cell>
+                  <StartCells row={r} n={1} check={check} type={type} onStart={updateStart(r)} />
+                  {maxStarts > 1 && <StartCells row={r} n={2} check={check} type={type} onStart={updateStart(r)} />}
+                  <Cell className="text-center">
                     <input
                       type="checkbox"
                       checked={!r.excluded}
                       onChange={(e) => update(r.id, { excluded: !e.target.checked })}
-                      aria-label={`Include ${r.firstName} ${r.lastName}`}
+                      aria-label={`Include ${name}`}
+                      title="On the start list"
                       className="accent-brand-700"
                     />
-                  </td>
-                  <td className="px-1 text-xs text-slate-400 tabular-nums">{r.rowNumber ?? "new"}</td>
-                  <td className="min-w-28 p-0.5">
-                    <TextCell check={check} k="name" value={r.firstName} aria-label="First name" onChange={(e) => update(r.id, { firstName: e.target.value })} />
-                  </td>
-                  <td className="min-w-28 p-0.5">
-                    <TextCell check={check} k="name" value={r.lastName} aria-label="Last name" onChange={(e) => update(r.id, { lastName: e.target.value })} />
-                  </td>
-                  <td className="p-0.5">
-                    <OptionCell check={check} k="gender" value={r.gender} options={["F", "M"]} label="Gender" onChange={(gender) => update(r.id, { gender })} />
-                  </td>
-                  <td className="min-w-20 p-0.5">
-                    <input className={cellClass} value={r.country} aria-label="Country" onChange={(e) => update(r.id, { country: e.target.value })} />
-                  </td>
-                  <StartCells row={r} n={1} check={check} type={type} onStart={updateStart(r)} />
-                  {maxStarts > 1 && <StartCells row={r} n={2} check={check} type={type} onStart={updateStart(r)} />}
-                  <td className="px-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      aria-label={`Delete ${r.firstName} ${r.lastName}`}
+                  </Cell>
+                  <Cell>
+                    <Notes check={check} />
+                  </Cell>
+                  <Cell className="text-center">
+                    <button
+                      type="button"
+                      aria-label={`Delete ${name}`}
+                      title="Delete athlete"
+                      className="h-8 w-full text-slate-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950"
                       onClick={() => confirm("Delete this athlete?") && dispatch({ type: "deleteRow", id: r.id })}
                     >
                       ✕
-                    </Button>
-                  </td>
-                </tr>,
-                hasMessages && (
-                  <tr key={`${r.id}-m`} className={cx(r.excluded && "opacity-50")}>
-                    <td />
-                    <td colSpan={maxStarts > 1 ? 14 : 10} className="px-1 pb-1.5">
-                      <Messages check={check} />
-                    </td>
-                  </tr>
-                ),
-              ];
+                    </button>
+                  </Cell>
+                </tr>
+              );
             })}
           </tbody>
         </table>

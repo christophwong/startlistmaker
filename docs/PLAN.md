@@ -21,6 +21,8 @@ A light, client-only version of the pnwapnea start-list generator, hosted on Git
 | Half-time break | Auto-inserted at the OT-group boundary nearest the middle, only when the list has no other break |
 | Column sort | Sorts starts within each stretch between breaks; breaks stay put |
 | Grouping | `groupBy` DISCIPLINE (block order editable) or MIXED (pool static stays apart, first or last per block order); optional women/men first; sort key AP / dive time / name / registration, ascending or descending |
+| Theme | Light by default (the user found the system-following dark too dark); a header toggle for dark mode |
+| Athletes editor | Spreadsheet layout at all widths (gridded, borderless cells, Notes column), replacing the bordered inputs and mobile cards |
 | Spacing | FIXED interval, or DIVE_TIME = longest dive in the OT group + buffer, rounded up to 1/5/10 min (falls back to fixed when no dive time) |
 
 ## TODO
@@ -44,6 +46,10 @@ A light, client-only version of the pnwapnea start-list generator, hosted on Git
 - [x] Finalize step: print preview, Print / Save as PDF, Download PDF, CSV, XLSX, Save project; column toggles; page per break
 - [x] Persistence (session / remember / clear), `#demo` links
 - [x] Anonymized samples + `scripts/anonymize.mjs` with leak check
+
+### Review feedback
+- [x] Light by default + dark mode toggle
+- [x] Athletes step as a spreadsheet
 
 ### Phase 4: ship
 - [x] GitHub Actions: checks + Pages deploy (actions pinned to SHAs), Dependabot
