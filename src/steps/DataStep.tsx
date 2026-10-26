@@ -1,10 +1,11 @@
 import { Fragment, useMemo, useState, type ComponentProps, type ReactNode } from "react";
 import { DayBadge } from "~/components/day-tabs";
-import { TrashIcon } from "~/components/icons";
-import { Alert, Badge, Button, Card, cx } from "~/components/ui";
+import { ArrowIcon, SortIcon, TrashIcon } from "~/components/icons";
+import { Alert, Button, cx } from "~/components/ui";
 import { disciplinesFor, isTimedDiscipline, normalizeDiscipline, type CompetitionType } from "~/lib/disciplines";
 import { checkRows, onList, type CellKey, type RegRow, type RegStart, type RowCheck } from "~/lib/registrations";
 import type { Action, AppState } from "~/state/store";
+import { REPLACE_ORDER } from "./ListStep";
 
 /**
  * Editable registrations: fix what the import couldn't read, fill in gaps,
@@ -18,9 +19,10 @@ import type { Action, AppState } from "~/state/store";
 // Separate borders (right/bottom per cell) so the sticky header and columns keep their grid lines.
 const grid = "border-r border-b border-line";
 const headCell = cx(grid, "bg-sunken px-2 py-1.5 text-left text-xs font-medium whitespace-nowrap text-ink-2");
+const groupHead = cx(headCell, "text-[11px] font-bold tracking-wider text-muted uppercase");
 const plain = "bg-surface";
 const inputClass =
-  "block h-8 w-full min-w-0 border-0 bg-transparent px-2 text-sm text-inherit outline-none placeholder:text-muted/50 focus:bg-field focus:ring-2 focus:ring-accent focus:ring-inset";
+  "block h-9 w-full min-w-0 border-0 bg-transparent px-2 text-sm text-inherit outline-none placeholder:text-muted/50 focus:bg-field focus:ring-2 focus:ring-accent focus:ring-inset";
 const corner = "after:pointer-events-none after:absolute after:top-0 after:right-0 after:border-[5px] after:border-transparent";
 
 /** Cell background: red for an error, amber for a warning, white otherwise. */
@@ -170,7 +172,22 @@ function Notes({ check, day }: { check: RowCheck; day?: 1 | 2 }) {
   );
 }
 
-const setDayOff = (row: RegRow, day: 1 | 2, off: boolean): [boolean, boolean] => {
+/** A count above the sheet: plain, or red / amber with a coloured key. */
+function Chip({ tone, children }: { tone?: "err" | "warn"; children: ReactNode }) {
+  return (
+    <span
+      className={cx(
+        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1",
+        tone === "err" ? "bg-err-bg font-semibold text-err-fg" : tone === "warn" ? "bg-warn-bg font-semibold text-warn-fg" : "bg-surface ring-1 ring-line ring-inset",
+      )}
+    >
+      {tone && <span aria-hidden className={cx("size-2 rounded-[2px]", tone === "err" ? "bg-err-fg" : "bg-warn-fg")} />}
+      {children}
+    </span>
+  );
+}
+
+const setDayOff =(row: RegRow, day: 1 | 2, off: boolean): [boolean, boolean] => {
   const dayOff: [boolean, boolean] = [...(row.dayOff ?? [false, false])];
   dayOff[day - 1] = off;
   return dayOff;
@@ -202,8 +219,18 @@ export function DataStep({ state, dispatch }: { state: AppState; dispatch(a: Act
     update(row.id, { starts });
   };
   const generate = () => {
-    if (state.entries.length && state.manualOrder && !confirm("Regenerate the start list? Manual reordering and breaks will be replaced.")) return;
+    if (state.entries.length && state.manualOrder && !confirm(REPLACE_ORDER)) return;
     dispatch({ type: "generate" });
+  };
+  // New rows go at the end: bring the new one into view and start typing in it.
+  const addRow = () => {
+    const id = `n${state.nextId}`;
+    dispatch({ type: "addRow" });
+    setTimeout(() => {
+      const row = document.querySelector<HTMLElement>(`[data-row="${id}"]`);
+      row?.scrollIntoView({ block: "nearest" });
+      row?.querySelector<HTMLElement>("input")?.focus({ preventScroll: true });
+    });
   };
 
   const startHead = (n: 1 | 2, first: boolean) => (
@@ -217,12 +244,12 @@ export function DataStep({ state, dispatch }: { state: AppState; dispatch(a: Act
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h2 className="flex items-center gap-2 text-xl">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div className="min-w-0 flex-1 basis-80">
+          <h2 className="flex items-center gap-2 text-2xl font-bold tracking-tight sm:text-[28px]">
             Athletes {day && <DayBadge day={day} />}
           </h2>
-          <p className="text-sm text-muted">
+          <p className="mt-1 text-muted">
             Fix the red cells: those starts stay off the list until they're fixed. Amber cells are only warnings. The Notes
             column says what's wrong.
           </p>
@@ -234,61 +261,86 @@ export function DataStep({ state, dispatch }: { state: AppState; dispatch(a: Act
             </Button>
           )}
           <Button onClick={generate} disabled={startCount === 0}>
-            {state.entries.length ? "Regenerate start list" : "Generate start list"}
+            {state.entries.length ? (
+              <>
+                <SortIcon /> Re-sort list
+              </>
+            ) : (
+              <>
+                Generate start list <ArrowIcon />
+              </>
+            )}
           </Button>
         </div>
       </div>
 
-      <Card className="space-y-3 !p-4">
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-          <span>
-            <strong className="tabular-nums">{included.length}</strong> athletes · <strong className="tabular-nums">{startCount}</strong> starts
-            {day && ` on Day ${day}`}
-          </span>
-          {notDiving > 0 && <span className="text-muted">{notDiving} not diving Day {day}</span>}
-          {withErrors.length > 0 && <Badge tone="red">{withErrors.length} with errors</Badge>}
-          {withWarnings.length > 0 && <Badge tone="amber">{withWarnings.length} with warnings</Badge>}
-          <label className="flex items-center gap-1.5">
-            <input type="checkbox" checked={filter === "problems"} onChange={(e) => setFilter(e.target.checked ? "problems" : "all")} className="accent-accent" />
-            Only rows with problems
-          </label>
-          {!day && (
-            <label className="flex items-center gap-1.5">
-              <input
-                type="checkbox"
-                checked={maxStarts === 2}
-                onChange={(e) => dispatch({ type: "maxStarts", maxStarts: e.target.checked ? 2 : 1 })}
-                className="accent-accent"
-              />
-              Two starts per athlete
-            </label>
-          )}
-          <span className="text-muted">{type === "POOL" ? "Pool" : "Depth"} competition</span>
-        </div>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+        <Chip>
+          <strong className="tabular-nums">{included.length}</strong> athlete{included.length === 1 ? "" : "s"}
+          {startCount !== included.length && (
+            <>
+              {" "}
+              · <strong className="tabular-nums">{startCount}</strong> starts
+            </>
+          )}{" "}
+          on the {day ? `Day ${day} ` : ""}list
+        </Chip>
         {withErrors.length > 0 && (
-          <Alert tone="error">
-            {withErrors.length} athlete{withErrors.length === 1 ? " has" : "s have"} a problem that keeps a start off the list:{" "}
-            {[...new Set(withErrors.flatMap((r) => Object.keys(checks.get(r.id)!.errors) as CellKey[]))]
-              .map((k) => label(k, startWord))
-              .join(", ")}
-            .
-          </Alert>
+          <Chip tone="err">
+            {withErrors.length} to fix
+          </Chip>
         )}
-      </Card>
+        {withWarnings.length > 0 && (
+          <Chip tone="warn">
+            {withWarnings.length} with warnings
+          </Chip>
+        )}
+        {notDiving > 0 && <span className="text-muted">{notDiving} not diving Day {day}</span>}
+        <span className="text-muted">{type === "POOL" ? "Pool" : "Depth"} competition</span>
+        <span className="hidden flex-1 sm:block" />
+        <label className="flex min-h-11 items-center gap-2">
+          <input type="checkbox" checked={filter === "problems"} onChange={(e) => setFilter(e.target.checked ? "problems" : "all")} className="size-4 accent-accent" />
+          Only rows with problems
+        </label>
+        {!day && (
+          <label className="flex min-h-11 items-center gap-2">
+            <input
+              type="checkbox"
+              checked={maxStarts === 2}
+              onChange={(e) => dispatch({ type: "maxStarts", maxStarts: e.target.checked ? 2 : 1 })}
+              className="size-4 accent-accent"
+            />
+            Two starts per athlete
+          </label>
+        )}
+        <Button variant="secondary" size="sm" onClick={addRow}>
+          + Add athlete
+        </Button>
+      </div>
+      {withErrors.length > 0 && (
+        <Alert tone="error">
+          {withErrors.length} athlete{withErrors.length === 1 ? " has" : "s have"} a problem that keeps a start off the list:{" "}
+          {[...new Set(withErrors.flatMap((r) => Object.keys(checks.get(r.id)!.errors) as CellKey[]))]
+            .map((k) => label(k, startWord))
+            .join(", ")}
+          .
+        </Alert>
+      )}
 
       <p className="text-xs text-muted md:hidden">Scroll sideways for the start columns.</p>
-      <div className="max-h-[70vh] overflow-auto border-t border-l border-line-strong">
-        <table className="w-max min-w-full border-separate border-spacing-0 text-sm">
+      {/* The box draws the outer edge, so the last column and row drop their own lines. */}
+      <div className="max-h-[70vh] overflow-auto rounded-[10px] border border-line-strong bg-surface">
+        <table className="w-max min-w-full border-separate border-spacing-0 text-sm [&_tbody_tr:last-child>*]:border-b-0 [&_tbody_tr>:last-child]:border-r-0 [&_thead_tr:first-child>:last-child]:border-r-0">
           <thead className="sticky top-0 z-20">
             <tr>
               <th rowSpan={2} className={cx(headCell, "sticky left-0 z-10 w-10 max-w-10 min-w-10 text-center")} title="Row in the file">
                 #
               </th>
-              <th colSpan={4} className={headCell}>
+              <th colSpan={4} className={groupHead}>
                 Athlete
               </th>
               {startGroups.map((n) => (
-                <th key={n} colSpan={4} className={cx(headCell, "border-l border-l-line-strong")}>
+                <th key={n} colSpan={4} className={cx(groupHead, "border-l border-l-line-strong")}>
                   {startWord} {n}
                 </th>
               ))}
@@ -357,7 +409,7 @@ export function DataStep({ state, dispatch }: { state: AppState; dispatch(a: Act
                       type="button"
                       aria-label={`Delete ${name}`}
                       title="Delete athlete"
-                      className="inline-flex h-8 w-full items-center justify-center text-muted hover:bg-err-bg hover:text-err-fg"
+                      className="inline-flex h-9 w-full items-center justify-center text-muted hover:bg-err-bg hover:text-err-fg"
                       onClick={() => confirm(`Delete ${name}? This can't be undone.`) && dispatch({ type: "deleteRow", id: r.id })}
                     >
                       <TrashIcon />
@@ -370,10 +422,6 @@ export function DataStep({ state, dispatch }: { state: AppState; dispatch(a: Act
         </table>
       </div>
       {shown.length === 0 && <p className="text-sm text-muted">Nothing to fix.</p>}
-
-      <Button variant="secondary" onClick={() => dispatch({ type: "addRow" })}>
-        + Add athlete
-      </Button>
     </div>
   );
 }

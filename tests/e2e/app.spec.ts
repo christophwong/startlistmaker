@@ -143,6 +143,8 @@ test("upload → fix a row → generate; reorder and sort", async ({ page }) => 
   // Add an athlete by hand.
   await page.getByRole("button", { name: "+ Add athlete" }).click();
   const scope = page.locator("table tbody tr").filter({ has: page.locator('input[aria-label="First name"]') }).last();
+  await expect(scope.getByLabel("First name")).toBeFocused();
+  await expect(page.getByText("1 to fix")).toBeVisible();
   await scope.getByLabel("First name").fill("Test");
   await scope.getByLabel("Last name").fill("Diver");
   await scope.getByLabel(/Start 1 discipline/).selectOption("CWT");

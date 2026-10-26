@@ -13,7 +13,7 @@ import { breakSchema, fieldErrors, settingsSchema, type FieldErrors } from "~/li
 import { useStartList } from "~/state/derived";
 import type { Action, AppState } from "~/state/store";
 
-const REPLACE_ORDER = "Replace your manual order and breaks?";
+export const REPLACE_ORDER ="Replace your manual order and breaks?";
 
 /** Name, day, type, date and location; "Edit details" opens the fields in place. */
 export function EventCard({ state, dispatch }: { state: AppState; dispatch(a: Action): void }) {

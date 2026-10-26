@@ -34,7 +34,7 @@ Key points that span files:
 - **Registrations are the source of truth for athletes.** Starts are derived with `rowsToStarts`, and start ids are `${rowId}-s{1|2}`, so fixing data keeps a start's place in the list.
 - **Settings shape.** `StartListSettings` lives in `lib/startlist/types.ts`. Adding a setting touches the type, `defaults.ts`, `settingsSchema` (`lib/validation.ts`), the stored-state schema in `state/persist.ts`, the settings form, and the engine.
 - **Privacy/security is a feature.** A CSP meta tag is injected at build time (`vite.config.ts`, `connect-src 'none'`). Nothing may fetch at runtime: no CDNs, web fonts, analytics, or `fetch` of samples. Don't use `dangerouslySetInnerHTML`. Anything read from storage or a project file goes through `parseState`. Exported cells go through `safeCell` (formula injection). The e2e suite fails on any off-origin request or console error.
-- **Heavy libraries are lazy.** `write-excel-file` and `read-excel-file` are dynamically imported. Keep them out of the main chunk (about 119 KB gzipped, most of it React DOM).
+- **Heavy libraries are lazy.** `write-excel-file` and `read-excel-file` are dynamically imported. Keep them out of the main chunk, which must stay at or under 135 KB gzipped (most of it React DOM).
 - **Real form exports never go in the repo.** They're kept outside the repo (location in `tmp/docs/HANDOFF.md`). Samples are made with `scripts/anonymize.mjs`, which refuses to write if a source name or email survives.
 
 ## Tests
