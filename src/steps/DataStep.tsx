@@ -319,7 +319,7 @@ export function DataStep({ state, dispatch }: { state: AppState; dispatch(a: Act
               const check = checks.get(r.id)!;
               const name = `${r.firstName} ${r.lastName}`.trim() || "new athlete";
               return (
-                <tr key={r.id} className={cx((!onList(r, day) || check.notEntered) && "text-muted")}>
+                <tr key={r.id} data-row={r.id} className={cx((!onList(r, day) || check.notEntered) && "text-muted")}>
                   <td className={cx(grid, "sticky left-0 z-10 w-10 max-w-10 min-w-10 bg-sunken text-center text-xs text-muted tabular-nums")}>
                     {r.rowNumber ?? "new"}
                   </td>

@@ -1,4 +1,4 @@
-import type { ComponentProps, ReactNode } from "react";
+import { useId, type ComponentProps, type ReactNode } from "react";
 
 export const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(" ");
 
@@ -185,6 +185,19 @@ export function Segmented({
         ))}
       </div>
     </fieldset>
+  );
+}
+
+/** A card in a step's side column (Columns, Start list), with a small caps title. */
+export function SideCard({ title, children, className }: { title: ReactNode; children: ReactNode; className?: string }) {
+  const id = useId();
+  return (
+    <section aria-labelledby={id} className={cx("rounded-xl bg-surface p-4 ring-1 ring-line", className)}>
+      <h3 id={id} className="mb-3 flex items-center gap-2 text-xs font-semibold tracking-wider text-muted uppercase">
+        {title}
+      </h3>
+      {children}
+    </section>
   );
 }
 

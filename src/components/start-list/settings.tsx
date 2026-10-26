@@ -1,6 +1,6 @@
-import { useState, type FormEvent, type ReactNode } from "react";
+import { useState, type FormEvent } from "react";
 import { ArrowIcon } from "~/components/icons";
-import { Button, cx, Field, RadioGroup, Segmented, SelectField } from "~/components/ui";
+import { Button, Field, RadioGroup, Segmented, SelectField, SideCard } from "~/components/ui";
 import { DISCIPLINE_NAMES, disciplinesFor, type Discipline } from "~/lib/disciplines";
 import type { StartListSettings } from "~/lib/startlist";
 import { toTimeInput, type TimeFormat } from "~/lib/time";
@@ -61,16 +61,6 @@ function BlockOrder({
         ))}
       </ol>
     </fieldset>
-  );
-}
-
-/** A card in the start list's settings column, with a small caps title. */
-export function SideCard({ title, children, className }: { title: string; children: ReactNode; className?: string }) {
-  return (
-    <section aria-label={title} className={cx("rounded-xl bg-surface p-4 ring-1 ring-line", className)}>
-      <h3 className="mb-3 text-xs font-semibold tracking-wider text-muted uppercase">{title}</h3>
-      {children}
-    </section>
   );
 }
 

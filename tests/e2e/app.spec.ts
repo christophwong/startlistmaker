@@ -189,8 +189,7 @@ test("revisiting Columns keeps athlete edits; a changed import asks before repla
 
   // Changed columns: asks first; cancelling stays on Columns.
   await goToStep(page, /^2 Columns$/);
-  await page.getByText("Column mapping").click();
-  await page.locator('select[name="m.country"]').selectOption("");
+  await page.getByLabel("Use Country as").selectOption("");
   const messages: string[] = [];
   page.once("dialog", (d) => (messages.push(d.message()), d.dismiss()));
   await page.getByRole("button", { name: "Continue to athletes" }).click();
@@ -213,6 +212,26 @@ test("paste from Google Sheets", async ({ page }) => {
   await page.getByRole("button", { name: "Continue to athletes" }).click();
   await page.getByRole("button", { name: /Generate start list/ }).click();
   await expect(page.getByText(/^2 starts · \d+ discipline/)).toBeVisible();
+});
+
+test("Columns: rows that need fixing are shown first, with a link to the row on Athletes", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Paste from Sheets" }).click();
+  await page.getByLabel("Pasted cells").fill(
+    "Name\tGender\tDiscipline\tAnnounced Performance (AP)\nAna Lima\tFemale\tCWT\t30\nBo Chen\tMale\tFIM\t\nCy Park\tMale\tCWT\t25\n",
+  );
+  await page.getByRole("button", { name: "Read pasted data" }).click();
+  await expect(page.getByLabel("Use Name as")).toHaveValue("fullName");
+  const filter = page.getByLabel(/Only rows with problems/);
+  await expect(filter).toBeChecked();
+  await expect(page.getByText(/Row 3/)).toBeVisible();
+  await expect(page.getByText(/Row 2/)).toHaveCount(0);
+  await filter.uncheck();
+  await expect(page.getByText(/Row 2 · Ana Lima/)).toBeVisible();
+
+  await page.getByRole("button", { name: "Fix it on Athletes" }).click();
+  await expect(page.getByRole("heading", { name: "Athletes" })).toBeVisible();
+  await expect(page.locator('[data-row="r3"] :focus')).toHaveCount(1);
 });
 
 test("Excel export, and a saved project reopens where it left off", async ({ page }) => {
