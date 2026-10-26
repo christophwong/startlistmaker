@@ -44,7 +44,7 @@ The column titles don't have to match exactly. Example files that also work as f
 
 ## Development
 
-Requires Node 22 or later.
+Requires Node 24 or later (`.nvmrc` has the version CI uses).
 
 ```sh
 npm install

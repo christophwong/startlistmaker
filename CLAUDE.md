@@ -4,7 +4,7 @@ Start List Maker (startlistmaker.online) is a static, client-only single-page ap
 
 ## Commands
 
-Requires Node ≥ 22.
+Requires Node ≥ 24 (`.nvmrc`; CI reads it too).
 
 ```sh
 npm run dev          # http://localhost:5173 (no CSP in dev, so HMR styles work)
