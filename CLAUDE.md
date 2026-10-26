@@ -23,7 +23,7 @@ There is no linter. Done means `npm run typecheck && npm test` pass, plus `npm r
 
 The stack is Vite, TypeScript, Tailwind v4 and React 19. `~/` maps to `src/`.
 
-- **`src/lib/`** holds pure domain logic, mostly copied from pnwapnea. `startlist/` is the engine (sort, generate, schedule, validate, edits) and `import/` covers CSV/XLSX/paste → mapped columns → parsed rows. `registrations.ts` has the editable athlete rows and per-cell validation. `export/` builds the shared table for print, CSV, XLSX and PDF.
+- **`src/lib/`** holds pure domain logic, mostly copied from pnwapnea. `startlist/` is the engine (sort, generate, schedule, validate, edits) and `import/` covers CSV/XLSX/paste → mapped columns → parsed rows. `registrations.ts` has the editable athlete rows and per-cell validation. `export/` builds the shared table for print, CSV and XLSX. PDFs come only from the browser's Print / Save as PDF (the jsPDF download was dropped because its fonts garbled names outside Latin-1).
 - **`src/state/`**: `store.ts` holds one reducer with all app state, `persist.ts` covers session/local storage and project files (zod/mini validated), and `derived.ts` has the `useStartList` hook.
 - **`src/steps/`** has one component per step (Upload → Columns → Athletes → Start list → Print & export). **`src/components/`** holds the shared UI copied from pnwapnea (callback-driven).
 - **`src/samples/`** holds the anonymized demo CSVs, bundled as `?raw` and loaded on demand.
@@ -34,7 +34,7 @@ Key points that span files:
 - **Registrations are the source of truth for athletes.** Starts are derived with `rowsToStarts`, and start ids are `${rowId}-s{1|2}`, so fixing data keeps a start's place in the list.
 - **Settings shape.** `StartListSettings` lives in `lib/startlist/types.ts`. Adding a setting touches the type, `defaults.ts`, `settingsSchema` (`lib/validation.ts`), the stored-state schema in `state/persist.ts`, the settings form, and the engine.
 - **Privacy/security is a feature.** A CSP meta tag is injected at build time (`vite.config.ts`, `connect-src 'none'`). Nothing may fetch at runtime: no CDNs, web fonts, analytics, or `fetch` of samples. Don't use `dangerouslySetInnerHTML`. Anything read from storage or a project file goes through `parseState`. Exported cells go through `safeCell` (formula injection). The e2e suite fails on any off-origin request or console error.
-- **Heavy libraries are lazy.** `jspdf`/`jspdf-autotable`, `write-excel-file` and `read-excel-file` are dynamically imported. Keep them out of the main chunk (about 119 KB gzipped, most of it React DOM).
+- **Heavy libraries are lazy.** `write-excel-file` and `read-excel-file` are dynamically imported. Keep them out of the main chunk (about 119 KB gzipped, most of it React DOM).
 - **Real form exports never go in the repo.** They live in `../pnwapnea/temp/data/`. Samples are made with `scripts/anonymize.mjs`, which refuses to write if a source name or email survives.
 
 ## Tests

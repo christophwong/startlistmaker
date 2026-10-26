@@ -36,7 +36,7 @@ export function HelpDialog({ open, onClose }: { open: boolean; onClose(): void }
           </li>
           <li>
             <strong>Print & export:</strong> add logos if you like (competition and AIDA beside the title, sponsors after the list),
-            then print, save as PDF, or download PDF, CSV or Excel.
+            then print or save as PDF, or download CSV or Excel.
           </li>
         </ol>
       </Section>

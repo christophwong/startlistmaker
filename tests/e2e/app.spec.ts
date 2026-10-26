@@ -39,7 +39,7 @@ test("has a strict CSP and no inline scripts", async ({ page }) => {
   expect(blocked).toBe(true);
 });
 
-test("demo: sample depth list → finalize → CSV and PDF downloads", async ({ page }) => {
+test("demo: sample depth list → finalize → CSV download; PDF is through Print", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: /Try a demo/ }).click();
   // Defaults: depth, 2 days.
@@ -59,11 +59,9 @@ test("demo: sample depth list → finalize → CSV and PDF downloads", async ({ 
   expect(text).toContain("Diver Name,Gender,Country,Discipline,AP,Time,OT,WT,Check-in");
   expect(text.split("\n").length).toBeGreaterThan(10);
 
-  const pdf = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Download PDF" }).click();
-  const download = await pdf;
-  expect(download.suggestedFilename()).toMatch(/\.pdf$/);
-  expect(fs.readFileSync(await download.path()).subarray(0, 5).toString()).toBe("%PDF-");
+  // The jsPDF download garbled names outside Latin-1; the browser's print dialog makes the PDF.
+  await expect(page.getByRole("button", { name: "Print / Save as PDF" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Download PDF" })).toHaveCount(0);
 });
 
 test("#demo-pool link opens the pool sample with lanes", async ({ page }) => {
@@ -165,7 +163,7 @@ async function png(page: Page, width: number, height: number, color: string) {
   return Buffer.from(b64, "base64");
 }
 
-test("logos: header and sponsors on the sheet, in the PDF and in a saved project", async ({ page }) => {
+test("logos: header and sponsors on the sheet and in a saved project", async ({ page }) => {
   await page.goto("/#demo");
   await page.getByRole("button", { name: "Print & export →" }).click();
 
@@ -196,13 +194,6 @@ test("logos: header and sponsors on the sheet, in the PDF and in a saved project
   await page.getByRole("button", { name: "Move sponsor-b.png left" }).click();
   await page.getByLabel("Size of sponsor-b.png").selectOption("L");
   expect(await widthOf(0)).toBeGreaterThan(before);
-
-  // The PDF embeds all four images.
-  const pdf = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Download PDF" }).click();
-  const bytes = fs.readFileSync(await (await pdf).path()).toString("latin1");
-  expect(bytes.startsWith("%PDF-")).toBe(true);
-  expect(bytes.match(/\/Subtype \/Image/g)).toHaveLength(4);
 
   // A saved project brings the logos back, in order.
   const json = page.waitForEvent("download");

@@ -11,7 +11,7 @@ Start List Maker turns competition registrations into a printable AIDA-style sta
 - **Fix data in place.** A spreadsheet-style athletes table marks problems (a missing AP, the wrong discipline for the competition) and keeps those starts off the list until they're fixed.
 - **Flexible scheduling.** Fixed intervals, or each athlete's announced dive time plus a buffer. Group by discipline or mix them, put women or men first, and sort by AP, dive time, name or registration order. Optional half-time break.
 - **Hand-tune the order.** Drag rows, use ↑ ↓, or type a position. Add or edit breaks. Click a column title to re-sort. Times recalculate as you go, and recovery-time and same-OT conflicts are flagged.
-- **Ready to post.** Print or save as PDF, download a PDF, CSV or Excel file, and add competition, federation and sponsor logos to the sheet.
+- **Ready to post.** Print or save as PDF, download a CSV or Excel file, and add competition, federation and sponsor logos to the sheet.
 - **Pick up where you left off.** Save the whole project to a file and reopen it later, or let the browser remember it on your device.
 
 ## Privacy
@@ -57,7 +57,7 @@ npm run build        # static site in dist/
 
 Run `npx playwright install chromium` once before the end-to-end tests.
 
-**Stack:** Vite, TypeScript, Tailwind CSS and React. The scheduling engine and the import and export code are pure TypeScript in `src/lib/`, with no browser dependencies, so they're unit-tested on their own. App state is a single reducer in `src/state/`, and each step of the flow is a component in `src/steps/`. The PDF and Excel libraries load only when you use them.
+**Stack:** Vite, TypeScript, Tailwind CSS and React. The scheduling engine and the import and export code are pure TypeScript in `src/lib/`, with no browser dependencies, so they're unit-tested on their own. App state is a single reducer in `src/state/`, and each step of the flow is a component in `src/steps/`. The Excel libraries load only when you use them.
 
 The build is a static site with no backend, so any static host can serve it.
 

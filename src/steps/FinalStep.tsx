@@ -2,7 +2,7 @@ import { useState } from "react";
 import { LogosEditor } from "~/components/logos-editor";
 import { PrintSheet } from "~/components/start-list/print-sheet";
 import { Alert, Button, Card } from "~/components/ui";
-import { downloadBlob, downloadText, toPdf, toXlsx, type SheetTitle } from "~/lib/export/files";
+import { downloadBlob, downloadText, toXlsx, type SheetTitle } from "~/lib/export/files";
 import { fileBase, toCsv } from "~/lib/export/table";
 import { useStartList } from "~/state/derived";
 import { toProjectJson } from "~/state/persist";
@@ -33,7 +33,7 @@ export function FinalStep({ state, dispatch }: { state: AppState; dispatch(a: Ac
     try {
       await fn();
     } catch {
-      setError(`Could not create the ${label}. Try Print / Save as PDF instead.`);
+      setError(`Could not create the ${label}. Try Download CSV instead.`);
     } finally {
       setBusy(null);
     }
@@ -63,13 +63,6 @@ export function FinalStep({ state, dispatch }: { state: AppState; dispatch(a: Ac
         <Card className="space-y-4 !p-4">
           <div className="flex flex-wrap gap-2">
             <Button onClick={() => window.print()}>Print / Save as PDF</Button>
-            <Button
-              variant="secondary"
-              disabled={!!busy}
-              onClick={() => run("PDF", async () => downloadBlob(`${base}.pdf`, await toPdf(table, title, print, state.logos)))}
-            >
-              {busy === "PDF" ? "Creating PDF…" : "Download PDF"}
-            </Button>
             <Button variant="secondary" onClick={() => downloadText(`${base}.csv`, toCsv(table), "text/csv;charset=utf-8")}>
               Download CSV
             </Button>
@@ -95,8 +88,7 @@ export function FinalStep({ state, dispatch }: { state: AppState; dispatch(a: Ac
             <Toggle label="New page after each break" checked={print.pageBreakAtBreaks} onChange={(v) => setPrint({ pageBreakAtBreaks: v })} />
           </div>
           <p className="text-xs text-slate-500">
-            Files are made in this browser. The PDF download uses standard fonts; for names in non-Latin scripts use Print /
-            Save as PDF.
+            Files are made in this browser. For a PDF, choose Save as PDF as the printer in the print dialog.
           </p>
         </Card>
 

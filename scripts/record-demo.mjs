@@ -2,7 +2,7 @@
 /**
  * Records a video walkthrough of the main flow on the production build:
  * upload the anonymized depth sample → columns → athletes → start list
- * (move a start, sort by athlete) → finalize → Download PDF.
+ * (move a start, sort by athlete) → print & export preview.
  *
  *   node scripts/record-demo.mjs [out-dir] [--mobile]
  *
@@ -85,14 +85,11 @@ async function record() {
   await shot("4-startlist");
   await smoothScroll(0);
 
-  // 5. Print & export: preview and download the PDF.
+  // 5. Print & export: preview the sheet.
   await page.getByRole("button", { name: "Print & export →" }).click();
   await page.locator(".print-area tbody tr").first().waitFor();
   await pause(1500);
   await smoothScroll(500);
-  const download = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Download PDF" }).click();
-  await download;
   await pause(2000);
   await shot("5-finalize");
 

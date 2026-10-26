@@ -5,7 +5,7 @@ import { LOGO_SRC, MAX_LOGO_PX, MAX_LOGO_SRC, type Logo } from "../export/logos"
  * redrawn on a canvas, so whatever came in (SVG, WebP, a PNG with metadata)
  * leaves as a plain PNG, or a JPEG when it has no transparency and the PNG
  * is too big. Only that re-encoded image reaches state, project files and
- * jsPDF.
+ * the print sheet.
  */
 
 export const LOGO_ACCEPT = "image/png,image/jpeg,image/webp,image/gif,image/svg+xml";
