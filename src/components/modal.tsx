@@ -1,7 +1,8 @@
 import { useEffect, useRef, type ReactNode } from "react";
+import { CloseIcon } from "~/components/icons";
 import { Button, cx } from "~/components/ui";
 
-/** A native modal <dialog>: Escape, ✕ or a click on the backdrop closes it. */
+/** A native modal <dialog>: Escape, the close button or a click on the backdrop closes it. */
 export function Modal({
   open,
   onClose,
@@ -43,7 +44,7 @@ export function Modal({
             {title}
           </h2>
           <Button variant="ghost" size="sm" onClick={onClose} aria-label={`Close ${title.toLowerCase()}`}>
-            ✕
+            <CloseIcon className="size-5" />
           </Button>
         </div>
         {children}

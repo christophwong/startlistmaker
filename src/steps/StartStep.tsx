@@ -1,5 +1,6 @@
 import { useState, type DragEvent } from "react";
 import { DemoPicker } from "~/components/demo-picker";
+import { ArrowIcon, UploadIcon } from "~/components/icons";
 import { SampleDownloads } from "~/components/sample-downloads";
 import { Alert, Button, cx } from "~/components/ui";
 import { parsePasted, readSpreadsheet, SpreadsheetError, type SheetTable, type Workbook } from "~/lib/import/file";
@@ -82,7 +83,7 @@ export function StartStep({ dispatch, onHelp }: { dispatch(a: Action): void; onH
           <p className="text-sm text-ink-2">See a finished start list with sample athletes. No file needed.</p>
         </div>
         <Button onClick={() => setPicking(true)} aria-haspopup="dialog" className="min-h-12 px-6 text-base">
-          ▶ Try a demo
+          Try a demo <ArrowIcon />
         </Button>
       </div>
       <DemoPicker open={picking} onClose={() => setPicking(false)} onOpen={(kind, starts) => void demo(kind, starts)} />
@@ -101,7 +102,8 @@ export function StartStep({ dispatch, onHelp }: { dispatch(a: Action): void; onH
           dragging ? "border-accent bg-accent-soft" : "border-line-strong bg-surface hover:border-accent",
         )}
       >
-        <span className="inline-flex min-h-11 items-center rounded-lg bg-accent px-5 font-medium text-on-accent">
+        <span className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-accent px-5 font-medium text-on-accent">
+          <UploadIcon className="size-5" />
           Upload your Google Forms export
         </span>
         <span className="text-sm text-muted">

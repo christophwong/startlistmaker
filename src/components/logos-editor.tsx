@@ -11,6 +11,7 @@ import {
 } from "~/lib/export/logos";
 import { LOGO_ACCEPT, LogoError, readLogo } from "~/lib/import/image";
 import type { Action } from "~/state/store";
+import { ArrowIcon, TrashIcon } from "./icons";
 import { Alert, Button, buttonClass, cx } from "./ui";
 
 const PLACES = Object.keys(PLACE_LABELS) as LogoPlace[];
@@ -133,7 +134,7 @@ export function LogosEditor({ logos, dispatch }: { logos: Logo[]; dispatch(a: Ac
                 </select>
                 <span className="flex">
                   <Button variant="ghost" size="sm" aria-label={`Move ${l.name} left`} disabled={i === 0} onClick={() => dispatch({ type: "moveLogo", id: l.id, by: -1 })}>
-                    ←
+                    <ArrowIcon dir="left" />
                   </Button>
                   <Button
                     variant="ghost"
@@ -142,10 +143,10 @@ export function LogosEditor({ logos, dispatch }: { logos: Logo[]; dispatch(a: Ac
                     disabled={i === same.length - 1}
                     onClick={() => dispatch({ type: "moveLogo", id: l.id, by: 1 })}
                   >
-                    →
+                    <ArrowIcon />
                   </Button>
                   <Button variant="ghost" size="sm" aria-label={`Remove ${l.name}`} onClick={() => dispatch({ type: "removeLogo", id: l.id })}>
-                    ✕
+                    <TrashIcon />
                   </Button>
                 </span>
               </li>

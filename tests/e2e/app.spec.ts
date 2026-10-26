@@ -48,7 +48,7 @@ test("demo: sample depth list → finalize → CSV download; PDF is through Prin
   await expect(page.getByText(/This is a demo with made-up athletes/)).toBeVisible();
   await expect(page.getByText(/(\d+) of \1 starts on the list/)).toBeVisible();
 
-  await page.getByRole("button", { name: "Print & export →" }).click();
+  await page.getByRole("button", { name: "Print & export", exact: true }).click();
   await expect(page.getByText("Sample Depth Challenge · Day 1")).toBeVisible();
   await expect(page.locator(".print-area tbody tr").first()).toBeVisible();
 
@@ -158,7 +158,7 @@ test("paste from Google Sheets", async ({ page }) => {
 
 test("Excel export, and a saved project reopens where it left off", async ({ page }) => {
   await page.goto("/#demo-pool");
-  await page.getByRole("button", { name: "Print & export →" }).click();
+  await page.getByRole("button", { name: "Print & export", exact: true }).click();
 
   const xlsx = page.waitForEvent("download");
   await page.getByRole("button", { name: "Download Excel" }).click();
@@ -208,7 +208,7 @@ async function png(page: Page, width: number, height: number, color: string) {
 
 test("logos: header and sponsors on the sheet and in a saved project", async ({ page }) => {
   await page.goto("/#demo");
-  await page.getByRole("button", { name: "Print & export →" }).click();
+  await page.getByRole("button", { name: "Print & export", exact: true }).click();
 
   const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="300" height="100"><rect width="300" height="100" fill="#1e40af"/></svg>';
   await page.locator("label", { hasText: "+ Header logo" }).locator("input").setInputFiles([
@@ -249,7 +249,7 @@ test("logos: header and sponsors on the sheet and in a saved project", async ({ 
     mimeType: "application/json",
     buffer: fs.readFileSync(projectPath),
   });
-  await page.getByRole("button", { name: "Print & export →" }).click();
+  await page.getByRole("button", { name: "Print & export", exact: true }).click();
   await expect(page.getByLabel("Size of sponsor-b.png")).toHaveValue("L");
   await expect(page.getByRole("button", { name: "Move sponsor-b.png left" })).toBeDisabled();
   await expect(sheet.locator("header img")).toHaveCount(2);

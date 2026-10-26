@@ -1,4 +1,5 @@
 import { useMemo, useState, type ComponentProps, type ReactNode } from "react";
+import { TrashIcon } from "~/components/icons";
 import { Alert, Badge, Button, Card, cx } from "~/components/ui";
 import { disciplinesFor, isTimedDiscipline, normalizeDiscipline, type CompetitionType } from "~/lib/disciplines";
 import { checkRows, type CellKey, type RegRow, type RegStart, type RowCheck } from "~/lib/registrations";
@@ -326,10 +327,10 @@ export function DataStep({ state, dispatch }: { state: AppState; dispatch(a: Act
                       type="button"
                       aria-label={`Delete ${name}`}
                       title="Delete athlete"
-                      className="h-8 w-full text-muted hover:bg-err-bg hover:text-err-fg"
+                      className="inline-flex h-8 w-full items-center justify-center text-muted hover:bg-err-bg hover:text-err-fg"
                       onClick={() => confirm(`Delete ${name}? This can't be undone.`) && dispatch({ type: "deleteRow", id: r.id })}
                     >
-                      ✕
+                      <TrashIcon />
                     </button>
                   </Cell>
                 </tr>

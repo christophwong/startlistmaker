@@ -1,4 +1,5 @@
 import { useState, type DragEvent, type FormEvent } from "react";
+import { ArrowIcon, ChevronIcon, GripIcon } from "~/components/icons";
 import { Alert, Badge, Button, cx } from "~/components/ui";
 import { formatPerformance } from "~/lib/disciplines";
 import type { ColumnKey, EngineStartWithAthlete, Issue, ScheduledRow, StartListSettings } from "~/lib/startlist";
@@ -63,9 +64,7 @@ function SortHeader({ column, label, sort, className }: { column: ColumnKey; lab
         title={`Sort by ${label.toLowerCase()} (within each section between breaks)`}
       >
         {label}
-        <span aria-hidden className={active ? "" : "opacity-30"}>
-          {active && sort.dir === "DESC" ? "▼" : "▲"}
-        </span>
+        <ChevronIcon dir={active && sort.dir === "DESC" ? "down" : "up"} className={cx("size-3", !active && "opacity-30")} />
       </button>
     </th>
   );
@@ -128,7 +127,7 @@ function MoveButtons({ row, first, last, actions, busy }: Shared & { row: Editor
         aria-label="Move up"
         onClick={() => actions.move(row.entryId, "up")}
       >
-        ↑
+        <ArrowIcon dir="up" />
       </Button>
       <Button
         variant="secondary"
@@ -137,7 +136,7 @@ function MoveButtons({ row, first, last, actions, busy }: Shared & { row: Editor
         aria-label="Move down"
         onClick={() => actions.move(row.entryId, "down")}
       >
-        ↓
+        <ArrowIcon dir="down" />
       </Button>
     </span>
   );
@@ -436,8 +435,8 @@ export function StartListRows({
                     )}
                   >
                     <td className="px-2 py-1.5 whitespace-nowrap">
-                      <span aria-hidden className="mr-1 text-muted/60 select-none" title="Drag to move">
-                        ⠿
+                      <span className="mr-1 inline-flex align-middle text-muted/60 select-none" title="Drag to move">
+                        <GripIcon />
                       </span>
                       <PositionInput n={++n} count={startIds.length} onMove={(p) => moveToPosition(r.entryId, p)} />
                     </td>

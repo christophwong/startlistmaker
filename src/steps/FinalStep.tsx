@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ArrowIcon } from "~/components/icons";
 import { LogosEditor } from "~/components/logos-editor";
 import { PrintSheet } from "~/components/start-list/print-sheet";
 import { Alert, Button, Card } from "~/components/ui";
@@ -48,7 +49,7 @@ export function FinalStep({ state, dispatch }: { state: AppState; dispatch(a: Ac
             <p className="text-sm text-muted">Check the sheet, then print it or download it.</p>
           </div>
           <Button variant="secondary" onClick={() => dispatch({ type: "step", step: "list" })}>
-            ← Back to start list
+            <ArrowIcon dir="left" /> Back to start list
           </Button>
         </div>
 

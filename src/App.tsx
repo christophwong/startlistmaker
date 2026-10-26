@@ -1,5 +1,6 @@
 import { useEffect, useReducer, useRef, useState } from "react";
 import { HelpDialog } from "~/components/help";
+import { LockIcon, MoonIcon, SunIcon } from "~/components/icons";
 import { Button, cx } from "~/components/ui";
 import { loadSample, type SampleKind } from "~/samples";
 import { clearStorage, getRemember, loadState, saveState, setRemember } from "~/state/persist";
@@ -22,7 +23,10 @@ const STEPS: [Step, string][] = [
 function PrivacyNote() {
   return (
     <details className="text-sm">
-      <summary className="cursor-pointer font-medium text-ok-fg">🔒 Private: nothing leaves this browser</summary>
+      <summary className="cursor-pointer font-medium text-ok-fg">
+        <LockIcon className="mr-1 inline align-[-2px]" />
+        Private: nothing leaves this browser
+      </summary>
       <div className="mt-2 max-w-xl space-y-1 text-ink-2">
         <p>
           Files are read and start lists are built entirely on your device. There is no server, no account, no analytics,
@@ -113,7 +117,15 @@ export default function App() {
             Help
           </Button>
           <Button variant="ghost" size="sm" onClick={toggleTheme} aria-pressed={theme === "dark"} title="Switch between light and dark">
-            {theme === "dark" ? "☀ Light" : "☾ Dark"}
+            {theme === "dark" ? (
+              <>
+                <SunIcon /> Light
+              </>
+            ) : (
+              <>
+                <MoonIcon /> Dark
+              </>
+            )}
           </Button>
         </div>
       </header>

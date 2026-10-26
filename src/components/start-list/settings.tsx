@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import { ArrowIcon } from "~/components/icons";
 import { Button, cx, Field, RadioGroup, SelectField } from "~/components/ui";
 import { DISCIPLINE_NAMES, disciplinesFor, type Discipline } from "~/lib/disciplines";
 import type { StartListSettings } from "~/lib/startlist";
@@ -44,7 +45,7 @@ function BlockOrder({
               <strong>{d}</strong> <span className="text-muted">{DISCIPLINE_NAMES[d]}</span>
             </span>
             <Button type="button" variant="ghost" size="sm" aria-label={`Move ${d} earlier`} disabled={i === 0} onClick={() => move(i, i - 1)}>
-              ↑
+              <ArrowIcon dir="up" />
             </Button>
             <Button
               type="button"
@@ -54,7 +55,7 @@ function BlockOrder({
               disabled={i === visible.length - 1}
               onClick={() => move(i, i + 1)}
             >
-              ↓
+              <ArrowIcon dir="down" />
             </Button>
           </li>
         ))}

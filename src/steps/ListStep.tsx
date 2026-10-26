@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ArrowIcon } from "~/components/icons";
 import { IssueList, laneLabel, showLaneColumn, SORT_COLUMNS, StartListRows, type StartListActions } from "~/components/start-list/rows";
 import { SettingsPanel } from "~/components/start-list/settings";
 import { Alert, Button, Field } from "~/components/ui";
@@ -92,7 +93,9 @@ export function ListStep({ state, dispatch }: { state: AppState; dispatch(a: Act
             Drag rows, use ↑ ↓, or click a number to move a start. Click a column title to sort. Times update as you go.
           </p>
         </div>
-        <Button onClick={() => dispatch({ type: "step", step: "final" })}>Print & export →</Button>
+        <Button onClick={() => dispatch({ type: "step", step: "final" })}>
+          Print & export <ArrowIcon />
+        </Button>
       </div>
 
       {state.demo && (
