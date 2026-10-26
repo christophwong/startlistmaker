@@ -1,4 +1,5 @@
 import { useEffect, useReducer, useRef, useState } from "react";
+import { HelpDialog } from "~/components/help";
 import { Button, cx } from "~/components/ui";
 import { loadSample, type SampleKind } from "~/samples";
 import { clearStorage, getRemember, loadState, saveState, setRemember } from "~/state/persist";
@@ -41,6 +42,7 @@ export default function App() {
   const [state, dispatch] = useReducer(reducer, initialState, () => loadState() ?? initialState);
   const [remember, setRememberState] = useState(getRemember);
   const [theme, setTheme] = useState(getTheme);
+  const [help, setHelp] = useState(false);
   const mainRef = useRef<HTMLElement>(null);
 
   useEffect(() => saveState(state, remember), [state, remember]);
@@ -107,6 +109,9 @@ export default function App() {
               </Button>
             </>
           )}
+          <Button variant="ghost" size="sm" onClick={() => setHelp(true)} aria-haspopup="dialog">
+            Help
+          </Button>
           <Button variant="ghost" size="sm" onClick={toggleTheme} aria-pressed={theme === "dark"} title="Switch between light and dark">
             {theme === "dark" ? "☀ Light" : "☾ Dark"}
           </Button>
@@ -138,12 +143,14 @@ export default function App() {
       </nav>
 
       <main ref={mainRef} tabIndex={-1} className="outline-none">
-        {state.step === "start" && <StartStep dispatch={dispatch} />}
+        {state.step === "start" && <StartStep dispatch={dispatch} onHelp={() => setHelp(true)} />}
         {state.step === "map" && state.source && <MapStep state={state} dispatch={dispatch} />}
         {state.step === "data" && <DataStep state={state} dispatch={dispatch} />}
         {state.step === "list" && <ListStep state={state} dispatch={dispatch} />}
         {state.step === "final" && <FinalStep state={state} dispatch={dispatch} />}
       </main>
+
+      <HelpDialog open={help} onClose={() => setHelp(false)} />
 
       <footer className="no-print mt-16 border-t border-slate-200 pt-4 text-xs text-slate-500 dark:border-slate-800">
         Start List Maker · for AIDA-style freediving competitions · runs entirely in your browser

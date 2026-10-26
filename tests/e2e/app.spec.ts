@@ -41,7 +41,9 @@ test("has a strict CSP and no inline scripts", async ({ page }) => {
 
 test("demo: sample depth list → finalize → CSV and PDF downloads", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: /Depth competition \(2-day form\)/ }).click();
+  await page.getByRole("button", { name: /Try a demo/ }).click();
+  // Defaults: depth, 2 days.
+  await page.getByRole("dialog", { name: "Try a demo" }).getByRole("button", { name: "Open the demo" }).click();
   await expect(page.getByRole("heading", { name: "Start list" })).toBeVisible();
   await expect(page.getByText(/demo data with fictional athletes/)).toBeVisible();
   await expect(page.getByText(/18\/18 starts scheduled|\d+\/\d+ starts scheduled/)).toBeVisible();
@@ -110,7 +112,7 @@ test("upload → fix a row → generate; reorder and sort", async ({ page }) => 
 
 test("paste from Google Sheets", async ({ page }) => {
   await page.goto("/");
-  await page.getByText("Or paste cells from Google Sheets").click();
+  await page.getByRole("button", { name: "Paste from Google Sheets" }).click();
   await page.getByLabel("Pasted responses").fill(
     "Name\tGender\tDiscipline\tAnnounced Performance (AP)\tDive Time\nAna Lima\tFemale\tCWT\t30\t1:10\nBo Chen\tMale\tFIM\t40\t1:30\n",
   );
@@ -164,6 +166,37 @@ test("work survives a reload in the same tab, and Clear all data removes it", as
   await expect(page.getByRole("heading", { name: /Freediving start lists/ })).toBeVisible();
   const stored = await page.evaluate(() => [sessionStorage.length, localStorage.length]);
   expect(stored).toEqual([0, 0]);
+});
+
+test("demo picker: pool with one start per athlete", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: /Try a demo/ }).click();
+  const picker = page.getByRole("dialog", { name: "Try a demo" });
+  await picker.getByText("Pool", { exact: true }).click();
+  await expect(picker.getByText("Starts per athlete")).toBeVisible();
+  await picker.getByText("1 start", { exact: true }).click();
+  await picker.getByRole("button", { name: "Open the demo" }).click();
+  await expect(page.getByRole("heading", { name: "Start list", exact: true })).toBeVisible();
+  await expect(page.getByText("Sample Pool Classic").first()).toBeVisible();
+  await expect(page.getByText(/(\d+)\/\1 starts scheduled/)).toBeVisible();
+  await expect(page.getByText("BREAK", { exact: true }).filter({ visible: true })).toHaveCount(0);
+});
+
+test("the home page keeps only the calls to action; the how-to is in Help", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "What the form needs" })).toBeHidden();
+  await page.getByRole("button", { name: "How it works" }).click();
+  const help = page.getByRole("dialog", { name: "Help" });
+  await expect(help.getByRole("heading", { name: "What the form needs" })).toBeVisible();
+  const download = page.waitForEvent("download");
+  await help.getByRole("button", { name: "sample-pool.csv" }).click();
+  expect((await download).suggestedFilename()).toBe("sample-pool.csv");
+  await page.keyboard.press("Escape");
+  await expect(help).toBeHidden();
+  await page.getByRole("button", { name: "Help", exact: true }).click();
+  await expect(help).toBeVisible();
+  await help.getByRole("button", { name: "Close help" }).click();
+  await expect(help).toBeHidden();
 });
 
 test("opens light; the dark toggle sticks across reloads until Clear all data", async ({ page }) => {

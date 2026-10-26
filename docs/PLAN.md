@@ -50,6 +50,8 @@ A light, client-only version of the pnwapnea start-list generator, hosted on Git
 ### Review feedback
 - [x] Light by default + dark mode toggle
 - [x] Athletes step as a spreadsheet
+- [x] Home page has only the calls to action; the guidelines are in a Help dialog (header, every step)
+- [x] One prominent "Try a demo" button → picker (Pool/Depth, 1 or 2 starts/days)
 
 ### Phase 4: ship
 - [x] GitHub Actions: checks + Pages deploy (actions pinned to SHAs), Dependabot

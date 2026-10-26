@@ -3,7 +3,8 @@ import { describe, expect, it } from "vitest";
 import { parseCsv } from "~/lib/import/file";
 import { schedule } from "~/lib/startlist";
 import { fromProjectJson, parseState, ProjectError, toProjectJson } from "./persist";
-import { initialState, reachable, reducer, startsOf, type Action, type AppState } from "./store";
+import { loadSample } from "~/samples";
+import { dayImport, initialState, reachable, reducer, startsOf, type Action, type AppState } from "./store";
 
 const run = (actions: Action[], state: AppState = initialState) => actions.reduce(reducer, state);
 const sample = (name: string) => parseCsv(fs.readFileSync(`src/samples/${name}`, "utf8"));
@@ -29,6 +30,29 @@ describe("demo flow", () => {
     expect(s.entries.filter((e) => e.kind === "BREAK")).toHaveLength(1);
     const rows = schedule(s.entries, new Map(startsOf(s).map((x) => [x.id, x])), s.settings);
     expect(rows.some((r) => r.kind === "START" && r.lane === 3)).toBe(true);
+  });
+
+  it("1-start demos cut the sample before its second start / second day", async () => {
+    const pool = await loadSample("pool", 1);
+    expect(pool.table.headers).not.toContain("Start 2 - Discipline");
+    const p = run([{ type: "demo", filename: pool.filename, table: pool.table, event: pool.event }]);
+    expect(p).toMatchObject({ maxStarts: 1, demo: true });
+    expect(startsOf(p)).toHaveLength(p.registrations.length);
+    expect(p.entries.filter((e) => e.kind === "BREAK")).toHaveLength(0);
+
+    const depth = await loadSample("depth", 1);
+    const d = run([{ type: "demo", filename: depth.filename, table: depth.table, event: depth.event }]);
+    expect(dayImport(d).days).toBeNull(); // no Day 1 / Day 2 picker
+    expect(d.entries.filter((e) => e.kind === "START")).toHaveLength(startsOf(d).length);
+    expect(depth.event.name).toBe("Sample Depth Challenge");
+    // The template download stays the full 2-day file.
+    expect(depth.csv).toContain("Discipline | Day 2");
+  });
+
+  it("2-start demos are the sample files unchanged", async () => {
+    for (const [kind, file] of [["pool", "pool.csv"], ["depth", "depth-2day.csv"]] as const) {
+      expect((await loadSample(kind, 2)).table).toEqual(sample(file));
+    }
   });
 });
 

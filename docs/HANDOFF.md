@@ -40,6 +40,12 @@ The user is testing the local preview before making the repo public (decided: pu
 - The Athletes step is a spreadsheet (`src/steps/DataStep.tsx`), and the mobile cards are gone.
 - Checks: typecheck clean, 165 unit tests, 17 e2e pass + 1 skipped (a new theme test).
 
+## Review round 2 (2026-10-25, pushed)
+
+- The home page has only the calls to action. The how-to, form fields, templates, saving and privacy text moved to a Help dialog (`src/components/help.tsx`), opened from the header on every step.
+- The two demo buttons became one highlighted "▶ Try a demo" banner, which opens a picker for Depth/Pool and 1 or 2 days/starts (`src/components/demo-picker.tsx`, `loadSample(kind, starts)`). Help and the picker share `src/components/modal.tsx`.
+- Checks: typecheck clean, 167 unit tests, 21 e2e pass + 1 skipped.
+
 ## Next up
 
 1. The repo is https://github.com/christophwong/startlistmaker and is **private** while the user reviews and tests it. CI runs the checks and skips the deploy while it's private (`!github.event.repository.private` in `pages.yml`).
