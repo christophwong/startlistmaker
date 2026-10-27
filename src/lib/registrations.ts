@@ -1,7 +1,9 @@
 import {
   formatPerformance,
   isDiscipline,
+  isNoStart,
   isTimedDiscipline,
+  namesSeveralDisciplines,
   normalizeDiscipline,
   parsePerformance,
   type CompetitionType,
@@ -77,9 +79,7 @@ export function emptyRow(id: string): RegRow {
   };
 }
 
-const NO_START = /^(none|no|n\/?a|-+|no second start|just one|only one|0)$/i;
-
-const isBlank = (s: RegStart) => !s.discipline.trim() || NO_START.test(s.discipline.trim());
+const isBlank = (s: RegStart) => !s.discipline.trim() || isNoStart(s.discipline);
 
 /**
  * With `day`, only that day's start is checked (a two-day form) and a blank
@@ -114,6 +114,10 @@ export function checkRow(row: RegRow, type: CompetitionType, maxStarts: 1 | 2, o
     if (isBlank(s)) {
       if (!day && n === 1 && isBlank(row.starts[1]) && !row.startOff?.[1]) errors[k("discipline")] = `${p}: discipline is missing.`;
       if (s.ap.trim()) warnings[k("ap")] = `${p}: AP given without a discipline. The AP is ignored.`;
+      continue;
+    }
+    if (namesSeveralDisciplines(s.discipline, type)) {
+      errors[k("discipline")] = `${p}: "${s.discipline}" is more than one discipline. Pick one.`;
       continue;
     }
     const discipline = normalizeDiscipline(s.discipline, type);

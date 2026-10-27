@@ -121,6 +121,22 @@ describe("parseRows", () => {
     expect(drafts[13].starts).toHaveLength(1);
   });
 
+  it("parses a form with one Name field and checkbox disciplines", () => {
+    const { headers, rows } = fixture("google-form-pool-checkbox.csv");
+    const mapping = autoMap(headers);
+    expect(missingRequired(mapping)).toEqual([]);
+    const parsed = parseRows(rows, mapping, { type: "POOL", maxStarts: 2 });
+    expect(parsed.map((p) => p.draft?.starts.map((s) => `${s.discipline} ${s.ap}`))).toEqual([
+      ["STA 285", "DYN 140"],
+      ["DYN 160"], // "N/A - Only doing one start"
+      ["STA 140"],
+      undefined,
+    ]);
+    expect(parsed[2].draft).toMatchObject({ firstName: "Hana", lastName: "Sato" });
+    // Two boxes ticked: not silently the first one.
+    expect(parsed[3].errors).toEqual(['Start 1: "DNF, DYN" is more than one discipline. Pick one.']);
+  });
+
   it("drops second starts when the event allows one", () => {
     const { headers, rows } = fixture("google-form-pool.csv");
     const [first] = parseRows(rows.slice(0, 1), autoMap(headers), { type: "POOL", maxStarts: 1 });

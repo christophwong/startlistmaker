@@ -73,6 +73,20 @@ export function normalizeDiscipline(
   return null;
 }
 
+const NO_START = /^(none|no|n\/?a|-+|no second start|just one|only one|0)$|^(n\/?a|none)\b|^(just|only) (doing )?one start\b/i;
+
+/** "N/A - Only doing one start", "none", "-": the athlete has no such start. */
+export const isNoStart = (raw: string) => NO_START.test(raw.trim());
+
+/**
+ * A checkbox question exports every ticked box in one cell ("DNF, DYN").
+ * True when that names more than one discipline, so none can be picked.
+ */
+export function namesSeveralDisciplines(raw: string, type: CompetitionType): boolean {
+  const found = raw.split(/[,;]/).map((part) => normalizeDiscipline(part.trim(), type));
+  return new Set(found.filter(Boolean)).size > 1;
+}
+
 /**
  * Parses an AP/PB value for a discipline: seconds for STA ("4:30"),
  * whole meters otherwise ("75", "75m", "75 meters").

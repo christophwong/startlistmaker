@@ -1,6 +1,8 @@
 import {
   isDiscipline,
+  isNoStart,
   isTimedDiscipline,
+  namesSeveralDisciplines,
   normalizeDiscipline,
   parsePerformance,
   type CompetitionType,
@@ -53,8 +55,6 @@ export interface ImportContext {
   selectedLabel?: string;
 }
 
-const NO_START = /^(none|no|n\/?a|-+|no second start|just one|only one|0)$/i;
-
 /** The note on a row with nothing in one day's columns ("Day 2"). */
 export const noEntry = (label: string) => `No ${label} entry. This row is skipped.`;
 
@@ -76,7 +76,7 @@ function splitContact(raw: string): { name: string; phone: string } {
 
 const startIsBlank = (n: 1 | 2, get: (k: FieldKey) => string) => {
   const d = get(`s${n}Discipline`);
-  return !d || NO_START.test(d);
+  return !d || isNoStart(d);
 };
 
 /** Returns null for a blank start without reporting it; the caller decides. */
@@ -99,6 +99,10 @@ function parseStart(
     return null;
   }
 
+  if (namesSeveralDisciplines(rawDiscipline, ctx.type)) {
+    errors.push(`${p}: "${rawDiscipline}" is more than one discipline. Pick one.`);
+    return null;
+  }
   const other: CompetitionType = ctx.type === "POOL" ? "DEPTH" : "POOL";
   const discipline = normalizeDiscipline(rawDiscipline, ctx.type);
   if (!discipline) {

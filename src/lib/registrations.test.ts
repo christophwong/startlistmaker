@@ -45,6 +45,20 @@ describe("checkRow", () => {
     expect(c.starts[0]).toMatchObject({ discipline: "STA", ap: 270, diveTimeSec: 270 });
   });
 
+  it("a cell with two disciplines blocks the start until one is picked", () => {
+    const c = checkRow(row({}, { discipline: "DNF, DYN", ap: "80" }), "POOL", 1);
+    expect(c.errors["s1.discipline"]).toBe('Start 1: "DNF, DYN" is more than one discipline. Pick one.');
+    expect(c.starts).toEqual([]);
+  });
+
+  it('"N/A - Only doing one start" is no second start', () => {
+    const r = row();
+    r.starts[1] = { discipline: "N/A - Only doing one start", ap: "", pb: "", diveTime: "" };
+    const c = checkRow(r, "DEPTH", 2);
+    expect(c.errors).toEqual({});
+    expect(c.starts).toHaveLength(1);
+  });
+
   it("start 2 only counts with two starts per athlete", () => {
     const r = row();
     r.starts[1] = { discipline: "FIM", ap: "25", pb: "", diveTime: "1:00" };

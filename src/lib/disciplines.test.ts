@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatPerformance, normalizeDiscipline, parsePerformance } from "./disciplines";
+import { formatPerformance, isNoStart, namesSeveralDisciplines, normalizeDiscipline, parsePerformance } from "./disciplines";
 
 describe("normalizeDiscipline", () => {
   it.each([
@@ -25,6 +25,26 @@ describe("normalizeDiscipline", () => {
     expect(normalizeDiscipline("", "POOL")).toBeNull();
     expect(normalizeDiscipline("None", "POOL")).toBeNull();
     expect(normalizeDiscipline("Skandalopetra", "DEPTH")).toBeNull();
+  });
+});
+
+describe("isNoStart", () => {
+  it.each(["None", "n/a", "NA", "-", "N/A - Only doing one start", "n/a (one start only)", "Only one start", "just doing one start"])(
+    "%j is no start",
+    (raw) => expect(isNoStart(raw)).toBe(true),
+  );
+  it.each(["DNF", "No fins", "Nadia", "DYN, N/A - Only doing one start"])("%j is a start", (raw) =>
+    expect(isNoStart(raw)).toBe(false),
+  );
+});
+
+describe("namesSeveralDisciplines", () => {
+  it("is true only for two different disciplines in one cell", () => {
+    expect(namesSeveralDisciplines("DNF, DYN", "POOL")).toBe(true);
+    expect(namesSeveralDisciplines("Static (STA); Dynamic (DYN)", "POOL")).toBe(true);
+    expect(namesSeveralDisciplines("DYN", "POOL")).toBe(false);
+    expect(namesSeveralDisciplines("DYN, DYN", "POOL")).toBe(false);
+    expect(namesSeveralDisciplines("DYN, N/A - Only doing one start", "POOL")).toBe(false);
   });
 });
 
