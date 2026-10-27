@@ -267,6 +267,12 @@ describe("project files and stored state", () => {
     delete old.importedKey;
     delete old.editedRows;
     expect(parseState(old)).toMatchObject({ importedKey: s.importedKey, editedRows: [] });
+    // Saved before the judge and results sheets: opens on the athlete sheet with its options kept.
+    const noSheet = JSON.parse(JSON.stringify(s));
+    noSheet.print = { ...noSheet.print, showWarmup: false };
+    delete noSheet.print.sheet;
+    expect(parseState(noSheet)?.print).toEqual({ ...s.print, sheet: "ATHLETES", showWarmup: false });
+    expect(parseState({ ...s, print: { ...s.print, sheet: "SPONSORS" } })).toBeNull();
   });
 
   it("keeps logos in the project file and rejects anything but PNG/JPEG data URLs", () => {

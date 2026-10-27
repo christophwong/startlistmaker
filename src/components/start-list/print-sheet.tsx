@@ -1,5 +1,6 @@
+import { Fragment } from "react";
 import type { CompetitionType } from "~/lib/disciplines";
-import { LEGEND, titleLines } from "~/lib/export/files";
+import { legend, titleLines, WIDE_BLANK } from "~/lib/export/files";
 import { logoBox, logosAt, type Logo } from "~/lib/export/logos";
 import type { ExportTable } from "~/lib/export/table";
 import { cx } from "../ui";
@@ -49,11 +50,27 @@ export function PrintSheet({
   logos: Logo[];
 }) {
   const [title, ...sub] = titleLines({ type, name, date, location, notes });
-  const accent = type === "POOL" ? "bg-[#2a5ea8]" : "bg-[#3c7a2a]";
+  // `!` beats the zebra stripe when the header repeats inside the body.
+  const accent = type === "POOL" ? "!bg-[#2a5ea8]" : "!bg-[#3c7a2a]";
   const nameCol = table.header.indexOf("Diver Name");
   const left = logosAt(logos, "HEADER_LEFT");
   const right = logosAt(logos, "HEADER_RIGHT");
-  const sponsors = logosAt(logos, "SPONSORS");
+  // The judge sheet is a working form, so no sponsor strip (as on the ECAC sheet).
+  const sponsors = table.sheet === "JUDGES" ? [] : logosAt(logos, "SPONSORS");
+  // Forms with blank columns get taller rows to write in.
+  const form = table.blank.some(Boolean);
+  const headerRow = (
+    <tr className={cx(accent, "text-white [&_th]:py-1 [&_th]:font-medium", form ? "[&_th]:px-1" : "[&_th]:px-1.5")}>
+      {table.header.map((h, i) => (
+        <th
+          key={h}
+          className={cx(i === nameCol && "text-left", table.blank[i] && (WIDE_BLANK.includes(h) ? "min-w-18" : "min-w-12"))}
+        >
+          {h}
+        </th>
+      ))}
+    </tr>
+  );
   const titleBlock = (
     <div className="min-w-0">
       <p className="text-xl font-semibold sm:text-2xl">{title}</p>
@@ -91,28 +108,33 @@ export function PrintSheet({
       </header>
 
       <div className="overflow-x-auto">
-        <table className="w-full border-collapse text-center text-[13px] [&_td]:border [&_td]:border-slate-300 [&_td]:px-1.5 [&_td]:py-0.5">
-          <thead className="[display:table-header-group]">
-            <tr className={`${accent} text-white [&_th]:px-1.5 [&_th]:py-1 [&_th]:font-medium`}>
-              {table.header.map((h, i) => (
-                <th key={h} className={i === nameCol ? "text-left" : ""}>
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
+        <table
+          className={cx(
+            "w-full border-collapse text-center [&_td]:border [&_td]:border-slate-300",
+            // Forms fit up to 12 columns on a portrait page, as on the ECAC judge sheet: smaller type, names on one line.
+            form
+              ? "text-[12px] [&_td]:h-8 [&_td]:px-1 [&_td]:py-1 [&_th]:whitespace-nowrap"
+              : "text-[13px] [&_td]:px-1.5 [&_td]:py-0.5",
+          )}
+        >
+          <thead className="[display:table-header-group]">{headerRow}</thead>
           <tbody className="[&_tr:nth-child(even)]:bg-slate-100">
             {table.rows.map((r, i) =>
               r.kind === "BREAK" ? (
-                <tr key={i} className={cx("!bg-black text-white", pageBreakAtBreaks && "print-break-after")}>
-                  <td colSpan={table.header.length} className="font-medium tracking-widest">
-                    {r.label}
-                  </td>
-                </tr>
+                <Fragment key={i}>
+                  <tr className={cx("!bg-black text-white", pageBreakAtBreaks && "print-break-after")}>
+                    <td colSpan={table.header.length} className="font-medium tracking-widest">
+                      {r.label}
+                    </td>
+                  </tr>
+                  {/* The judge sheet repeats its header after a break (ECAC judge sheet). With a page per
+                      break, the thead already repeats at the top of the next page. */}
+                  {table.sheet === "JUDGES" && !pageBreakAtBreaks && i < table.rows.length - 1 && headerRow}
+                </Fragment>
               ) : (
                 <tr key={i} className="break-inside-avoid">
                   {r.cells.map((c, j) => (
-                    <td key={j} className={j === nameCol ? "text-left" : "tabular-nums"}>
+                    <td key={j} className={j === nameCol ? cx("text-left", form && "whitespace-nowrap") : "tabular-nums"}>
                       {c}
                     </td>
                   ))}
@@ -122,7 +144,7 @@ export function PrintSheet({
           </tbody>
         </table>
       </div>
-      <p className="mt-3 text-xs text-slate-500">{LEGEND}</p>
+      <p className="mt-3 text-xs text-slate-500">{legend(table)}</p>
       {notes && <p className="mt-1 text-xs whitespace-pre-line text-slate-700">{notes}</p>}
       {sponsors.length > 0 && (
         <div aria-label="Sponsors" className="mt-6 flex break-inside-avoid flex-wrap items-center justify-center gap-6">

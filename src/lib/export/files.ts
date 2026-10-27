@@ -1,6 +1,6 @@
 import type { CompetitionType } from "../disciplines";
 import { formatEventDate } from "../format";
-import { safeCell, type ExportTable } from "./table";
+import { safeCell, type ExportTable, type SheetKind } from "./table";
 
 /**
  * File downloads, all generated in the browser. The Excel writer is loaded
@@ -23,6 +23,13 @@ export function downloadBlob(filename: string, blob: Blob) {
 export const downloadText = (filename: string, text: string, type: string) =>
   downloadBlob(filename, new Blob([text], { type }));
 
+/** Name on screen, and the suffix on downloaded file names ("" keeps today's names). */
+export const SHEETS: Record<SheetKind, { label: string; suffix: string }> = {
+  ATHLETES: { label: "Athlete", suffix: "" },
+  JUDGES: { label: "Judge", suffix: "-judge" },
+  RESULTS: { label: "Results", suffix: "-results" },
+};
+
 export interface SheetTitle {
   type: CompetitionType;
   name: string;
@@ -38,7 +45,20 @@ export function titleLines(t: SheetTitle): string[] {
   ].filter(Boolean);
 }
 
-export const LEGEND = "OT = official top · WT = warm-up time (OT − 45 min) · Check-in = OT − 60 min";
+/** Blank columns that get extra writing space (names and penalty notes). */
+export const WIDE_BLANK = ["Remarks", "Notes", "Judge"];
+
+/** The abbreviations under the sheet, for the columns it has. */
+export function legend(t: Pick<ExportTable, "header">): string {
+  const terms: [string, string][] = [
+    ["OT", "OT = official top"],
+    ["WT", "WT = warm-up time (OT − 45 min)"],
+    ["Check-in", "Check-in = OT − 60 min"],
+    ["RP", "RP = realized performance"],
+    ["RESULT", "RESULT = card (white, yellow, red)"],
+  ];
+  return terms.flatMap(([h, text]) => (t.header.includes(h) ? [text] : [])).join(" · ");
+}
 
 export async function toXlsx(t: ExportTable, title: SheetTitle): Promise<Blob> {
   const { default: writeXlsxFile } = await import("write-excel-file/browser");
@@ -52,5 +72,6 @@ export async function toXlsx(t: ExportTable, title: SheetTitle): Promise<Blob> {
       r.kind === "BREAK" ? [text(r.label, { fontWeight: "bold", span: width })] : r.cells.map((c) => text(c)),
     ),
   ];
-  return writeXlsxFile(data as never, { columns: t.header.map((h) => ({ width: h === "Diver Name" ? 28 : 11 })) }).toBlob();
+  const colWidth = (h: string, i: number) => (h === "Diver Name" ? 28 : !t.blank[i] ? 11 : WIDE_BLANK.includes(h) ? 24 : 13);
+  return writeXlsxFile(data as never, { columns: t.header.map((h, i) => ({ width: colWidth(h, i) })) }).toBlob();
 }

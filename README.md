@@ -10,6 +10,7 @@ Start List Maker turns competition registrations into a printable AIDA-style sta
 - Reads a Google Forms CSV, an Excel file or pasted cells, and handles two-day forms and resubmissions.
 - Fixed or dive-time-based spacing, with sorting and drag-to-reorder. Times recalculate as you go.
 - Print or save as PDF, or download CSV or Excel, with logos. Save the project to a file to reopen later.
+- Judge and results sheets from the same list: forms with blank RP, card, remarks and points columns for judges to fill in on the day.
 
 ## How to use it
 

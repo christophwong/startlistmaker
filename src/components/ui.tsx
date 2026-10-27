@@ -154,12 +154,15 @@ export function Segmented({
   label,
   name,
   options,
+  value,
   defaultValue,
   onChange,
 }: {
   label: string;
   name: string;
   options: { value: string; label: string }[];
+  /** Controlled; otherwise `defaultValue`. */
+  value?: string;
   defaultValue?: string;
   onChange?: (value: string) => void;
 }) {
@@ -176,8 +179,8 @@ export function Segmented({
               type="radio"
               name={name}
               value={o.value}
-              defaultChecked={defaultValue === o.value}
-              onChange={onChange && ((e) => onChange(e.target.value))}
+              {...(value === undefined ? { defaultChecked: defaultValue === o.value } : { checked: value === o.value })}
+              onChange={(e) => onChange?.(e.target.value)}
               className="sr-only"
             />
             {o.label}

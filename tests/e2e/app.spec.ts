@@ -83,6 +83,35 @@ test("demo: sample depth list → finalize → CSV download; PDF is through Prin
   await expect(page.getByRole("button", { name: "Download PDF" })).toHaveCount(0);
 });
 
+test("judge and results sheets: blank forms from the same list, with their own downloads", async ({ page }) => {
+  await page.goto("/#demo-pool");
+  await page.getByRole("button", { name: "Print & export", exact: true }).click();
+  const sheet = page.locator(".print-area");
+  const names = async () => sheet.locator("tbody td:first-child").allTextContents();
+  const athleteNames = await names();
+
+  await page.getByText("Judge", { exact: true }).click();
+  await expect(sheet.locator("thead th")).toHaveText(["Diver Name", "Sex", "Country", "Disc", "AP", "OT", "Lane", "RP", "RESULT", "Remarks", "Points", "Judge"]);
+  await expect(page.getByText(/RESULT = card/)).toBeVisible();
+  // Same starts in the same order; a header row comes back after each break.
+  expect((await names()).filter((n) => !n.startsWith("BREAK") && n !== "Diver Name")).toEqual(athleteNames.filter((n) => !n.startsWith("BREAK")));
+  const breaks = await sheet.locator("tbody td", { hasText: /^BREAK/ }).count();
+  await expect(sheet.locator("tbody th", { hasText: "Diver Name" })).toHaveCount(breaks);
+  await expect(page.getByRole("checkbox", { name: "Warm-up (WT) column" })).toHaveCount(0);
+
+  const csv = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Download CSV" }).click();
+  const judgeCsv = await csv;
+  expect(judgeCsv.suggestedFilename()).toMatch(/-judge\.csv$/);
+  expect(fs.readFileSync(await judgeCsv.path(), "utf8")).toContain("Diver Name,Sex,Country,Disc,AP,OT,Lane,RP,RESULT,Remarks,Points,Judge");
+
+  await page.getByText("Results", { exact: true }).click();
+  await expect(sheet.locator("thead th")).toHaveText(["Diver Name", "Gender", "Country", "Discipline", "AP", "RP", "Card", "Notes", "Points", "Rank"]);
+  // Stays on the picked sheet after a reload.
+  await page.reload();
+  await expect(sheet.locator("thead th").last()).toHaveText("Rank");
+});
+
 test("a two-day form: both days on Columns, a tab per day after it", async ({ page }) => {
   await page.goto("/#demo");
   const tabs = page.getByRole("tablist", { name: "Competition day" });

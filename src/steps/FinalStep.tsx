@@ -3,9 +3,9 @@ import { DayBadge } from "~/components/day-tabs";
 import { ArrowIcon } from "~/components/icons";
 import { LogosEditor } from "~/components/logos-editor";
 import { PrintSheet } from "~/components/start-list/print-sheet";
-import { Alert, Button, SideCard } from "~/components/ui";
-import { downloadBlob, downloadText, toXlsx, type SheetTitle } from "~/lib/export/files";
-import { fileBase, toCsv } from "~/lib/export/table";
+import { Alert, Button, Segmented, SideCard } from "~/components/ui";
+import { downloadBlob, downloadText, SHEETS, toXlsx, type SheetTitle } from "~/lib/export/files";
+import { fileBase, toCsv, type SheetKind } from "~/lib/export/table";
 import { useStartList } from "~/state/derived";
 import { toProjectJson } from "~/state/persist";
 import type { Action, AppState, PrintOptions } from "~/state/store";
@@ -19,6 +19,14 @@ function Toggle({ label, checked, onChange }: { label: string; checked: boolean;
   );
 }
 
+const SHEET_KINDS: SheetKind[] = ["ATHLETES", "JUDGES", "RESULTS"];
+
+const SHEET_HINTS: Record<SheetKind, string> = {
+  ATHLETES: "The start list for divers.",
+  JUDGES: "A form for the judges: RP, RESULT (card), Remarks, Points and Judge are left blank to fill in by hand.",
+  RESULTS: "A form for results on the day: RP, Card, Notes, Points and Rank are left blank to fill in by hand.",
+};
+
 export function FinalStep({ state, dispatch }: { state: AppState; dispatch(a: Action): void }) {
   const { table, issues } = useStartList(state);
   const [busy, setBusy] = useState<string | null>(null);
@@ -28,7 +36,9 @@ export function FinalStep({ state, dispatch }: { state: AppState; dispatch(a: Ac
   const dayName = state.twoDay ? `Day ${state.day}` : "";
   const event = { ...state.event, name: [state.event.name, dayName].filter(Boolean).join(" · ") };
   const title: SheetTitle = { type: settings.type, ...event };
-  const base = fileBase([state.event.name || state.source?.filename.replace(/\.[^.]+$/, ""), dayName].filter(Boolean).join(" "));
+  const base =
+    fileBase([state.event.name || state.source?.filename.replace(/\.[^.]+$/, ""), dayName].filter(Boolean).join(" ")) +
+    SHEETS[print.sheet].suffix;
   const setPrint = (patch: Partial<PrintOptions>) => dispatch({ type: "print", patch });
   const problems = issues.filter((i) => i.severity !== "info");
 
@@ -82,6 +92,16 @@ export function FinalStep({ state, dispatch }: { state: AppState; dispatch(a: Ac
           aria-label="Export and sheet options"
           className="no-print space-y-4 md:grid md:grid-cols-2 md:items-start md:gap-4 md:space-y-0 lg:block lg:space-y-4"
         >
+          <SideCard title="Sheet">
+            <Segmented
+              label="Sheet to print or download"
+              name="sheet"
+              options={SHEET_KINDS.map((k) => ({ value: k, label: SHEETS[k].label }))}
+              value={print.sheet}
+              onChange={(v) => setPrint({ sheet: v as SheetKind })}
+            />
+            <p className="mt-2 text-xs text-muted">{SHEET_HINTS[print.sheet]}</p>
+          </SideCard>
           <SideCard title="Print or download">
             <div className="grid grid-cols-2 gap-2">
               <Button className="col-span-2" onClick={() => window.print()}>
@@ -115,8 +135,12 @@ export function FinalStep({ state, dispatch }: { state: AppState; dispatch(a: Ac
           </SideCard>
           <SideCard title="On the sheet">
             <div className="space-y-1">
-              <Toggle label="Warm-up (WT) column" checked={print.showWarmup} onChange={(v) => setPrint({ showWarmup: v })} />
-              <Toggle label="Check-in column" checked={print.showCheckIn} onChange={(v) => setPrint({ showCheckIn: v })} />
+              {print.sheet === "ATHLETES" && (
+                <>
+                  <Toggle label="Warm-up (WT) column" checked={print.showWarmup} onChange={(v) => setPrint({ showWarmup: v })} />
+                  <Toggle label="Check-in column" checked={print.showCheckIn} onChange={(v) => setPrint({ showCheckIn: v })} />
+                </>
+              )}
               <Toggle label="Start numbers" checked={print.showStartNumber} onChange={(v) => setPrint({ showStartNumber: v })} />
               <Toggle label="New page after each break" checked={print.pageBreakAtBreaks} onChange={(v) => setPrint({ pageBreakAtBreaks: v })} />
             </div>

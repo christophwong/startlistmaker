@@ -116,6 +116,7 @@ const stateSchema = z.object({
   nextId: int(1, Number.MAX_SAFE_INTEGER),
   manualOrder: z.boolean(),
   print: z.object({
+    sheet: z.enum(["ATHLETES", "JUDGES", "RESULTS"]),
     showWarmup: z.boolean(),
     showCheckIn: z.boolean(),
     showStartNumber: z.boolean(),

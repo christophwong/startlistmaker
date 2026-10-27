@@ -21,6 +21,7 @@ export function useStartList(state: AppState) {
   const table = useMemo(
     () =>
       exportTable(rows, {
+        sheet: print.sheet,
         timeFormat: settings.timeFormat,
         showLane: showLaneColumn(settings),
         laneLabel: laneLabel(settings),

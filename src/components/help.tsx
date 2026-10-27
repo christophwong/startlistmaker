@@ -37,7 +37,9 @@ export function HelpDialog({ open, onClose }: { open: boolean; onClose(): void }
           </li>
           <li>
             <strong>Print & export:</strong> add logos if you like (competition and AIDA beside the title, sponsors after the list),
-            then print or save as PDF, or download CSV or Excel.
+            then print or save as PDF, or download CSV or Excel. Under <strong>Sheet</strong>, the same list also prints as a
+            judge sheet or a results sheet: forms with blank columns (RP, card, remarks, points) that judges fill in by hand on
+            the day.
           </li>
         </ol>
       </Section>

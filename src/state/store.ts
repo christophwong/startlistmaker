@@ -1,5 +1,6 @@
 import type { CompetitionType } from "~/lib/disciplines";
 import type { Logo } from "~/lib/export/logos";
+import type { SheetKind } from "~/lib/export/table";
 import { autoMap, dayLabels, hasStart2, selectStart, type Mapping } from "~/lib/import/columns";
 import { detectCompetitionType, detectMaxStarts } from "~/lib/import/detect";
 import type { NamedSheet, SheetTable } from "~/lib/import/file";
@@ -39,6 +40,8 @@ export interface EventInfo {
 }
 
 export interface PrintOptions {
+  /** The sheet shown on Print & export and used by the downloads. */
+  sheet: SheetKind;
   showWarmup: boolean;
   showCheckIn: boolean;
   showStartNumber: boolean;
@@ -111,7 +114,7 @@ export const initialState: AppState = {
   entries: [],
   nextId: 1,
   manualOrder: false,
-  print: { showWarmup: true, showCheckIn: true, showStartNumber: false, pageBreakAtBreaks: false },
+  print: { sheet: "ATHLETES", showWarmup: true, showCheckIn: true, showStartNumber: false, pageBreakAtBreaks: false },
   logos: [],
 };
 
