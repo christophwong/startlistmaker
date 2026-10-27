@@ -4,6 +4,7 @@ import { ArrowIcon } from "~/components/icons";
 import { LogosEditor } from "~/components/logos-editor";
 import { PrintSheet } from "~/components/start-list/print-sheet";
 import { Alert, Button, Segmented, SideCard } from "~/components/ui";
+import { crewAt, crewOutOfDate, hasNames } from "~/lib/export/crew";
 import { downloadBlob, downloadText, SHEETS, toXlsx, type SheetTitle } from "~/lib/export/files";
 import { fileBase, toCsv, type SheetKind } from "~/lib/export/table";
 import { useStartList } from "~/state/derived";
@@ -19,16 +20,17 @@ function Toggle({ label, checked, onChange }: { label: string; checked: boolean;
   );
 }
 
-const SHEET_KINDS: SheetKind[] = ["ATHLETES", "JUDGES", "RESULTS"];
+const SHEET_KINDS: SheetKind[] = ["ATHLETES", "JUDGES", "SAFETY", "RESULTS"];
 
 const SHEET_HINTS: Record<SheetKind, string> = {
   ATHLETES: "The start list for divers.",
-  JUDGES: "A form for the judges: RP, RESULT (card), Remarks, Points and Judge are left blank to fill in by hand.",
+  JUDGES: "A form for the judges: RP, RESULT (card), Remarks and Points are left blank to fill in by hand.",
+  SAFETY: "The safety divers' and deck crew's schedule, with their names per OT and zone. Prints landscape.",
   RESULTS: "A form for results on the day: RP, Card, Notes, Points and Rank are left blank to fill in by hand.",
 };
 
 export function FinalStep({ state, dispatch }: { state: AppState; dispatch(a: Action): void }) {
-  const { table, issues } = useStartList(state);
+  const { table, issues, rows } = useStartList(state);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const { settings, print } = state;
@@ -55,6 +57,8 @@ export function FinalStep({ state, dispatch }: { state: AppState; dispatch(a: Ac
   };
 
   const starts = table.rows.filter((r) => r.kind === "START").length;
+  const named = rows.filter((r) => r.kind === "START" && Object.values(crewAt(state.crew, r)).some(Boolean)).length;
+  const crewSheet = print.sheet === "JUDGES" || print.sheet === "SAFETY";
 
   return (
     <div className="space-y-6">
@@ -77,6 +81,12 @@ export function FinalStep({ state, dispatch }: { state: AppState; dispatch(a: Ac
           </Button>
         </div>
 
+        {crewSheet && crewOutOfDate(state.crew, rows) && (
+          <Alert tone="warning">
+            The start list has changed since judge and safety names were set. Names stay on their OT and zone; check them on
+            the names screen before printing.
+          </Alert>
+        )}
         {problems.length > 0 && (
           <Alert tone="warning">
             {problems.length} warning{problems.length === 1 ? "" : "s"} on the start list (recovery time, same OT). See the
@@ -101,6 +111,24 @@ export function FinalStep({ state, dispatch }: { state: AppState; dispatch(a: Ac
               onChange={(v) => setPrint({ sheet: v as SheetKind })}
             />
             <p className="mt-2 text-xs text-muted">{SHEET_HINTS[print.sheet]}</p>
+            {crewSheet && (
+              <div className="mt-3 border-t border-line-soft pt-3">
+                <p className="text-sm">
+                  {hasNames(state.crew)
+                    ? `Names set on ${named} of ${starts} starts.`
+                    : print.sheet === "JUDGES"
+                      ? "No names yet: the Judge column prints blank."
+                      : "No names yet: add the safety divers, deck and warm-up crew."}
+                </p>
+                <Button
+                  variant={print.sheet === "SAFETY" && !hasNames(state.crew) ? "primary" : "secondary"}
+                  className="mt-2 w-full"
+                  onClick={() => dispatch({ type: "step", step: "officials" })}
+                >
+                  {hasNames(state.crew) ? "Edit judge & safety names" : "Set judge & safety names"} <ArrowIcon />
+                </Button>
+              </div>
+            )}
           </SideCard>
           <SideCard title="Print or download">
             <div className="grid grid-cols-2 gap-2">

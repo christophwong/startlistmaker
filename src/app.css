@@ -205,4 +205,11 @@ html.dark {
   .print-break-after {
     break-after: page;
   }
+  /* The safety schedule has a column per zone, so it prints landscape. */
+  @page landscape {
+    size: landscape;
+  }
+  .print-landscape {
+    page: landscape;
+  }
 }

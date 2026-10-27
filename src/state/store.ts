@@ -1,5 +1,6 @@
 import type { CompetitionType } from "~/lib/disciplines";
 import type { Logo } from "~/lib/export/logos";
+import { emptyCrew, type Crew } from "~/lib/export/crew";
 import type { SheetKind } from "~/lib/export/table";
 import { autoMap, dayLabels, hasStart2, selectStart, type Mapping } from "~/lib/import/columns";
 import { detectCompetitionType, detectMaxStarts } from "~/lib/import/detect";
@@ -27,7 +28,8 @@ export type { Day };
  * breaks, and schedule() computes every time.
  */
 
-export type Step = "start" | "map" | "data" | "list" | "final";
+/** "officials" is a screen inside Print & export (judge and safety names), not a stepper step. */
+export type Step = "start" | "map" | "data" | "list" | "final" | "officials";
 
 export type Settings = StartListSettings & { timeFormat: TimeFormat };
 
@@ -64,6 +66,7 @@ export interface DayList {
   manualOrder: boolean;
   /** YYYY-MM-DD, or "" */
   date: string;
+  crew: Crew;
 }
 
 export interface AppState {
@@ -89,6 +92,8 @@ export interface AppState {
   event: EventInfo;
   settings: Settings;
   entries: Entry[];
+  /** The day's judge and safety names, by OT group and zone. */
+  crew: Crew;
   nextId: number;
   /** Order changed by hand since the last generate or sort. */
   manualOrder: boolean;
@@ -112,6 +117,7 @@ export const initialState: AppState = {
   event: { name: "", date: "", location: "", notes: "" },
   settings: { ...defaultSettings("POOL"), timeFormat: DEFAULT_TIME_FORMAT },
   entries: [],
+  crew: emptyCrew(),
   nextId: 1,
   manualOrder: false,
   print: { sheet: "ATHLETES", showWarmup: true, showCheckIn: true, showStartNumber: false, pageBreakAtBreaks: false },
@@ -138,6 +144,8 @@ export type Action =
   | { type: "sortColumn"; column: ColumnKey; dir: "ASC" | "DESC" }
   | { type: "event"; patch: Partial<EventInfo> }
   | { type: "print"; patch: Partial<PrintOptions> }
+  /** `newId` is free for a new section row. */
+  | { type: "crew"; edit: (crew: Crew, newId: string) => Crew }
   | { type: "addLogos"; logos: Omit<Logo, "id">[] }
   | { type: "updateLogo"; id: string; patch: Partial<Pick<Logo, "place" | "size">> }
   | { type: "moveLogo"; id: string; by: -1 | 1 }
@@ -190,7 +198,7 @@ export const otherOf = (day: Day): Day => (day === 1 ? 2 : 1);
 /** A day's list, whether it's on screen or not. */
 export function dayList(state: AppState, day: Day): DayList | null {
   if (day === state.day) {
-    return { settings: state.settings, entries: state.entries, manualOrder: state.manualOrder, date: state.event.date };
+    return { settings: state.settings, entries: state.entries, manualOrder: state.manualOrder, date: state.event.date, crew: state.crew };
   }
   return state.otherDay;
 }
@@ -212,6 +220,7 @@ function switchDay(state: AppState, day: Day): AppState {
     settings: other.settings,
     entries: other.entries,
     manualOrder: other.manualOrder,
+    crew: other.crew,
     event: { ...state.event, date: other.date },
     otherDay: dayList(state, state.day),
   };
@@ -249,7 +258,7 @@ function loadSource(state: AppState, source: Source): AppState {
     logos: state.logos,
     settings,
     twoDay,
-    otherDay: twoDay ? { settings, entries: [], manualOrder: false, date: nextDate(state.event.date) } : null,
+    otherDay: twoDay ? { settings, entries: [], manualOrder: false, date: nextDate(state.event.date), crew: emptyCrew() } : null,
     step: "map",
     source,
     mapping,
@@ -311,7 +320,13 @@ export function upgradeOneDaySave(state: AppState, use: Day): AppState {
     registrations,
     entries,
     importedKey: fresh.importedKey,
-    otherDay: { settings: state.settings, entries: [], manualOrder: false, date: use === 1 ? nextDate(state.event.date) : "" },
+    otherDay: {
+      settings: state.settings,
+      entries: [],
+      manualOrder: false,
+      date: use === 1 ? nextDate(state.event.date) : "",
+      crew: emptyCrew(),
+    },
   };
   const other = otherOf(use);
   const more = withIds(upgraded.nextId, generateEntries(startsOf({ ...upgraded, day: other }), state.settings));
@@ -428,6 +443,8 @@ export function reducer(state: AppState, action: Action): AppState {
     }
     case "print":
       return { ...state, print: { ...state.print, ...action.patch } };
+    case "crew":
+      return { ...state, crew: action.edit(state.crew, `c${state.nextId}`), nextId: state.nextId + 1 };
     case "addLogos": {
       let nextId = state.nextId;
       const added = action.logos.map((l) => ({ ...l, id: `l${nextId++}` }));
@@ -481,6 +498,7 @@ export function reachable(state: AppState, step: Step): boolean {
       return state.registrations.length > 0;
     case "list":
     case "final":
+    case "officials":
       return state.entries.length > 0 || !!state.otherDay?.entries.length;
   }
 }

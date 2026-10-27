@@ -112,6 +112,52 @@ test("judge and results sheets: blank forms from the same list, with their own d
   await expect(sheet.locator("thead th").last()).toHaveText("Rank");
 });
 
+test("safety sheet: set names by selecting starts, then print the schedule", async ({ page, isMobile }) => {
+  await page.goto("/#demo-pool");
+  await page.getByRole("button", { name: "Print & export", exact: true }).click();
+  await page.getByText("Safety", { exact: true }).click();
+  await page.getByRole("button", { name: /Set judge & safety names/ }).click();
+  await expect(page.getByRole("heading", { name: /Judge & safety names/ })).toBeVisible();
+
+  // Lane 2 after the break: two chips, one apply.
+  await page.getByRole("button", { name: "After break" }).click();
+  await page.getByRole("button", { name: "Lane 2" }).click();
+  const bar = page.getByRole("form", { name: "Set names on the selected starts" });
+  await expect(bar.getByText(/^\d+ starts selected$/)).toBeVisible();
+  const picked = Number((await bar.getByText(/starts selected/).textContent())!.split(" ")[0]);
+  await bar.getByLabel("Safety").fill("Robin");
+  await bar.getByLabel("Deck").fill("Kai");
+  await bar.getByRole("button", { name: "Apply" }).click();
+  await expect(page.getByRole("status")).toHaveText(new RegExp(`Names set on ${picked} starts`));
+
+  // Undo takes it back; apply again.
+  await page.getByRole("button", { name: "Undo" }).click();
+  await expect(page.getByRole("status")).toHaveCount(0);
+  await bar.getByLabel("Safety").fill("Robin");
+  await bar.getByRole("button", { name: "Apply" }).click();
+
+  if (!isMobile) {
+    // One-off: edit a single judge cell in place.
+    await page.getByLabel(/^Judge, 9:00 Lane 1$/).fill("Jo & Ana");
+    await page.getByLabel(/^Judge, 9:00 Lane 1$/).press("Enter");
+  }
+  await page.getByRole("button", { name: "Add warm-up rows for the safety sheet" }).click();
+
+  await page.getByRole("button", { name: "Safety sheet" }).click();
+  const sheet = page.locator(".print-area");
+  await expect(sheet.locator("thead th")).toHaveText(["Diver Name", "Sex", "Disc", "AP", "OT", "WT", "Lane", "Deck", "Warm Up", "Lane 1", "Lane 2", "Lane 3", "Judge"]);
+  await expect(sheet.locator("tbody td", { hasText: /^Robin$/ })).toHaveCount(picked);
+  await expect(sheet.locator("tbody td", { hasText: "STA WARM UP" })).toBeVisible();
+  if (!isMobile) await expect(sheet.locator("tbody td", { hasText: /^Jo & Ana$/ })).toHaveCount(1);
+  await expect(page.getByText(/Names set on \d+ of \d+ starts/)).toBeVisible();
+
+  const csv = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Download CSV" }).click();
+  const file = await csv;
+  expect(file.suggestedFilename()).toMatch(/-safety\.csv$/);
+  expect(fs.readFileSync(await file.path(), "utf8")).toContain("STA WARM UP · 8:15");
+});
+
 test("a two-day form: both days on Columns, a tab per day after it", async ({ page }) => {
   await page.goto("/#demo");
   const tabs = page.getByRole("tablist", { name: "Competition day" });

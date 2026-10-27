@@ -11,6 +11,7 @@ Start List Maker turns competition registrations into a printable AIDA-style sta
 - Fixed or dive-time-based spacing, with sorting and drag-to-reorder. Times recalculate as you go.
 - Print or save as PDF, or download CSV or Excel, with logos. Save the project to a file to reopen later.
 - Judge and results sheets from the same list: forms with blank RP, card, remarks and points columns for judges to fill in on the day.
+- A landscape safety schedule with the safety divers, deck and warm-up crew and judges per zone and OT, entered by selecting starts and applying names to all of them at once.
 
 ## How to use it
 

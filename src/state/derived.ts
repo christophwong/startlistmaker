@@ -6,7 +6,7 @@ import { startsOf, type AppState } from "./store";
 
 /** Starts, scheduled rows, issues and the export table, all derived from state. */
 export function useStartList(state: AppState) {
-  const { settings, registrations, maxStarts, twoDay, day, entries, print } = state;
+  const { settings, registrations, maxStarts, twoDay, day, entries, print, crew } = state;
   const starts = useMemo(
     () => startsOf({ registrations, settings, maxStarts, twoDay, day }),
     [registrations, settings, maxStarts, twoDay, day],
@@ -28,8 +28,9 @@ export function useStartList(state: AppState) {
         showWarmup: print.showWarmup,
         showCheckIn: print.showCheckIn,
         showStartNumber: print.showStartNumber,
+        crew,
       }),
-    [rows, settings, print],
+    [rows, settings, print, crew],
   );
   return { starts, rows, issues, table };
 }

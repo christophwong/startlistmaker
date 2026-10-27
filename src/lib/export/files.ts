@@ -1,6 +1,6 @@
 import type { CompetitionType } from "../disciplines";
 import { formatEventDate } from "../format";
-import { safeCell, type ExportTable, type SheetKind } from "./table";
+import { safeCell, sectionText, type ExportTable, type SheetKind } from "./table";
 
 /**
  * File downloads, all generated in the browser. The Excel writer is loaded
@@ -27,6 +27,7 @@ export const downloadText = (filename: string, text: string, type: string) =>
 export const SHEETS: Record<SheetKind, { label: string; suffix: string }> = {
   ATHLETES: { label: "Athlete", suffix: "" },
   JUDGES: { label: "Judge", suffix: "-judge" },
+  SAFETY: { label: "Safety", suffix: "-safety" },
   RESULTS: { label: "Results", suffix: "-results" },
 };
 
@@ -69,7 +70,11 @@ export async function toXlsx(t: ExportTable, title: SheetTitle): Promise<Blob> {
     [],
     t.header.map((h) => text(h, { fontWeight: "bold" })),
     ...t.rows.map((r) =>
-      r.kind === "BREAK" ? [text(r.label, { fontWeight: "bold", span: width })] : r.cells.map((c) => text(c)),
+      r.kind === "BREAK"
+        ? [text(r.label, { fontWeight: "bold", span: width })]
+        : r.kind === "SECTION"
+          ? [text(sectionText(r), { fontWeight: "bold", span: width })]
+          : r.cells.map((c, i) => text(c, r.greyed?.[i] ? { backgroundColor: "#BFBFBF" } : {})),
     ),
   ];
   const colWidth = (h: string, i: number) => (h === "Diver Name" ? 28 : !t.blank[i] ? 11 : WIDE_BLANK.includes(h) ? 24 : 13);

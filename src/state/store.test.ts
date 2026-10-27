@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import { describe, expect, it } from "vitest";
+import { emptyCrew, setCrew } from "~/lib/export/crew";
 import { MAX_LOGO_SRC, type Logo } from "~/lib/export/logos";
 import { parseCsv } from "~/lib/import/file";
 import { schedule } from "~/lib/startlist";
@@ -273,6 +274,18 @@ describe("project files and stored state", () => {
     delete noSheet.print.sheet;
     expect(parseState(noSheet)?.print).toEqual({ ...s.print, sheet: "ATHLETES", showWarmup: false });
     expect(parseState({ ...s, print: { ...s.print, sheet: "SPONSORS" } })).toBeNull();
+    // Saved before judge and safety names.
+    const noCrew = JSON.parse(JSON.stringify(s));
+    delete noCrew.crew;
+    expect(parseState(noCrew)?.crew).toEqual(emptyCrew());
+  });
+
+  it("judge and safety names round-trip and are bounded", () => {
+    const crew = setCrew(emptyCrew(), [{ group: 1, lane: 2 }], { judge: "Jo & Ana", deck: "Kai" }, { groups: 4, lanes: 3 });
+    const withCrew = { ...s, crew: { ...crew, sections: [{ id: "c1", beforeGroup: 1, label: "STA WARM UP", note: "" }] } };
+    expect(fromProjectJson(toProjectJson(withCrew)).crew).toEqual(withCrew.crew);
+    expect(parseState({ ...s, crew: { ...crew, zone: { "<img>": { judge: "x" } } } })).toBeNull();
+    expect(parseState({ ...s, crew: { ...crew, zone: { "1:1": { judge: "x".repeat(81) } } } })).toBeNull();
   });
 
   it("keeps logos in the project file and rejects anything but PNG/JPEG data URLs", () => {

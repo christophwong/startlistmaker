@@ -1,5 +1,6 @@
 import * as z from "zod/mini";
 import { DEPTH_DISCIPLINES, POOL_DISCIPLINES } from "~/lib/disciplines";
+import { emptyCrew, MAX_NAME } from "~/lib/export/crew";
 import { LOGO_SRC, MAX_LOGO_PX, MAX_LOGO_SRC, MAX_LOGOS, MAX_LOGOS_TOTAL } from "~/lib/export/logos";
 import { MAX_ROWS } from "~/lib/import/file";
 import { THEME_KEY } from "~/theme";
@@ -76,8 +77,19 @@ const logos = list(
   MAX_LOGOS,
 ).check(z.refine((l) => l.reduce((sum, x) => sum + x.src.length, 0) <= MAX_LOGOS_TOTAL));
 
+// Judge and safety names: plain text, bounded per name and in count.
+const name = z.optional(str(MAX_NAME));
+const slots = <T extends z.core.SomeType>(key: RegExp, value: T) =>
+  z.record(z.string().check(z.regex(key)), value).check(z.refine((r) => Object.keys(r).length <= MAX_ROWS * 4));
+const crew = z.object({
+  zone: slots(/^\d{1,5}:\d{1,2}$/, z.object({ judge: name, safety: name })),
+  group: slots(/^\d{1,5}$/, z.object({ deck: name, warmUp: name })),
+  sections: list(z.object({ id: str(40), beforeGroup: int(1, MAX_ROWS * 2), label: str(MAX_NAME), note: str(MAX_NAME) }), 200),
+  shape: z.nullable(z.object({ groups: int(0, MAX_ROWS * 2), lanes: int(1, 10) })),
+});
+
 const stateSchema = z.object({
-  step: z.enum(["start", "map", "data", "list", "final"]),
+  step: z.enum(["start", "map", "data", "list", "final", "officials"]),
   demo: z.boolean(),
   source: z.nullable(
     z.object({
@@ -90,7 +102,7 @@ const stateSchema = z.object({
   mapping: z.record(z.string(), int(0, 199)),
   twoDay: z.boolean(),
   day,
-  otherDay: z.nullable(z.object({ settings, entries, manualOrder: z.boolean(), date: str(20) })),
+  otherDay: z.nullable(z.object({ settings, entries, manualOrder: z.boolean(), date: str(20), crew })),
   maxStarts: z.union([z.literal(1), z.literal(2)]),
   registrations: list(
     z.object({
@@ -113,10 +125,11 @@ const stateSchema = z.object({
   event: z.object({ name: str(), date: str(20), location: str(), notes: str(2000) }),
   settings,
   entries,
+  crew,
   nextId: int(1, Number.MAX_SAFE_INTEGER),
   manualOrder: z.boolean(),
   print: z.object({
-    sheet: z.enum(["ATHLETES", "JUDGES", "RESULTS"]),
+    sheet: z.enum(["ATHLETES", "JUDGES", "SAFETY", "RESULTS"]),
     showWarmup: z.boolean(),
     showCheckIn: z.boolean(),
     showStartNumber: z.boolean(),
@@ -135,6 +148,8 @@ export function parseState(value: unknown): AppState | null {
     event: { ...initialState.event, ...v.event },
     settings: { ...initialState.settings, ...v.settings },
     print: { ...initialState.print, ...v.print },
+    // Saved before judge and safety names.
+    otherDay: v.otherDay ? { ...v.otherDay, crew: v.otherDay.crew ?? emptyCrew() } : null,
   };
   // Saved before imports were tracked: treat the athletes as read with the current columns, so Continue keeps them.
   if (v.importedKey === undefined && merged.registrations.length) merged.importedKey = importKey(merged);
@@ -144,7 +159,11 @@ export function parseState(value: unknown): AppState | null {
   // Saved when a two-day form was built one day at a time: open it with both days.
   if (v.twoDay !== undefined || !formDays(state.source)) return state;
   if (!state.registrations.length) {
-    return { ...state, twoDay: true, otherDay: { settings: state.settings, entries: [], manualOrder: false, date: "" } };
+    return {
+      ...state,
+      twoDay: true,
+      otherDay: { settings: state.settings, entries: [], manualOrder: false, date: "", crew: emptyCrew() },
+    };
   }
   const use = (value as { use?: unknown }).use === 2 ? 2 : 1;
   const upgraded = stateSchema.safeParse(upgradeOneDaySave(state, use));

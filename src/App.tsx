@@ -1,4 +1,4 @@
-import { useEffect, useReducer, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useReducer, useRef, useState } from "react";
 import { DAY_PANEL_ID, DayTabs, dayTabId } from "~/components/day-tabs";
 import { HelpDialog } from "~/components/help";
 import { ChevronIcon, HelpIcon, LockIcon, MoonIcon, MoreIcon, SunIcon, TrashIcon } from "~/components/icons";
@@ -15,6 +15,9 @@ import { ListStep } from "~/steps/ListStep";
 import { MapStep } from "~/steps/MapStep";
 import { StartStep } from "~/steps/StartStep";
 import { applyTheme, getTheme } from "~/theme";
+
+// Only organizers who print judge or safety sheets open it, so it stays out of the main chunk.
+const OfficialsStep = lazy(() => import("~/steps/OfficialsStep").then((m) => ({ default: m.OfficialsStep })));
 
 const STEPS: [Step, string][] = [
   ["start", "Upload"],
@@ -70,7 +73,8 @@ export default function App() {
     dispatch({ type: "reset" });
   };
   const hasData = !!state.source || state.registrations.length > 0;
-  const showDayTabs = state.twoDay && (state.step === "data" || state.step === "list" || state.step === "final");
+  const showDayTabs =
+    state.twoDay && (state.step === "data" || state.step === "list" || state.step === "final" || state.step === "officials");
   const toggleTheme = () => {
     const next = theme === "dark" ? "light" : "dark";
     applyTheme(next, true);
@@ -203,7 +207,8 @@ export default function App() {
 
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <Stepper
-          current={state.step}
+          // The judge and safety names screen is part of Print & export.
+          current={state.step === "officials" ? "final" : state.step}
           onStep={(step) => dispatch({ type: "step", step })}
           steps={STEPS.map(([step, label]) => ({ step, label, enabled: reachable(state, step) }))}
         />
@@ -231,6 +236,11 @@ export default function App() {
           {state.step === "data" && <DataStep key={state.day} state={state} dispatch={dispatch} />}
           {state.step === "list" && <ListStep key={state.day} state={state} dispatch={dispatch} />}
           {state.step === "final" && <FinalStep key={state.day} state={state} dispatch={dispatch} />}
+          {state.step === "officials" && (
+            <Suspense fallback={<p className="text-muted">Loading…</p>}>
+              <OfficialsStep key={state.day} state={state} dispatch={dispatch} />
+            </Suspense>
+          )}
         </main>
 
         <HelpDialog open={help} onClose={() => setHelp(false)} />

@@ -53,10 +53,14 @@ export function PrintSheet({
   // `!` beats the zebra stripe when the header repeats inside the body.
   const accent = type === "POOL" ? "!bg-[#2a5ea8]" : "!bg-[#3c7a2a]";
   const nameCol = table.header.indexOf("Diver Name");
-  const left = logosAt(logos, "HEADER_LEFT");
-  const right = logosAt(logos, "HEADER_RIGHT");
-  // The judge sheet is a working form, so no sponsor strip (as on the ECAC sheet).
-  const sponsors = table.sheet === "JUDGES" ? [] : logosAt(logos, "SPONSORS");
+  const safety = table.sheet === "SAFETY";
+  // The safety schedule is a working sheet with no logos (as on the ECAC sheet).
+  const left = safety ? [] : logosAt(logos, "HEADER_LEFT");
+  const right = safety ? [] : logosAt(logos, "HEADER_RIGHT");
+  // Neither the judge sheet nor the safety schedule has a sponsor strip.
+  const sponsors = table.sheet === "JUDGES" || safety ? [] : logosAt(logos, "SPONSORS");
+  // A section row puts its time under WT, as on the ECAC safety schedule.
+  const wtCol = table.header.indexOf("WT");
   // Forms with blank columns get taller rows to write in.
   const form = table.blank.some(Boolean);
   const headerRow = (
@@ -88,7 +92,8 @@ export function PrintSheet({
   );
 
   return (
-    <div className="bg-white text-black">
+    // The safety schedule prints landscape (a named page in app.css), since it has a column per zone.
+    <div className={cx("bg-white text-black", safety && "print-landscape")}>
       {/* Equal sides keep the title centred with a logo on one side only. */}
       <header
         className={cx(
@@ -114,7 +119,9 @@ export function PrintSheet({
             // Forms fit up to 12 columns on a portrait page, as on the ECAC judge sheet: smaller type, names on one line.
             form
               ? "text-[12px] [&_td]:h-8 [&_td]:px-1 [&_td]:py-1 [&_th]:whitespace-nowrap"
-              : "text-[13px] [&_td]:px-1.5 [&_td]:py-0.5",
+              : safety
+                ? "text-[12px] [&_td]:px-1 [&_td]:py-0.5 [&_th]:whitespace-nowrap"
+                : "text-[13px] [&_td]:px-1.5 [&_td]:py-0.5",
           )}
         >
           <thead className="[display:table-header-group]">{headerRow}</thead>
@@ -131,10 +138,24 @@ export function PrintSheet({
                       break, the thead already repeats at the top of the next page. */}
                   {table.sheet === "JUDGES" && !pageBreakAtBreaks && i < table.rows.length - 1 && headerRow}
                 </Fragment>
+              ) : r.kind === "SECTION" ? (
+                <tr key={i} className="break-after-avoid !bg-slate-200 font-semibold">
+                  <td colSpan={Math.max(wtCol, 1)} className="text-left uppercase">
+                    {r.label}
+                  </td>
+                  {wtCol > 0 && <td className="tabular-nums">{r.time}</td>}
+                  <td colSpan={table.header.length - Math.max(wtCol, 1) - (wtCol > 0 ? 1 : 0)}>{r.note}</td>
+                </tr>
               ) : (
                 <tr key={i} className="break-inside-avoid">
                   {r.cells.map((c, j) => (
-                    <td key={j} className={j === nameCol ? cx("text-left", form && "whitespace-nowrap") : "tabular-nums"}>
+                    <td
+                      key={j}
+                      className={cx(
+                        j === nameCol ? cx("text-left", (form || safety) && "whitespace-nowrap") : "tabular-nums",
+                        r.greyed?.[j] && "!bg-slate-400",
+                      )}
+                    >
                       {c}
                     </td>
                   ))}
