@@ -52,6 +52,13 @@ describe("checkRow", () => {
     expect(checkRow(r, "DEPTH", 2).starts.map((s) => s.id)).toEqual(["x-s1", "x-s2"]);
   });
 
+  it("a day with nothing entered isn't checked; the athlete fields are checked on the day they dive", () => {
+    const r = row({ firstName: "", lastName: "", gender: "" });
+    const day2 = checkRow(r, "DEPTH", 2, 0, 2);
+    expect(day2).toEqual({ notEntered: true, errors: {}, warnings: {}, starts: [] });
+    expect(checkRow(r, "DEPTH", 2, 0, 1).errors.name).toBe("Name is missing.");
+  });
+
   it("excluded rows are left off", () => {
     expect(rowsToStarts([row({ excluded: true }), row({ id: "y" })], "DEPTH", 1).map((s) => s.athleteId)).toEqual(["y"]);
   });

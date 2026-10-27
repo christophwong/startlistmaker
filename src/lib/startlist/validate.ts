@@ -3,7 +3,7 @@ import type { EngineStart, ScheduledRow, ScheduledStart, StartListSettings } fro
 
 export interface Issue {
   severity: "error" | "warning" | "info";
-  code: "RECOVERY" | "SAME_GROUP" | "UNSCHEDULED" | "BREAK_OVERLAP";
+  code: "RECOVERY" | "SAME_GROUP" | "UNSCHEDULED" | "BREAK_OVERLAP" | "PAST_MIDNIGHT";
   message: string;
   startIds: string[];
 }
@@ -58,6 +58,17 @@ export function validateStartList(
         startIds: [],
       });
     }
+  }
+
+  // OTs are minutes from the day's midnight; the clock wraps them silently.
+  const nextDay = starts.find((r) => r.ot >= 24 * 60);
+  if (nextDay) {
+    issues.push({
+      severity: "warning",
+      code: "PAST_MIDNIGHT",
+      message: `The list runs past midnight from OT ${formatClock(nextDay.ot, timeFormat)}. Those OTs are on the next day.`,
+      startIds: [nextDay.start.id],
+    });
   }
 
   const scheduled = new Set(starts.map((r) => r.start.id));

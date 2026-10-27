@@ -374,4 +374,21 @@ describe("validateStartList", () => {
     );
     expect(issues.map((i) => i.code)).toEqual(["BREAK_OVERLAP"]);
   });
+
+  it("warns once when OTs run past midnight, pointing at the first start of the next day", () => {
+    const entries: EntryInput[] = depthStarts.map((s) => ({ kind: "START", startId: s.id }));
+    const late = { ...depthSettings, startTime: parseClock("23:30")! };
+    const rows = schedule(entries, index(depthStarts), late);
+    const first = startRows(rows).find((r) => r.ot >= 24 * 60)!;
+    const issues = validateStartList(rows, depthStarts, late);
+    expect(issues).toEqual([
+      {
+        severity: "warning",
+        code: "PAST_MIDNIGHT",
+        message: `The list runs past midnight from OT ${formatClock(first.ot)}. Those OTs are on the next day.`,
+        startIds: [first.start.id],
+      },
+    ]);
+    expect(validateStartList(schedule(entries, index(depthStarts), depthSettings), depthStarts, depthSettings)).toEqual([]);
+  });
 });

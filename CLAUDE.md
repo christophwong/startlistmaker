@@ -25,13 +25,15 @@ The stack is Vite, TypeScript, Tailwind v4 and React 19. `~/` maps to `src/`.
 
 - **`src/lib/`** holds pure domain logic. `startlist/` is the engine (sort, generate, schedule, validate, edits) and `import/` covers CSV/XLSX/paste → mapped columns → parsed rows. `registrations.ts` has the editable athlete rows and per-cell validation. `export/` builds the shared table for print, CSV and XLSX. PDFs come only from the browser's Print / Save as PDF (the jsPDF download was dropped because its fonts garbled names outside Latin-1).
 - **`src/state/`**: `store.ts` holds one reducer with all app state, `persist.ts` covers session/local storage and project files (zod/mini validated), and `derived.ts` has the `useStartList` hook.
-- **`src/steps/`** has one component per step (Upload → Columns → Athletes → Start list → Print & export). **`src/components/`** holds the shared UI (callback-driven).
+- **`src/steps/`** has one component per step (Upload → Columns → Athletes → Start list → Print & export), plus `OfficialsStep.tsx`, the lazy-loaded judge & safety names screen under Print & export. **`src/components/`** holds the shared UI (callback-driven).
+- **`src/lib/export/`** also has the sheet presets (`table.ts`: athlete, judge, safety, results) and `crew.ts` (judge and safety names, keyed by OT-group slot so they stay put when divers are reordered).
 - **`src/samples/`** holds the anonymized demo CSVs, bundled as `?raw` and loaded on demand.
 
 Key points that span files:
 
 - **The engine is two-phase.** `generateEntries()` produces order and breaks, and `schedule()` computes every time. State stores only `entries` (order + breaks). Times are never stored, so edits can't leave stale OTs.
 - **Registrations are the source of truth for athletes.** Starts are derived with `rowsToStarts`, and start ids are `${rowId}-s{1|2}`, so fixing data keeps a start's place in the list.
+- **Two-day forms** share one `RegRow` per athlete; each day has its own `DayList` (settings, entries, date, crew). State holds the shown day's list at the top level and the other in `otherDay`.
 - **Settings shape.** `StartListSettings` lives in `lib/startlist/types.ts`. Adding a setting touches the type, `defaults.ts`, `settingsSchema` (`lib/validation.ts`), the stored-state schema in `state/persist.ts`, the settings form, and the engine.
 - **Privacy/security is a feature.** A CSP meta tag is injected at build time (`vite.config.ts`, `connect-src 'none'`). Nothing may fetch at runtime: no CDNs, web fonts, analytics, or `fetch` of samples. Don't use `dangerouslySetInnerHTML`. Anything read from storage or a project file goes through `parseState`. Exported cells go through `safeCell` (formula injection). The e2e suite fails on any off-origin request or console error.
 - **Heavy libraries are lazy.** `write-excel-file` and `read-excel-file` are dynamically imported. Keep them out of the main chunk, which must stay at or under 135 KB gzipped (most of it React DOM).
@@ -41,4 +43,4 @@ Key points that span files:
 
 - `src/**/*.test.ts` are unit tests. `tests/fixtures/ecac.ts` reproduces the real ECAC start sheets, and engine changes must keep those passing.
 - `tests/unit/anonymize.test.ts` runs the anonymizer script.
-- `tests/e2e/app.spec.ts` covers the CSP, demo, upload → fix → generate, sort, drag and drop, paste, exports, logos, project save/open, and storage clearing. Test images are drawn on a canvas in the page, so there are no binary fixtures.
+- `tests/e2e/app.spec.ts` covers the CSP, demo, upload → fix → generate, sort, drag and drop, paste, exports, logos, project save/open, storage clearing, two-day forms, and the judge, results and safety sheets. Test images are drawn on a canvas in the page, so there are no binary fixtures.

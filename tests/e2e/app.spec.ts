@@ -553,6 +553,21 @@ test("start list: a start's menu moves it to a position and adds a break; the br
   await expect(bars).toHaveCount(before);
 });
 
+test("phone: a start's menu near the bottom of the screen opens upward, so every item is on screen", async ({ page }) => {
+  test.skip(!isMobile(page), "the table's ⋯ menu opens beside the button");
+  await page.goto("/#demo");
+  const menu = page.getByRole("button", { name: /^Move (?!break )/ }).nth(2);
+  // Put the button near the bottom edge, just above the sticky Print & export bar.
+  const box = (await menu.boundingBox())!;
+  await page.mouse.wheel(0, box.y - (page.viewportSize()!.height - 170));
+  await expect.poll(async () => (await menu.boundingBox())!.y).toBeGreaterThan(page.viewportSize()!.height - 200);
+  await menu.click();
+  const last = page.getByRole("button", { name: "Remove this start" });
+  await expect(last).toBeVisible();
+  const item = (await last.boundingBox())!;
+  expect(item.y + item.height).toBeLessThanOrEqual(page.viewportSize()!.height);
+});
+
 test("header: the privacy note and Your data menu open and close", async ({ page }) => {
   await page.goto("/#demo");
   await expect(page.getByRole("heading", { name: "Start list" })).toBeVisible();

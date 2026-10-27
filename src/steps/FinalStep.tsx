@@ -89,8 +89,12 @@ export function FinalStep({ state, dispatch }: { state: AppState; dispatch(a: Ac
         )}
         {problems.length > 0 && (
           <Alert tone="warning">
-            {problems.length} warning{problems.length === 1 ? "" : "s"} on the start list (recovery time, same OT). See the
-            Start list step for details.
+            {problems.length} warning{problems.length === 1 ? "" : "s"} on the start list. See the Start list step for details.
+            <ul className="mt-1 list-disc pl-5">
+              {problems.map((i, n) => (
+                <li key={n}>{i.message}</li>
+              ))}
+            </ul>
           </Alert>
         )}
         {error && <Alert tone="error">{error}</Alert>}

@@ -90,6 +90,8 @@ export function checkRow(row: RegRow, type: CompetitionType, maxStarts: 1 | 2, o
   const warnings: RowCheck["warnings"] = {};
   const starts: EngineStartWithAthlete[] = [];
   const notEntered = day !== undefined && isBlank(row.starts[day - 1]) && !row.starts[day - 1].ap.trim();
+  // Not diving this day: the athlete fields are checked on the day they dive.
+  if (notEntered) return { errors, warnings, starts, notEntered };
 
   const firstName = row.firstName.trim();
   const lastName = row.lastName.trim();
@@ -150,7 +152,7 @@ export function checkRow(row: RegRow, type: CompetitionType, maxStarts: 1 | 2, o
       order,
     });
   }
-  return { errors, warnings, starts, ...(notEntered && { notEntered }), ...(off.length > 0 && { off }) };
+  return { errors, warnings, starts, ...(off.length > 0 && { off }) };
 }
 
 /** On that day's list: not unticked as a whole (one-day files) or for that day. */
