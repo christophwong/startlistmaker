@@ -1,3 +1,4 @@
+import { formatCountry, type CountryFormat } from "~/lib/countries";
 import type { CompetitionType } from "~/lib/disciplines";
 import type { Logo } from "~/lib/export/logos";
 import { emptyCrew, type Crew } from "~/lib/export/crew";
@@ -49,7 +50,8 @@ export type { Day };
 /** "officials" is a screen inside Print & export (judge and safety names), not a tab. */
 export type Step = "start" | "data" | "list" | "final" | "officials";
 
-export type Settings = StartListSettings & { timeFormat: TimeFormat };
+/** Display settings ride along with the engine's; countryFormat is shared by both days. */
+export type Settings = StartListSettings & { timeFormat: TimeFormat; countryFormat: CountryFormat };
 
 export interface EventInfo {
   name: string;
@@ -151,7 +153,7 @@ export const initialState: AppState = {
   editedRows: [],
   event: { name: "", date: "", location: "", notes: "" },
   nameFromFile: false,
-  settings: { ...defaultSettings("POOL"), timeFormat: DEFAULT_TIME_FORMAT },
+  settings: { ...defaultSettings("POOL"), timeFormat: DEFAULT_TIME_FORMAT, countryFormat: "CODE" },
   entries: [],
   crew: emptyCrew(),
   nextId: 1,
@@ -260,9 +262,12 @@ export function missingColumns(state: Pick<AppState, "source" | "mapping">): Mis
 const edited = (state: AppState, id: string) =>
   state.editedRows.includes(id) ? state.editedRows : [...state.editedRows, id];
 
-/** The starts on screen: the current day's on a two-day form. */
+/** The starts on screen: the current day's on a two-day form, with the country as code or full name. */
 export const startsOf = (state: Pick<AppState, "registrations" | "settings" | "maxStarts" | "twoDay" | "day">) =>
-  rowsToStarts(state.registrations, state.settings.type, state.maxStarts, state.twoDay ? state.day : undefined);
+  rowsToStarts(state.registrations, state.settings.type, state.maxStarts, state.twoDay ? state.day : undefined).map((s) => ({
+    ...s,
+    country: formatCountry(s.country, state.settings.countryFormat),
+  }));
 
 export const otherOf = (day: Day): Day => (day === 1 ? 2 : 1);
 
@@ -311,7 +316,7 @@ function withIds(nextId: number, list: EntryInput[]): { entries: Entry[]; nextId
 /** New type: that type's ordering defaults, keeping the user's timing basics. */
 function settingsForType(s: Settings, type: CompetitionType): Settings {
   if (s.type === type) return s;
-  return { ...defaultSettings(type), startTime: s.startTime, timeFormat: s.timeFormat };
+  return { ...defaultSettings(type), startTime: s.startTime, timeFormat: s.timeFormat, countryFormat: s.countryFormat };
 }
 
 /** Both days share the competition type. */
@@ -327,7 +332,8 @@ function withType(state: AppState, type: CompetitionType): AppState {
 function loadSource(state: AppState, source: Source): AppState {
   const found = inferColumns(source.table.headers, source.table.rows, autoMap(source.table.headers));
   const type = detectCompetitionType(source.table.rows, found.mapping);
-  const settings = { ...defaultSettings(type), startTime: state.settings.startTime, timeFormat: state.settings.timeFormat };
+  const { startTime, timeFormat, countryFormat } = state.settings;
+  const settings = { ...defaultSettings(type), startTime, timeFormat, countryFormat };
   const twoDay = !!formDays(source);
   // The name from the file, unless the user named the event (kept across uploads).
   const suggested = !state.event.name || state.nameFromFile ? suggestEventName(source.filename) : "";
@@ -629,8 +635,15 @@ function apply(state: AppState, action: Action): AppState {
       const n = next.entries.length - state.entries.length;
       return { ...next, notice: { text: `${n} start${n === 1 ? "" : "s"} added at the end.`, undo: true } };
     }
-    case "settings":
-      return { ...state, settings: action.settings };
+    case "settings": {
+      const { countryFormat } = action.settings;
+      const other = state.otherDay;
+      return {
+        ...state,
+        settings: action.settings,
+        otherDay: other && { ...other, settings: { ...other.settings, countryFormat } },
+      };
+    }
     case "entries":
       return {
         ...state,
@@ -715,7 +728,8 @@ const MAX_HISTORY = 20;
 
 export function reducer(state: AppState, action: Action): AppState {
   if (action.type === "reset") {
-    return { ...initialState, settings: { ...initialState.settings, timeFormat: state.settings.timeFormat } };
+    const { timeFormat, countryFormat } = state.settings;
+    return { ...initialState, settings: { ...initialState.settings, timeFormat, countryFormat } };
   }
   if (action.type === "undo") {
     const prev = state.history.at(-1);

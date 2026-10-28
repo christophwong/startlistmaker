@@ -51,6 +51,7 @@ const settings = z.object({
   sortBy: z.enum(["AP", "DIVE_TIME", "NAME", "REGISTRATION"]),
   sortDir: z.enum(["ASC", "DESC"]),
   timeFormat: z.enum(["24h", "12h"]),
+  countryFormat: z.enum(["CODE", "NAME"]),
 });
 const entries = list(
   z.union([
@@ -163,8 +164,14 @@ export function parseState(value: unknown): AppState | null {
     event: { ...initialState.event, ...v.event },
     settings: { ...initialState.settings, ...v.settings },
     print: { ...initialState.print, ...v.print },
-    // Saved before judge and safety names.
-    otherDay: v.otherDay ? { ...v.otherDay, crew: v.otherDay.crew ?? emptyCrew() } : null,
+    // Saved before judge and safety names, or before country format (codes then).
+    otherDay: v.otherDay
+      ? {
+          ...v.otherDay,
+          settings: { ...v.otherDay.settings, countryFormat: v.otherDay.settings?.countryFormat ?? initialState.settings.countryFormat },
+          crew: v.otherDay.crew ?? emptyCrew(),
+        }
+      : null,
   };
   // Saved before imports were tracked: treat the athletes as read with the current columns, so Continue keeps them.
   if (v.importedKey === undefined && merged.registrations.length) merged.importedKey = importKey(merged);

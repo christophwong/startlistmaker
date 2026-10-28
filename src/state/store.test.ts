@@ -306,6 +306,24 @@ describe("two-day forms", () => {
     expect(startsOf({ ...base, day: 2 }).every((s) => s.startNumber === 1)).toBe(true);
   });
 
+  it("shows countries as codes or full names, the same on both days", () => {
+    const withCountry = (country: string): AppState => ({ ...base, registrations: base.registrations.map((r) => ({ ...r, country })) });
+    for (const typed of ["CAN", "Canada"]) {
+      const s = withCountry(typed);
+      expect(startsOf(s).every((x) => x.country === "CAN")).toBe(true);
+      const names = run([{ type: "settings", settings: { ...s.settings, countryFormat: "NAME" } }], s);
+      expect(startsOf(names).every((x) => x.country === "Canada")).toBe(true);
+      expect(names.otherDay!.settings.countryFormat).toBe("NAME");
+      // Athletes keeps what was typed.
+      expect(names.registrations[0].country).toBe(typed);
+    }
+    // Saved before the setting: both days open with codes.
+    const old = JSON.parse(JSON.stringify(base));
+    delete old.settings.countryFormat;
+    delete old.otherDay.settings.countryFormat;
+    expect(parseState(old)).toMatchObject({ settings: { countryFormat: "CODE" }, otherDay: { settings: { countryFormat: "CODE" } } });
+  });
+
   it("the day tabs swap settings, order, breaks and date, and swap back", () => {
     const d2 = run([{ type: "day", day: 2 }], base);
     expect(d2).toMatchObject({ day: 2, entries: base.otherDay!.entries, event: { date: "2026-09-06", name: "Test" } });
@@ -386,7 +404,8 @@ describe("project files and stored state", () => {
     delete old.print;
     delete old.logos;
     delete old.settings.halftimeBreakMin;
-    expect(parseState(old)).toMatchObject({ print: initialState.print, logos: [], settings: { halftimeBreakMin: 0 } });
+    delete old.settings.countryFormat;
+    expect(parseState(old)).toMatchObject({ print: initialState.print, logos: [], settings: { halftimeBreakMin: 0, countryFormat: "CODE" } });
     // Saved before imports were tracked: the athletes count as read with the current columns.
     delete old.importedKey;
     delete old.editedRows;

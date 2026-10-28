@@ -539,6 +539,23 @@ test("the home page shows what the file needs with an example; the full how-to i
   await expect(help).toBeHidden();
 });
 
+test("countries show as IOC codes, or full names from More settings, on the list and the sheet", async ({ page }) => {
+  await page.goto("/#demo-pool");
+  const first = page.locator("[data-start]").first();
+  // The pool sample types countries out ("Canada").
+  await expect(first).toContainText("CAN");
+  await expect(first).not.toContainText("Canada");
+
+  if (isMobile(page)) await page.getByRole("button", { name: "Settings", exact: true }).click();
+  await page.getByText("More settings", { exact: true }).click();
+  await page.getByRole("group", { name: "Country" }).getByText("Canada", { exact: true }).click();
+  if (isMobile(page)) await page.keyboard.press("Escape");
+  await expect(first).toContainText("Canada");
+
+  await goToTab(page, "Print & export");
+  await expect(page.locator(".print-area tbody").getByText("Canada", { exact: true }).first()).toBeVisible();
+});
+
 test("opens light; the dark toggle sticks across reloads until Clear all data", async ({ page }) => {
   await page.goto("/#demo");
   await expect(page.getByRole("heading", { name: "Start list" })).toBeVisible();

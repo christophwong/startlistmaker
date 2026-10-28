@@ -40,10 +40,10 @@ describe("checkRow", () => {
     expect(w.starts).toHaveLength(1);
   });
 
-  it("gives the start the IOC code; an unknown country stays as typed with a warning", () => {
+  it("warns on a country it doesn't know (startsOf formats the known ones)", () => {
     const known = checkRow(row({ country: "Canada" }), "DEPTH", 1);
     expect(known.warnings).toEqual({});
-    expect(known.starts[0].country).toBe("CAN");
+    expect(known.starts[0].country).toBe("Canada");
 
     const unknown = checkRow(row({ country: "Tahiti " }), "DEPTH", 1);
     expect(unknown.warnings.country).toMatch(/3-letter code/);

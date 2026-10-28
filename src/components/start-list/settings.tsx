@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { ArrowIcon, SortIcon } from "~/components/icons";
 import { Button, Field, RadioGroup, Segmented, SelectField, SideCard } from "~/components/ui";
+import type { CountryFormat } from "~/lib/countries";
 import { DISCIPLINE_NAMES, disciplinesFor, type Discipline } from "~/lib/disciplines";
 import type { StartListSettings } from "~/lib/startlist";
 import { toTimeInput, type TimeFormat } from "~/lib/time";
 import { fieldErrors, settingsSchema, type FieldErrors } from "~/lib/validation";
 
-export type SettingsValues = StartListSettings & { timeFormat: TimeFormat };
+export type SettingsValues = StartListSettings & { timeFormat: TimeFormat; countryFormat: CountryFormat };
 
 /**
  * Settings that decide the order (generateEntries reads them). The rest only
@@ -320,6 +321,15 @@ export function ScheduleCard({
               options={[
                 { value: "24h", label: "13:30" },
                 { value: "12h", label: "1:30 PM" },
+              ]}
+            />
+            <Segmented
+              label="Country"
+              name="countryFormat"
+              defaultValue={values.countryFormat}
+              options={[
+                { value: "CODE", label: "CAN" },
+                { value: "NAME", label: "Canada" },
               ]}
             />
           </div>

@@ -1,8 +1,9 @@
 /**
  * Country → IOC code ("Canada" → CAN), as AIDA start lists and results show
- * nationality. Registrations keep what was typed; starts (list, sheets,
- * exports) get the code. A value the table doesn't know is kept as typed and
- * flagged on Athletes, where the organizer can type the code.
+ * nationality, or back to one full name. Registrations keep what was typed;
+ * starts (list, sheets, exports) get the code or the name, per the
+ * `countryFormat` setting. A value the table doesn't know is kept as typed
+ * and flagged on Athletes, where the organizer can type the code.
  *
  * Each entry: IOC code → names and common spellings. Matching ignores case,
  * accents, punctuation and a leading "the".
@@ -236,8 +237,11 @@ const AFRICA: Record<string, string[]> = {
 };
 
 const ALIASES = new Map<string, string>();
+/** Code → the name shown in "Full name" mode: each entry's first name. */
+const NAMES = new Map<string, string>();
 for (const table of [EUROPE, AMERICAS, ASIA, OCEANIA, AFRICA]) {
   for (const [code, names] of Object.entries(table)) {
+    NAMES.set(code, names[0]);
     ALIASES.set(normalize(code), code);
     for (const name of names) ALIASES.set(normalize(name), code);
   }
@@ -260,7 +264,15 @@ export function countryCode(value: string): string | null {
   return ALIASES.get(normalize(value)) ?? null;
 }
 
-/** What the list, sheets and exports show: the code when known, else the value as typed. */
-export function countryForList(value: string): string {
-  return countryCode(value) ?? value.trim();
+/** How the list, sheets and exports show a country: CAN or Canada. */
+export type CountryFormat = "CODE" | "NAME";
+
+/**
+ * What the list, sheets and exports show. Forms can mix "CAN" and "Canada",
+ * so both formats convert from either; an unknown value is shown as typed.
+ */
+export function formatCountry(value: string, format: CountryFormat): string {
+  const code = countryCode(value);
+  if (!code) return value.trim();
+  return format === "CODE" ? code : NAMES.get(code)!;
 }

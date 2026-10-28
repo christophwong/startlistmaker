@@ -73,6 +73,7 @@ export const settingsSchema = z.object({
   sortBy: z.enum(["AP", "DIVE_TIME", "NAME", "REGISTRATION"]),
   sortDir: z.enum(["ASC", "DESC"]),
   timeFormat: z.enum(["24h", "12h"]),
+  countryFormat: z.enum(["CODE", "NAME"]),
 });
 
 export const breakSchema = z.object({
