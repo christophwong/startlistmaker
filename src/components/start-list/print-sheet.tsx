@@ -52,7 +52,7 @@ export function PrintSheet({
   const [title, ...sub] = titleLines({ type, name, date, location, notes });
   // `!` beats the zebra stripe when the header repeats inside the body.
   const accent = type === "POOL" ? "!bg-[#2a5ea8]" : "!bg-[#3c7a2a]";
-  const nameCol = table.header.indexOf("Diver Name");
+  const nameCol = table.ids.indexOf("name");
   const safety = table.sheet === "SAFETY";
   // The safety schedule is a working sheet with no logos (as on the ECAC sheet).
   const left = safety ? [] : logosAt(logos, "HEADER_LEFT");
@@ -60,15 +60,15 @@ export function PrintSheet({
   // Neither the judge sheet nor the safety schedule has a sponsor strip.
   const sponsors = table.sheet === "JUDGES" || safety ? [] : logosAt(logos, "SPONSORS");
   // A section row puts its time under WT, as on the ECAC safety schedule.
-  const wtCol = table.header.indexOf("WT");
+  const wtCol = table.ids.indexOf("wt");
   // Forms with blank columns get taller rows to write in.
   const form = table.blank.some(Boolean);
   const headerRow = (
     <tr className={cx(accent, "text-white [&_th]:py-1 [&_th]:font-medium", form ? "[&_th]:px-1" : "[&_th]:px-1.5")}>
       {table.header.map((h, i) => (
         <th
-          key={h}
-          className={cx(i === nameCol && "text-left", table.blank[i] && (WIDE_BLANK.includes(h) ? "min-w-18" : "min-w-12"))}
+          key={table.ids[i]}
+          className={cx(i === nameCol && "text-left", table.blank[i] && (WIDE_BLANK.includes(table.ids[i]) ? "min-w-18" : "min-w-12"))}
         >
           {h}
         </th>

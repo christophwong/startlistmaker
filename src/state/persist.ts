@@ -2,6 +2,7 @@ import * as z from "zod/mini";
 import { DEPTH_DISCIPLINES, POOL_DISCIPLINES } from "~/lib/disciplines";
 import { emptyCrew, MAX_NAME } from "~/lib/export/crew";
 import { LOGO_SRC, MAX_LOGO_PX, MAX_LOGO_SRC, MAX_LOGOS, MAX_LOGOS_TOTAL } from "~/lib/export/logos";
+import { MAX_HEADER } from "~/lib/export/table";
 import { FIELD_KEYS, type FieldKey } from "~/lib/import/columns";
 import { MAX_ROWS } from "~/lib/import/file";
 import { THEME_KEY } from "~/theme";
@@ -82,6 +83,12 @@ const logos = list(
 const name = z.optional(str(MAX_NAME));
 const slots = <T extends z.core.SomeType>(key: RegExp, value: T) =>
   z.record(z.string().check(z.regex(key)), value).check(z.refine((r) => Object.keys(r).length <= MAX_ROWS * 4));
+// A sheet's renamed and hidden columns, by column id.
+const sheetColumns = z.optional(
+  z
+    .record(z.string().check(z.regex(/^[A-Za-z0-9]{1,20}$/)), z.object({ label: z.optional(str(MAX_HEADER)), hidden: z.optional(z.boolean()) }))
+    .check(z.refine((r) => Object.keys(r).length <= 40)),
+);
 const crew = z.object({
   zone: slots(/^\d{1,5}:\d{1,2}$/, z.object({ judge: name, safety: name })),
   group: slots(/^\d{1,5}$/, z.object({ deck: name, warmUp: name })),
@@ -139,6 +146,7 @@ const stateSchema = z.object({
     showCheckIn: z.boolean(),
     showStartNumber: z.boolean(),
     pageBreakAtBreaks: z.boolean(),
+    columns: z.object({ ATHLETES: sheetColumns, JUDGES: sheetColumns, SAFETY: sheetColumns, RESULTS: sheetColumns }),
   }),
   logos,
 });

@@ -17,6 +17,16 @@ import { crewAt, emptyCrew, shapeOf, unusedZones, type Crew } from "./crew";
  */
 export type SheetKind = "ATHLETES" | "JUDGES" | "SAFETY" | "RESULTS";
 
+/** Longest header text a column can be given. */
+export const MAX_HEADER = 40;
+
+/** A column's own header text, or hidden; keyed by column id. Unset means the sheet's default. */
+export interface ColumnChoice {
+  label?: string;
+  hidden?: boolean;
+}
+export type SheetColumns = Partial<Record<string, ColumnChoice>>;
+
 export interface ExportOptions {
   /** Defaults to ATHLETES. */
   sheet?: SheetKind;
@@ -31,6 +41,8 @@ export interface ExportOptions {
   showStartNumber: boolean;
   /** Judge and safety names (judge and safety sheets). */
   crew?: Crew;
+  /** This sheet's renamed and hidden columns. */
+  columns?: SheetColumns;
 }
 
 export type ExportRow =
@@ -47,6 +59,8 @@ export type ExportRow =
 
 export interface ExportTable {
   sheet: SheetKind;
+  /** Per column: what it holds ("name", "ot", "zone2"…), whatever its header says. */
+  ids: string[];
   header: string[];
   /** Per column: true for writing space (empty in every row). */
   blank: boolean[];
@@ -56,6 +70,7 @@ export interface ExportTable {
 type Start = Extract<ScheduledRow<EngineStartWithAthlete>, { kind: "START" }>;
 
 interface Column {
+  id: string;
   header: string;
   /** Omitted for blank (handwriting) columns. `n` is the start's 1-based number. */
   cell?: (r: Start, n: number) => string;
@@ -68,16 +83,18 @@ function columns(o: ExportOptions, rows: ScheduledRow[]): Column[] {
   const names = (r: Start) => crewAt(crew, r);
   // Names fill the Judge column once any are set; until then it's writing space.
   const judge: Column = Object.values(crew.zone).some((z) => z.judge)
-    ? { header: "Judge", cell: (r) => names(r).judge }
-    : { header: "Judge" };
-  const name: Column = { header: "Diver Name", cell: (r) => `${r.start.firstName} ${r.start.lastName}`.trim() };
-  const gender = (header: string): Column => ({ header, cell: (r) => r.start.gender ?? "" });
-  const country: Column = { header: "Country", cell: (r) => r.start.country };
-  const discipline = (header: string): Column => ({ header, cell: (r) => r.start.discipline });
-  const ap: Column = { header: "AP", cell: (r) => formatPerformance(r.start.discipline, r.start.ap, { unit: false }) };
-  const ot: Column = { header: "OT", cell: (r) => fmt(r.ot) };
-  const lane: Column[] = o.showLane ? [{ header: o.laneLabel, cell: (r) => String(r.lane) }] : [];
-  const blank = (...headers: string[]): Column[] => headers.map((header) => ({ header }));
+    ? { id: "judge", header: "Judge", cell: (r) => names(r).judge }
+    : { id: "judge", header: "Judge" };
+  const name: Column = { id: "name", header: "Diver Name", cell: (r) => `${r.start.firstName} ${r.start.lastName}`.trim() };
+  const gender = (header: string): Column => ({ id: "gender", header, cell: (r) => r.start.gender ?? "" });
+  const country: Column = { id: "country", header: "Country", cell: (r) => r.start.country };
+  const discipline = (header: string): Column => ({ id: "discipline", header, cell: (r) => r.start.discipline });
+  const ap: Column = { id: "ap", header: "AP", cell: (r) => formatPerformance(r.start.discipline, r.start.ap, { unit: false }) };
+  const ot: Column = { id: "ot", header: "OT", cell: (r) => fmt(r.ot) };
+  const wt: Column = { id: "wt", header: "WT", cell: (r) => fmt(r.wt) };
+  const lane: Column[] = o.showLane ? [{ id: "lane", header: o.laneLabel, cell: (r) => String(r.lane) }] : [];
+  // "RESULT" → id "result".
+  const blank = (...headers: string[]): Column[] => headers.map((header) => ({ id: header.toLowerCase(), header }));
 
   switch (o.sheet ?? "ATHLETES") {
     case "ATHLETES":
@@ -87,10 +104,10 @@ function columns(o: ExportOptions, rows: ScheduledRow[]): Column[] {
         country,
         discipline("Discipline"),
         ap,
-        { header: "Time", cell: (r) => formatDuration(r.start.diveTimeSec) },
+        { id: "time", header: "Time", cell: (r) => formatDuration(r.start.diveTimeSec) },
         ot,
-        ...(o.showWarmup ? [{ header: "WT", cell: (r: Start) => fmt(r.wt) }] : []),
-        ...(o.showCheckIn ? [{ header: "Check-in", cell: (r: Start) => fmt(r.checkIn) }] : []),
+        ...(o.showWarmup ? [wt] : []),
+        ...(o.showCheckIn ? [{ id: "checkIn", header: "Check-in", cell: (r: Start) => fmt(r.checkIn) }] : []),
         ...lane,
       ];
     // As on the ECAC judge sheet: short headers, since the blank columns need the width.
@@ -100,6 +117,7 @@ function columns(o: ExportOptions, rows: ScheduledRow[]): Column[] {
     case "SAFETY": {
       const unused = unusedZones(rows, crew);
       const zones = Array.from({ length: shapeOf(rows).lanes }, (_, i): Column => ({
+        id: `zone${i + 1}`,
         header: `${o.laneLabel} ${i + 1}`,
         cell: (r) => (r.lane === i + 1 ? names(r).safety : ""),
         greyed: (r) => unused.get(r.group)?.has(i + 1) ?? false,
@@ -110,12 +128,12 @@ function columns(o: ExportOptions, rows: ScheduledRow[]): Column[] {
         discipline("Disc"),
         ap,
         ot,
-        { header: "WT", cell: (r) => fmt(r.wt) },
-        { header: o.laneLabel, cell: (r) => String(r.lane) },
-        { header: "Deck", cell: (r) => names(r).deck },
-        { header: "Warm Up", cell: (r) => names(r).warmUp },
+        wt,
+        { id: "lane", header: o.laneLabel, cell: (r) => String(r.lane) },
+        { id: "deck", header: "Deck", cell: (r) => names(r).deck },
+        { id: "warmUp", header: "Warm Up", cell: (r) => names(r).warmUp },
         ...zones,
-        { header: "Judge", cell: (r) => names(r).judge },
+        { id: "judge", header: "Judge", cell: (r) => names(r).judge },
       ];
     }
     case "RESULTS":
@@ -123,10 +141,26 @@ function columns(o: ExportOptions, rows: ScheduledRow[]): Column[] {
   }
 }
 
+const allColumns = (o: ExportOptions, rows: ScheduledRow[]): Column[] => [
+  ...(o.showStartNumber ? [{ id: "number", header: "#", cell: (_: Start, n: number) => String(n) }] : []),
+  ...columns(o, rows),
+];
+
+/**
+ * Every column the sheet can have, with its default header, for the column
+ * editor. The athlete sheet's optional ones (#, WT, Check-in) are included.
+ */
+export function sheetColumns(rows: ScheduledRow[], o: ExportOptions): { id: string; header: string }[] {
+  return allColumns({ ...o, showStartNumber: true, showWarmup: true, showCheckIn: true }, rows).map(({ id, header }) => ({ id, header }));
+}
+
 export function exportTable(rows: ScheduledRow<EngineStartWithAthlete>[], o: ExportOptions): ExportTable {
   const fmt = (t: number) => formatClock(t, o.timeFormat);
   const sheet = o.sheet ?? "ATHLETES";
-  const cols: Column[] = [...(o.showStartNumber ? [{ header: "#", cell: (_: Start, n: number) => String(n) }] : []), ...columns(o, rows)];
+  const chosen = o.columns ?? {};
+  const cols = allColumns(o, rows)
+    .filter((c) => !chosen[c.id]?.hidden)
+    .map((c) => ({ ...c, header: chosen[c.id]?.label?.trim() || c.header }));
   const sections = new Map(sheet === "SAFETY" ? (o.crew?.sections ?? []).map((s) => [s.beforeGroup, s]) : []);
   let n = 0;
   let last = 0;
@@ -146,7 +180,7 @@ export function exportTable(rows: ScheduledRow<EngineStartWithAthlete>[], o: Exp
     };
     return section ? [{ kind: "SECTION", label: section.label, time: fmt(r.wt), note: section.note }, start] : [start];
   });
-  return { sheet, header: cols.map((c) => c.header), blank: cols.map((c) => !c.cell), rows: out };
+  return { sheet, ids: cols.map((c) => c.id), header: cols.map((c) => c.header), blank: cols.map((c) => !c.cell), rows: out };
 }
 
 /** A section row as one line of text (CSV, Excel). */

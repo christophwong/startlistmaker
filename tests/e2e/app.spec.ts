@@ -100,7 +100,7 @@ test("judge and results sheets: blank forms from the same list, with their own d
   expect((await names()).filter((n) => !n.startsWith("BREAK") && n !== "Diver Name")).toEqual(athleteNames.filter((n) => !n.startsWith("BREAK")));
   const breaks = await sheet.locator("tbody td", { hasText: /^BREAK/ }).count();
   await expect(sheet.locator("tbody th", { hasText: "Diver Name" })).toHaveCount(breaks);
-  await expect(page.getByRole("checkbox", { name: "Warm-up (WT) column" })).toHaveCount(0);
+  await expect(page.getByRole("checkbox", { name: "Show WT" })).toHaveCount(0);
 
   const csv = page.waitForEvent("download");
   await page.getByRole("button", { name: "Download CSV" }).click();
@@ -113,6 +113,30 @@ test("judge and results sheets: blank forms from the same list, with their own d
   // Stays on the picked sheet after a reload.
   await page.reload();
   await expect(sheet.locator("thead th").last()).toHaveText("Rank");
+});
+
+test("sheet columns: rename and hide per sheet, in the preview, the CSV and after a reload", async ({ page }) => {
+  await page.goto("/#demo-pool");
+  await goToTab(page, "Print & export");
+  const sheet = page.locator(".print-area");
+  await page.getByText("Results", { exact: true }).click();
+  await page.getByLabel("Header for RP").fill("Result");
+  await page.getByLabel("Show Rank").uncheck();
+  await page.getByLabel("Show #").check();
+  await expect(sheet.locator("thead th")).toHaveText(["#", "Diver Name", "Gender", "Country", "Discipline", "AP", "Result", "Card", "Notes", "Points"]);
+
+  const csv = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Download CSV" }).click();
+  expect(fs.readFileSync(await (await csv).path(), "utf8")).toMatch(/#,Diver Name,Gender,Country,Discipline,AP,Result,Card,Notes,Points\r?\n/);
+
+  // Each sheet has its own: the athlete sheet is unchanged apart from #, which every sheet shares.
+  await page.getByText("Athlete", { exact: true }).click();
+  await expect(sheet.locator("thead th").nth(1)).toHaveText("Diver Name");
+  await page.reload();
+  await page.getByText("Results", { exact: true }).click();
+  await expect(sheet.locator("thead th").last()).toHaveText("Points");
+  await page.getByRole("button", { name: "Reset" }).click();
+  await expect(sheet.locator("thead th")).toHaveText(["Diver Name", "Gender", "Country", "Discipline", "AP", "RP", "Card", "Notes", "Points", "Rank"]);
 });
 
 test("safety sheet: set names by selecting starts, then print the schedule", async ({ page, isMobile }) => {

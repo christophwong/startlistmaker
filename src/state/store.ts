@@ -1,7 +1,7 @@
 import type { CompetitionType } from "~/lib/disciplines";
 import type { Logo } from "~/lib/export/logos";
 import { emptyCrew, type Crew } from "~/lib/export/crew";
-import type { SheetKind } from "~/lib/export/table";
+import type { SheetColumns, SheetKind } from "~/lib/export/table";
 import { autoMap, dayLabels, hasStart2, missingRequired, selectStart, type FieldKey, type Mapping } from "~/lib/import/columns";
 import { detectCompetitionType, detectMaxStarts } from "~/lib/import/detect";
 import type { NamedSheet, SheetTable } from "~/lib/import/file";
@@ -67,6 +67,8 @@ export interface PrintOptions {
   showStartNumber: boolean;
   /** Each BREAK starts a new page. */
   pageBreakAtBreaks: boolean;
+  /** Renamed and hidden columns, per sheet. */
+  columns: Partial<Record<SheetKind, SheetColumns>>;
 }
 
 export interface Source {
@@ -154,7 +156,7 @@ export const initialState: AppState = {
   crew: emptyCrew(),
   nextId: 1,
   manualOrder: false,
-  print: { sheet: "ATHLETES", showWarmup: true, showCheckIn: true, showStartNumber: false, pageBreakAtBreaks: false },
+  print: { sheet: "ATHLETES", showWarmup: true, showCheckIn: true, showStartNumber: false, pageBreakAtBreaks: false, columns: {} },
   logos: [],
   history: [],
   notice: null,

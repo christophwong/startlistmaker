@@ -2,6 +2,7 @@ import { useState } from "react";
 import { DayBadge } from "~/components/day-tabs";
 import { ArrowIcon } from "~/components/icons";
 import { LogosEditor } from "~/components/logos-editor";
+import { SheetColumnsEditor } from "~/components/sheet-columns";
 import { PrintSheet } from "~/components/start-list/print-sheet";
 import { Alert, Button, Field, Segmented, SideCard } from "~/components/ui";
 import { crewAt, crewOutOfDate, hasNames } from "~/lib/export/crew";
@@ -60,7 +61,7 @@ const SHEET_HINTS: Record<SheetKind, string> = {
 };
 
 export function FinalStep({ state, dispatch }: { state: AppState; dispatch(a: Action): void }) {
-  const { table, issues, rows } = useStartList(state);
+  const { table, issues, rows, columns } = useStartList(state);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const { settings, print } = state;
@@ -197,14 +198,8 @@ export function FinalStep({ state, dispatch }: { state: AppState; dispatch(a: Ac
             </div>
           </SideCard>
           <SideCard title="On the sheet">
-            <div className="space-y-1">
-              {print.sheet === "ATHLETES" && (
-                <>
-                  <Toggle label="Warm-up (WT) column" checked={print.showWarmup} onChange={(v) => setPrint({ showWarmup: v })} />
-                  <Toggle label="Check-in column" checked={print.showCheckIn} onChange={(v) => setPrint({ showCheckIn: v })} />
-                </>
-              )}
-              <Toggle label="Start numbers" checked={print.showStartNumber} onChange={(v) => setPrint({ showStartNumber: v })} />
+            <SheetColumnsEditor columns={columns} print={print} setPrint={setPrint} />
+            <div className="mt-3 border-t border-line-soft pt-2">
               <Toggle label="New page after each break" checked={print.pageBreakAtBreaks} onChange={(v) => setPrint({ pageBreakAtBreaks: v })} />
             </div>
           </SideCard>

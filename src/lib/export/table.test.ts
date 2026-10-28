@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { depthSettings, depthStarts } from "../../../tests/fixtures/ecac";
 import { schedule, type EngineStartWithAthlete, type EntryInput } from "../startlist";
 import { legend } from "./files";
-import { exportTable, fileBase, safeCell, toCsv, type ExportOptions } from "./table";
+import { exportTable, fileBase, safeCell, sheetColumns, toCsv, type ExportOptions } from "./table";
 
 const starts: EngineStartWithAthlete[] = depthStarts.slice(0, 3).map((s, i) => ({
   ...s,
@@ -79,6 +79,41 @@ describe("sheet kinds", () => {
       "OT = official top · RP = realized performance · RESULT = card (white, yellow, red)",
     );
     expect(legend(exportTable(rows, { ...opts, sheet: "RESULTS" }))).toBe("RP = realized performance");
+  });
+});
+
+describe("renamed and hidden columns", () => {
+  const custom = { name: { label: "  Athlete " }, country: { hidden: true }, ot: { label: "Top" }, time: { label: "" } };
+
+  it("renames headers (trimmed; empty keeps the default) and leaves hidden ones out of every row", () => {
+    const t = exportTable(rows, { ...opts, columns: custom });
+    expect(t.header).toEqual(["Athlete", "Gender", "Discipline", "AP", "Time", "Top", "WT", "Check-in"]);
+    expect(t.ids).toEqual(["name", "gender", "discipline", "ap", "time", "ot", "wt", "checkIn"]);
+    expect(t.rows[0]).toMatchObject({ cells: ["Diver Athlete01", "F", "CNF", "50", "1:48", "10:30", "9:45", "9:30"] });
+  });
+
+  it("the legend uses the header as shown", () => {
+    expect(legend(exportTable(rows, { ...opts, columns: custom }))).toMatch(/^Top = official top · WT = /);
+  });
+
+  it("blank columns keep their writing space when renamed", () => {
+    const t = exportTable(rows, { ...opts, sheet: "RESULTS", columns: { rp: { label: "Result" }, rank: { hidden: true } } });
+    expect(t.header.slice(-4)).toEqual(["Result", "Card", "Notes", "Points"]);
+    expect(t.blank.slice(-4)).toEqual([true, true, true, true]);
+  });
+
+  it("a renamed header is still made safe in the CSV", () => {
+    const csv = toCsv(exportTable(rows, { ...opts, columns: { name: { label: "=cmd" } } }));
+    expect(csv.split("\n")[0]).toMatch(/^﻿'=cmd,/);
+  });
+
+  it("the editor lists every column the sheet can have, optional ones included", () => {
+    expect(sheetColumns(rows, { ...opts, showWarmup: false, showCheckIn: false }).map((c) => c.id)).toEqual([
+      "number", "name", "gender", "country", "discipline", "ap", "time", "ot", "wt", "checkIn",
+    ]);
+    expect(sheetColumns(rows, { ...opts, sheet: "RESULTS", columns: { rp: { hidden: true } } }).map((c) => c.header)).toEqual([
+      "#", "Diver Name", "Gender", "Country", "Discipline", "AP", "RP", "Card", "Notes", "Points", "Rank",
+    ]);
   });
 });
 

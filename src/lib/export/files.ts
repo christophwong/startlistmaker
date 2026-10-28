@@ -46,19 +46,24 @@ export function titleLines(t: SheetTitle): string[] {
   ].filter(Boolean);
 }
 
-/** Blank columns that get extra writing space (names and penalty notes). */
-export const WIDE_BLANK = ["Remarks", "Notes", "Judge"];
+/** Blank columns (by id) that get extra writing space (names and penalty notes). */
+export const WIDE_BLANK = ["remarks", "notes", "judge"];
 
-/** The abbreviations under the sheet, for the columns it has. */
-export function legend(t: Pick<ExportTable, "header">): string {
+/** The abbreviations under the sheet, for the columns it has, under their headers as shown. */
+export function legend(t: Pick<ExportTable, "ids" | "header">): string {
   const terms: [string, string][] = [
-    ["OT", "OT = official top"],
-    ["WT", "WT = warm-up time (OT − 45 min)"],
-    ["Check-in", "Check-in = OT − 60 min"],
-    ["RP", "RP = realized performance"],
-    ["RESULT", "RESULT = card (white, yellow, red)"],
+    ["ot", "official top"],
+    ["wt", "warm-up time (OT − 45 min)"],
+    ["checkIn", "OT − 60 min"],
+    ["rp", "realized performance"],
+    ["result", "card (white, yellow, red)"],
   ];
-  return terms.flatMap(([h, text]) => (t.header.includes(h) ? [text] : [])).join(" · ");
+  return terms
+    .flatMap(([id, text]) => {
+      const i = t.ids.indexOf(id);
+      return i < 0 ? [] : [`${t.header[i]} = ${text}`];
+    })
+    .join(" · ");
 }
 
 export async function toXlsx(t: ExportTable, title: SheetTitle): Promise<Blob> {
@@ -77,6 +82,6 @@ export async function toXlsx(t: ExportTable, title: SheetTitle): Promise<Blob> {
           : r.cells.map((c, i) => text(c, r.greyed?.[i] ? { backgroundColor: "#BFBFBF" } : {})),
     ),
   ];
-  const colWidth = (h: string, i: number) => (h === "Diver Name" ? 28 : !t.blank[i] ? 11 : WIDE_BLANK.includes(h) ? 24 : 13);
-  return writeXlsxFile(data as never, { columns: t.header.map((h, i) => ({ width: colWidth(h, i) })) }).toBlob();
+  const colWidth = (id: string, i: number) => (id === "name" ? 28 : !t.blank[i] ? 11 : WIDE_BLANK.includes(id) ? 24 : 13);
+  return writeXlsxFile(data as never, { columns: t.ids.map((id, i) => ({ width: colWidth(id, i) })) }).toBlob();
 }

@@ -276,6 +276,17 @@ describe("upload straight to a start list", () => {
     // A save from when Columns was a step opens on the start list.
     expect(parseState({ ...json.state, step: "map" })?.step).toBe("list");
   });
+
+  it("sheet columns are saved in a project; older saves have none; bad ones are refused", () => {
+    const columns = { RESULTS: { rp: { label: "Result" }, rank: { hidden: true } } };
+    const base = run([{ type: "load", filename: "d.csv", table }, { type: "print", patch: { columns } }]);
+    expect(fromProjectJson(toProjectJson(base)).print.columns).toEqual(columns);
+    const json = JSON.parse(toProjectJson(base));
+    const { columns: _, ...old } = json.state.print;
+    expect(parseState({ ...json.state, print: old })?.print.columns).toEqual({});
+    expect(parseState({ ...json.state, print: { ...old, columns: { RESULTS: { rp: { label: "x".repeat(41) } } } } })).toBeNull();
+    expect(parseState({ ...json.state, print: { ...old, columns: { RESULTS: { "a b": {} } } } })).toBeNull();
+  });
 });
 
 describe("two-day forms", () => {
