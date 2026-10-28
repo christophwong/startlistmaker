@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { APP_VERSION, CONTACT_EMAIL, contactUrl } from "~/app-info";
 import { Modal } from "~/components/modal";
 import { SampleDownloads } from "~/components/sample-downloads";
 import { FIELDS } from "~/lib/import/columns";
@@ -97,6 +98,17 @@ export function HelpDialog({ open, onClose }: { open: boolean; onClose(): void }
           never uploaded, stored on a server or shared, and there's no account. Like most websites, the site may keep
           basic visit data, such as pages loaded and browser type, to keep it running and secure.
         </p>
+      </Section>
+
+      <Section title="Questions and feedback">
+        <p>
+          For help, a feature request or a problem, email{" "}
+          <a className="font-semibold text-accent hover:underline" href={contactUrl("Start List Maker")}>
+            {CONTACT_EMAIL}
+          </a>
+          . Please don't attach a real export with athletes' details; describe the problem or send a made-up example.
+        </p>
+        <p className="text-xs text-muted">Version {APP_VERSION}</p>
       </Section>
     </Modal>
   );

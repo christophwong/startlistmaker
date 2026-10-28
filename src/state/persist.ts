@@ -2,7 +2,8 @@ import * as z from "zod/mini";
 import { DEPTH_DISCIPLINES, POOL_DISCIPLINES } from "~/lib/disciplines";
 import { emptyCrew, MAX_NAME } from "~/lib/export/crew";
 import { LOGO_SRC, MAX_LOGO_PX, MAX_LOGO_SRC, MAX_LOGOS, MAX_LOGOS_TOTAL } from "~/lib/export/logos";
-import { MAX_HEADER } from "~/lib/export/table";
+import { downloadText } from "~/lib/export/files";
+import { fileBase, MAX_HEADER } from "~/lib/export/table";
 import { FIELD_KEYS, type FieldKey } from "~/lib/import/columns";
 import { MAX_ROWS } from "~/lib/import/file";
 import { THEME_KEY } from "~/theme";
@@ -268,6 +269,12 @@ const stored = ({ history: _h, notice: _n, ...rest }: AppState) => rest;
 
 export function toProjectJson(state: AppState): string {
   return JSON.stringify({ app: PROJECT_APP, version: PROJECT_VERSION, savedAt: new Date().toISOString(), state: stored(state) }, null, 1);
+}
+
+/** Save project: downloads the state as `<event name>.startlist.json`. */
+export function downloadProject(state: AppState) {
+  const name = state.event.name || state.source?.filename.replace(/\.[^.]+$/, "") || "start-list";
+  downloadText(`${fileBase(name)}.startlist.json`, toProjectJson(state), "application/json");
 }
 
 export class ProjectError extends Error {}

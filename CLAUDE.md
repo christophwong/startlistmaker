@@ -15,6 +15,7 @@ npm run test:e2e     # Playwright on the production build (vite preview :4173), 
 npm run build        # → dist/, what GitHub Pages serves
 node scripts/anonymize.mjs <real.csv> <out.csv> [seed] [--fix-typos]   # make a shareable sample
 node scripts/record-demo.mjs [out-dir] [--mobile]   # video of the main flow → tmp/demo-video/ (builds, serves :4174)
+node scripts/make-icons.mjs   # re-render public/ PNG icons and og.jpg (link preview) after changing favicon.svg
 ```
 
 There is no linter. Done means `npm run typecheck && npm test` pass, plus `npm run test:e2e` when UI, the build, or the CSP changes.
@@ -27,6 +28,7 @@ The stack is Vite, TypeScript, Tailwind v4 and React 19. `~/` maps to `src/`.
 - **`src/state/`**: `store.ts` holds one reducer with all app state, `persist.ts` covers session/local storage and project files (zod/mini validated), and `derived.ts` has the `useStartList` hook.
 - **`src/steps/`** has the home page (`StartStep`) and one component per workspace tab (Start list, Athletes, Print & export), plus `OfficialsStep.tsx`, the lazy-loaded judge & safety names screen under Print & export. Upload goes straight to a built start list: `lib/import/infer.ts` matches discipline columns by their values, athletes with errors wait in the Not-on-the-list tray, and Columns is a lazy side panel (`components/columns-drawer.tsx`). **`src/components/`** holds the shared UI (callback-driven).
 - **Undo.** List-changing actions push a snapshot onto `history` in the reducer (`UNDOABLE` in `store.ts`) and set a `notice` shown by the toast; neither is saved. Use Undo instead of `confirm()` for order changes.
+- **`src/app-info.ts`** has the build version (`__APP_VERSION__`, set in `vite.config.ts`) and the contact email. `components/error-boundary.tsx` wraps the app, so an error while drawing shows Save project / Reload / Report instead of a blank page.
 - **Every automatic guess needs a manual fallback** (column matching, pool/depth, event name, order): keep it visible and correctable by hand.
 - **`src/lib/export/`** also has the sheet presets (`table.ts`: athlete, judge, safety, results) and `crew.ts` (judge and safety names, keyed by OT-group slot so they stay put when divers are reordered).
 - **`src/samples/`** holds the anonymized demo CSVs, bundled as `?raw` and loaded on demand.
@@ -45,4 +47,5 @@ Key points that span files:
 
 - `src/**/*.test.ts` are unit tests. `tests/fixtures/ecac.ts` reproduces the real ECAC start sheets, and engine changes must keep those passing.
 - `tests/unit/anonymize.test.ts` runs the anonymizer script.
+- `tests/e2e/a11y.spec.ts` runs axe (WCAG 2.1 AA) on every screen in both themes, desktop and mobile.
 - `tests/e2e/app.spec.ts` covers the CSP, demo, upload → fix → generate, sort, drag and drop, paste, exports, logos, project save/open, storage clearing, two-day forms, and the judge, results and safety sheets. Test images are drawn on a canvas in the page, so there are no binary fixtures.

@@ -112,7 +112,8 @@ export function PrintSheet({
         )}
       </header>
 
-      <div className="overflow-x-auto">
+      {/* Focusable so a keyboard can scroll the preview sideways on a phone. */}
+      <div tabIndex={0} role="region" aria-label="Sheet preview" className="overflow-x-auto focus-visible:outline-2">
         <table
           className={cx(
             "w-full border-collapse text-center [&_td]:border [&_td]:border-slate-300",

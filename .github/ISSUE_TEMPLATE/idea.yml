@@ -1,0 +1,15 @@
+name: Idea or request
+description: Something that would make running a competition easier.
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Please don't attach real athlete data.** This page is public.
+  - type: textarea
+    id: what
+    attributes:
+      label: What would you like to do?
+      description: Tell us about the competition and the step where it gets in the way.
+    validations:
+      required: true

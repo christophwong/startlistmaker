@@ -1,0 +1,30 @@
+name: Something doesn't work
+description: A wrong time, a file that won't read, a sheet that prints badly…
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Please don't attach a real form export or start list.** This page is public, and athletes' names, emails and emergency contacts don't belong here. Describe the problem, or attach a made-up example.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: How to make it happen again
+      placeholder: "1. Upload a Google Forms CSV with…\n2. Click…"
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: At the bottom of Help.
+      placeholder: 2026-10-28 · 19b94ea
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and device
+      placeholder: Safari on iPhone, Chrome on Windows…

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Help, questions and feedback by email
+    url: mailto:help@startlistmaker.online
+    about: For help using Start List Maker, or if you'd rather not post in public.
+  - name: Report a security problem privately
+    url: https://github.com/christophwong/startlistmaker/security/policy
+    about: Please don't open a public issue for security problems.

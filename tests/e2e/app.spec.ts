@@ -31,17 +31,21 @@ const paste = async (page: Page, cells: string) => {
   await page.getByRole("button", { name: "Read pasted data" }).click();
 };
 
+// An error a test causes on purpose; the console checks ignore it.
+const TEST_CRASH = "Test crash";
+
 test.beforeEach(async ({ page, baseURL }) => {
   const external: string[] = [];
   const errors: string[] = [];
   page.on("request", (r) => {
-    if (!r.url().startsWith(baseURL!) && !r.url().startsWith("blob:") && !r.url().startsWith("data:")) external.push(r.url());
+    // mailto: (the feedback link) opens the mail app; it isn't a network request.
+    if (!/^(blob|data|mailto):/.test(r.url()) && !r.url().startsWith(baseURL!)) external.push(r.url());
   });
   page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
   page.on("pageerror", (e) => errors.push(e.message));
   (page as Page & { checks?: () => void }).checks = () => {
     expect(external, "requests outside the site").toEqual([]);
-    expect(errors.filter((e) => !e.includes("https://example.com")), "console errors").toEqual([]);
+    expect(errors.filter((e) => !e.includes("https://example.com") && !e.includes(TEST_CRASH)), "console errors").toEqual([]);
   };
 });
 
@@ -557,6 +561,44 @@ test("countries show as IOC codes, or full names from More settings, on the list
 
   await goToTab(page, "Print & export");
   await expect(page.locator(".print-area tbody").getByText("Canada", { exact: true }).first()).toBeVisible();
+});
+
+test("an error while drawing shows a way out: save the project, reload, report", async ({ page }) => {
+  await page.goto("/#demo");
+  await expect(page.getByRole("heading", { name: "Start list" })).toBeVisible();
+  // The demo has two days, and the day tabs format their dates on every render.
+  await page.evaluate((msg) => {
+    Date.prototype.toLocaleDateString = () => {
+      throw new Error(msg);
+    };
+  }, TEST_CRASH);
+  await goToTab(page, "Athletes");
+  await expect(page.getByRole("heading", { name: "Something went wrong" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Report this problem" })).toHaveAttribute("href", /^mailto:help@startlistmaker\.online\?/);
+
+  const download = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Save project" }).click();
+  expect((await download).suggestedFilename()).toMatch(/\.startlist\.json$/);
+
+  await page.getByRole("button", { name: "Reload" }).click();
+  await expect(page.getByRole("heading", { name: "Start list" })).toBeVisible();
+});
+
+test("closing the tab asks first when the work isn't remembered", async ({ page }) => {
+  const leaveAsks = () =>
+    page.evaluate(() => {
+      const e = new Event("beforeunload", { cancelable: true });
+      window.dispatchEvent(e);
+      return e.defaultPrevented;
+    });
+  await page.goto("/");
+  expect(await leaveAsks()).toBe(false);
+  await paste(page, "Name\tGender\tDiscipline\tAnnounced Performance (AP)\nAna Lima\tFemale\tCWT\t30\n");
+  await expect(page.getByRole("heading", { name: "Start list" })).toBeVisible();
+  expect(await leaveAsks()).toBe(true);
+  await openMenu(page, "Your data");
+  await page.getByLabel("Remember on this device").check();
+  expect(await leaveAsks()).toBe(false);
 });
 
 test("opens light; the dark toggle sticks across reloads until Clear all data", async ({ page }) => {

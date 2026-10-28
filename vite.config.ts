@@ -1,3 +1,4 @@
+import { execSync } from "node:child_process";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig, type Plugin } from "vite";
@@ -37,7 +38,18 @@ function csp(): Plugin {
   };
 }
 
+/** "2026-10-28 · 19b94ea": the build date and commit, shown in Help and filled into bug reports. */
+function version() {
+  const date = new Date().toISOString().slice(0, 10);
+  try {
+    return `${date} · ${execSync("git rev-parse --short HEAD", { stdio: ["ignore", "pipe", "ignore"] }).toString().trim()}`;
+  } catch {
+    return date;
+  }
+}
+
 export default defineConfig({
+  define: { __APP_VERSION__: JSON.stringify(version()) },
   // Relative asset URLs, so one build works at a sub-path (ctophw.xyz/startlistmaker/,
   // the GitHub Pages project URL) and at a domain root (startlistmaker.online later).
   base: "./",

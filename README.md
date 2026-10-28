@@ -22,6 +22,10 @@ In Google Forms, open **Responses → ⋮ → Download responses (.csv)**, or co
 
 The column titles don't have to match exactly. Example files that also work as form templates are in [`src/samples/`](src/samples/).
 
+## Questions and feedback
+
+Email **help@startlistmaker.online**, or [open an issue](https://github.com/christophwong/startlistmaker/issues/new/choose). Please don't attach real form exports: athletes' details don't belong in a public issue. Security problems: see [SECURITY.md](SECURITY.md).
+
 ## Development
 
 Requires Node 24 or later (see `.nvmrc`). Built with Vite, TypeScript, Tailwind CSS and React.

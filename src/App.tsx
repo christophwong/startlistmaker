@@ -1,4 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useReducer, useRef, useState } from "react";
+import { CONTACT_EMAIL, contactUrl } from "~/app-info";
 import { DAY_PANEL_ID, DayTabs, dayTabId } from "~/components/day-tabs";
 import { HelpDialog } from "~/components/help";
 import { ChevronIcon, HelpIcon, LockIcon, MoonIcon, MoreIcon, SunIcon, TrashIcon } from "~/components/icons";
@@ -8,10 +9,8 @@ import { LogoMark, PrivacyText } from "~/components/shell";
 import { Toast } from "~/components/toast";
 import { Button, buttonClass, cx } from "~/components/ui";
 import { EventHeader, ImportBar, WorkspaceTabs } from "~/components/workspace";
-import { downloadText } from "~/lib/export/files";
-import { fileBase } from "~/lib/export/table";
 import { loadSample, type SampleKind } from "~/samples";
-import { clearStorage, getRemember, loadState, saveState, setRemember, toProjectJson } from "~/state/persist";
+import { clearStorage, downloadProject, getRemember, loadState, saveState, setRemember } from "~/state/persist";
 import { formatEventDate } from "~/lib/format";
 import { dayList, initialState, reachable, reducer, startsOf, type Step } from "~/state/store";
 import { DataStep } from "~/steps/DataStep";
@@ -64,6 +63,15 @@ export default function App() {
     return () => window.removeEventListener("hashchange", onHash);
   }, []);
 
+  // Closing the tab loses work that isn't remembered, so the browser asks first (not for a demo).
+  const atRisk = (!!state.source || state.registrations.length > 0) && !state.demo && !remember;
+  useEffect(() => {
+    if (!atRisk) return;
+    const warn = (e: BeforeUnloadEvent) => e.preventDefault();
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [atRisk]);
+
   // Move focus to the new step so screen readers and keyboards follow along.
   useEffect(() => {
     mainRef.current?.focus({ preventScroll: true });
@@ -97,10 +105,7 @@ export default function App() {
       tray?.focus({ preventScroll: true });
     }, 50);
   };
-  const saveProject = () => {
-    const name = state.event.name || state.source?.filename.replace(/\.[^.]+$/, "") || "start-list";
-    downloadText(`${fileBase(name)}.startlist.json`, toProjectJson(state), "application/json");
-  };
+  const saveProject = () => downloadProject(state);
   const undo = useCallback(() => dispatch({ type: "undo" }), []);
   const dismiss = useCallback(() => dispatch({ type: "dismiss" }), []);
   const toggleTheme = () => {
@@ -309,7 +314,10 @@ export default function App() {
         <Toast notice={state.notice} onUndo={undo} onDismiss={dismiss} />
 
         <footer className="no-print mt-16 border-t border-line pt-4 text-xs text-muted">
-          Start List Maker · for AIDA-style freediving competitions · runs entirely in your browser
+          Start List Maker · for AIDA-style freediving competitions · runs entirely in your browser ·{" "}
+          <a className="hover:text-ink hover:underline" href={contactUrl("Start List Maker")}>
+            Feedback: {CONTACT_EMAIL}
+          </a>
         </footer>
       </div>
     </div>

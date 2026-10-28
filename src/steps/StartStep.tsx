@@ -234,7 +234,13 @@ export function StartStep({ dispatch, onHelp }: { dispatch(a: Action): void; onH
             </li>
           ))}
         </ul>
-        <div className="overflow-x-auto rounded-xl bg-surface ring-1 ring-line">
+        {/* Focusable so a keyboard can scroll it sideways on a phone. */}
+        <div
+          tabIndex={0}
+          role="region"
+          aria-label="Example export"
+          className="overflow-x-auto rounded-xl bg-surface ring-1 ring-line focus-visible:outline-2 focus-visible:outline-offset-2"
+        >
           <table className="w-full text-sm whitespace-nowrap tabular-nums" aria-describedby="example-note">
             <thead className="border-b border-line text-xs font-semibold tracking-wide text-muted uppercase">
               <tr>
