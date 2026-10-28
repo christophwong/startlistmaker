@@ -28,7 +28,7 @@ const og = `
   <div style="font-size:52px;font-weight:700;line-height:1.12;letter-spacing:-1px;max-width:960px">
     Freediving start lists from your Google Forms export.
   </div>
-  <div style="font-size:30px;color:#cfe9f7">AIDA-style · pool and depth · athlete data stays in your browser</div>
+  <div style="font-size:30px;color:#cfe9f7">AIDA world apnea · pool and depth · athlete data stays in your browser</div>
 </div>`;
 
 const browser = await chromium.launch();
