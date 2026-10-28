@@ -5,7 +5,7 @@ import { HelpDialog } from "~/components/help";
 import { ChevronIcon, HelpIcon, LockIcon, MoonIcon, MoreIcon, SunIcon, TrashIcon } from "~/components/icons";
 import { NOT_ON_LIST_ID } from "~/components/not-on-list";
 import { Popover } from "~/components/popover";
-import { LogoMark, PrivacyText } from "~/components/shell";
+import { LogoMark, PrivacyText, SAVE_PROJECT_HINT } from "~/components/shell";
 import { Toast } from "~/components/toast";
 import { Button, buttonClass, cx } from "~/components/ui";
 import { EventHeader, ImportBar, WorkspaceTabs } from "~/components/workspace";
@@ -116,6 +116,7 @@ export default function App() {
 
   const themeLabel = theme === "dark" ? "Switch to light mode" : "Switch to dark mode";
   const ThemeIcon = theme === "dark" ? SunIcon : MoonIcon;
+  const sessionLabel = remember ? "Saved on this device" : "Temporary session";
   const dataItems = (close: () => void) => (
     <div className="space-y-3">
       <label className="flex items-start gap-2">
@@ -128,7 +129,7 @@ export default function App() {
         <span>
           <span className="block font-medium">Remember on this device</span>
           <span className="block text-xs text-muted">
-            {remember ? "Your work is kept in this browser after the tab closes." : "Off: your work is gone when this tab closes."}
+            {remember ? "Kept after the tab closes." : "Cleared when the tab closes."}
           </span>
         </span>
       </label>
@@ -167,7 +168,6 @@ export default function App() {
               label={
                 <>
                   <LockIcon className="size-3.5" /> Local only
-                  <span className="hidden lg:inline">· athlete data stays in this browser</span>
                 </>
               }
               panelClassName="w-80"
@@ -181,7 +181,7 @@ export default function App() {
               Help
             </Button>
             {hasData && (
-              <Button variant="ghost" size="sm" onClick={saveProject} title="Everything (athletes, settings, order, logos) in a file, to reopen later">
+              <Button variant="ghost" size="sm" onClick={saveProject} title={SAVE_PROJECT_HINT}>
                 Save project
               </Button>
             )}
@@ -190,8 +190,7 @@ export default function App() {
                 className={buttonClass("ghost", "sm")}
                 label={
                   <>
-                    Your data{" "}
-                    <span className="hidden font-normal text-muted lg:inline">· {remember ? "remembered" : "this tab only"}</span>
+                    {sessionLabel}
                     <ChevronIcon dir="down" className="size-3.5" />
                   </>
                 }
@@ -238,14 +237,15 @@ export default function App() {
                         close();
                         saveProject();
                       }}
-                      className="flex min-h-11 w-full items-center gap-2 rounded-lg px-2 font-medium hover:bg-sunken"
+                      className="flex min-h-11 w-full flex-col justify-center rounded-lg px-2 text-left hover:bg-sunken"
                     >
-                      Save project
+                      <span className="font-medium">Save project</span>
+                      <span className="text-xs text-muted">{SAVE_PROJECT_HINT}</span>
                     </button>
                   )}
                   {hasData && (
                     <div className="mt-1 border-t border-line-soft px-2 pt-3">
-                      <p className="mb-2 text-xs font-semibold tracking-wide text-muted uppercase">Your data</p>
+                      <p className="mb-2 text-xs font-semibold tracking-wide text-muted uppercase">{sessionLabel}</p>
                       {dataItems(close)}
                     </div>
                   )}
@@ -314,7 +314,7 @@ export default function App() {
         <Toast notice={state.notice} onUndo={undo} onDismiss={dismiss} />
 
         <footer className="no-print mt-16 border-t border-line pt-4 text-xs text-muted">
-          Start List Maker · for AIDA-style freediving competitions · runs entirely in your browser ·{" "}
+          © 2026 Christoph Wong · Start List Maker, for AIDA world apnea competitions ·{" "}
           <a className="hover:text-ink hover:underline" href={contactUrl("Start List Maker")}>
             Feedback: {CONTACT_EMAIL}
           </a>

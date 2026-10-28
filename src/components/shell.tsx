@@ -15,19 +15,19 @@ export function LogoMark() {
   );
 }
 
+/** Tooltip for Save project buttons. */
+export const SAVE_PROJECT_HINT = "Downloads a file you can open on this site later to carry on";
+
 /** What "Local only" means, in the header's privacy popover. */
 export function PrivacyText() {
   return (
     <div className="space-y-2 text-ink-2">
       <p className="font-semibold text-ink">Athlete data stays in this browser</p>
-      <p>
-        Files are read and start lists are built entirely on your device. Your start lists and athletes' details are
-        never uploaded, stored on a server or shared, and there's no account.
-      </p>
-      <p>
-        While you work, your data is kept in this tab only and is gone when you close it, unless you choose “Remember on
-        this device”. “Clear all data” removes it immediately.
-      </p>
+      <ul className="list-disc space-y-1 pl-5">
+        <li>Files are read on your device.</li>
+        <li>Start lists and athlete data are never uploaded or shared.</li>
+        <li>No account.</li>
+      </ul>
     </div>
   );
 }

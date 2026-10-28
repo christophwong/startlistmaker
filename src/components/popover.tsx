@@ -83,7 +83,7 @@ export function Popover({
           ref={panel}
           id={id}
           className={cx(
-            "absolute z-40 w-72 max-w-[calc(100vw-2rem)] rounded-xl bg-surface p-3 text-left text-sm font-normal text-ink normal-case shadow-lg ring-1 ring-line",
+            "absolute z-40 w-72 max-w-[calc(100vw-2rem)] rounded-xl bg-surface p-3 text-left text-sm font-normal whitespace-normal text-ink normal-case shadow-lg ring-1 ring-line",
             align === "beside" ? "top-1/2 right-full mr-1 -translate-y-1/2" : up ? "bottom-full mb-2" : "top-full mt-2",
             align === "right" && "right-0",
             align === "left" && "left-0",

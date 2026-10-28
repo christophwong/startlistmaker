@@ -2,7 +2,7 @@
 
 **Freediving start lists in minutes, straight from your Google Forms export.**
 
-Start List Maker turns competition registrations into a printable AIDA-style start list, with official tops (OT), warm-up and check-in times, lanes or zones, and breaks. It runs entirely in your browser: there's no account to create, and start lists and athlete data are never uploaded, stored on a server or shared. Your work stays in the current tab unless you turn on **Remember on this device**.
+Start List Maker turns competition registrations into a printable start list for AIDA world apnea competitions, with official tops (OT), warm-up and check-in times, lanes or zones, and breaks. It runs entirely in your browser: there's no account to create, and start lists and athlete data are never uploaded, stored on a server or shared. Your work stays in the current tab unless you turn on **Remember on this device**.
 
 ## Features
 
@@ -15,7 +15,7 @@ Start List Maker turns competition registrations into a printable AIDA-style sta
 
 ## How to use it
 
-In Google Forms, open **Responses → ⋮ → Download responses (.csv)**, or copy the cells from the linked Google Sheet. Upload or paste them on the home page and the start list is built straight away; athletes with a problem wait above it to be fixed. To see a finished start list with made-up athletes, open **Depth demo** or **Pool demo**.
+In Google Forms, open **Responses → ⋮ → Download responses (.csv)**, or copy the cells from the linked Google Sheet. Upload or paste them on the home page and your start list is ready in seconds. Move athletes around, add breaks and adjust start times, then add your logos and print it, or save it as PDF, CSV or Excel. To see a finished start list with made-up athletes, open **Depth demo** or **Pool demo**.
 
 **Required per start:** name (full, or first + last), discipline, AP.\
 **Optional:** gender, country, personal best, announced dive time.

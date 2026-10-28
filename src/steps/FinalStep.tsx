@@ -3,6 +3,7 @@ import { DayBadge } from "~/components/day-tabs";
 import { ArrowIcon } from "~/components/icons";
 import { LogosEditor } from "~/components/logos-editor";
 import { SheetColumnsEditor } from "~/components/sheet-columns";
+import { SAVE_PROJECT_HINT } from "~/components/shell";
 import { PrintSheet, type SheetGuide } from "~/components/start-list/print-sheet";
 import { Alert, Button, Field, Segmented, SideCard } from "~/components/ui";
 import { YardGuideOptions } from "~/components/yard-guide";
@@ -199,7 +200,7 @@ export function FinalStep({ state, dispatch }: { state: AppState; dispatch(a: Ac
               <Button
                 variant="ghost"
                 className="w-full"
-                title="Everything (athletes, settings, order, logos) to reopen later"
+                title={SAVE_PROJECT_HINT}
                 onClick={() => downloadText(`${base}.startlist.json`, toProjectJson(state), "application/json")}
               >
                 Save project

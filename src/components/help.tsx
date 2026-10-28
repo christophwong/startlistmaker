@@ -22,12 +22,12 @@ export function HelpDialog({ open, onClose }: { open: boolean; onClose(): void }
         <ol className="list-decimal space-y-1 pl-5">
           <li>
             <strong>Upload:</strong> choose or drop your Google Forms export, paste it from Google Sheets, open a saved project,
-            or enter athletes by hand. The start list is built straight away, and pool or depth is worked out from the
+            or enter athletes by hand. Your start list is ready in seconds, and pool or depth is worked out from the
             disciplines in the file. If no column holds the name, discipline or AP, you're asked which one does.
           </li>
           <li>
-            <strong>Start list:</strong> name the event and set its date and location at the top. Athletes with a problem (a
-            missing AP, say) wait above the list: fix it there and “Add to list”. Set the first OT, interval or dive time +
+            <strong>Start list:</strong> name the event and set its date and location at the top. If an athlete's entry needs
+            a fix (a missing AP, say), it's shown above the list: correct it there and “Add to list”. Set the first OT, interval or dive time +
             buffer, lanes or zones, and breaks; times change as you type, and order settings apply on “Re-sort list”. Drag rows
             or sort by a column; click an AP to change it. A start's ⋯ menu (Move on a phone) moves it to a position, adds a
             break after it, or removes this start only. Most changes can be taken back with Undo.
@@ -90,7 +90,7 @@ export function HelpDialog({ open, onClose }: { open: boolean; onClose(): void }
           athletes, settings, the order and logos. To carry on later, use “Open a project” on the home page.
         </p>
         <p>
-          Your work is kept in this tab until you close it. In the “Your data” menu, check “Remember on this device” to keep it
+          Your work is kept in this tab until you close it. In the “Temporary session” menu in the header, check “Remember on this device” to keep it
           after the tab closes, and use “Clear all data” to remove it at once.
         </p>
       </Section>

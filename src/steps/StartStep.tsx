@@ -200,8 +200,8 @@ export function StartStep({ dispatch, onHelp }: { dispatch(a: Action): void; onH
           <ol className="space-y-2.5">
             {[
               "Upload your Google Forms export, or paste it from Google Sheets",
-              "The start list is built straight away; anyone with a problem waits above it to be fixed",
-              "Arrange the order, then print or export",
+              "Your start list is ready in seconds. Move athletes around, add breaks and adjust start times",
+              "Add your logos and print it, or save it as PDF, CSV or Excel",
             ].map((text, i) => (
               <li key={i} className="flex items-center gap-3">
                 <span className="grid size-[26px] shrink-0 place-items-center rounded-full bg-accent-soft text-[13px] font-bold text-accent">

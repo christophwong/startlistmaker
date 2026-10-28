@@ -9,14 +9,14 @@ import { expect, test, type Page } from "@playwright/test";
 
 const isMobile = (page: Page) => (page.viewportSize()?.width ?? 1280) < 768;
 
-// The header keeps Help, the theme and "Your data" in a menu on a phone.
-async function openMenu(page: Page, desktop: "Your data" | null) {
+// The header keeps Help, the theme and the session menu in a menu on a phone.
+async function openMenu(page: Page, desktop: "session" | null) {
   if (isMobile(page)) await page.getByRole("button", { name: "Menu" }).click();
-  else if (desktop) await page.getByRole("button", { name: /^Your data/ }).click();
+  else if (desktop) await page.getByRole("button", { name: /^(Temporary session|Saved on this device)/ }).click();
 }
 
 async function clearAllData(page: Page) {
-  await openMenu(page, "Your data");
+  await openMenu(page, "session");
   page.once("dialog", (d) => d.accept());
   await page.getByRole("button", { name: "Clear all data" }).click();
 }
@@ -655,7 +655,7 @@ test("closing the tab asks first when the work isn't remembered", async ({ page 
   await paste(page, "Name\tGender\tDiscipline\tAnnounced Performance (AP)\nAna Lima\tFemale\tCWT\t30\n");
   await expect(page.getByRole("heading", { name: "Start list" })).toBeVisible();
   expect(await leaveAsks()).toBe(true);
-  await openMenu(page, "Your data");
+  await openMenu(page, "session");
   await page.getByLabel("Remember on this device").check();
   expect(await leaveAsks()).toBe(false);
 });
@@ -715,7 +715,7 @@ test("phone: a start's menu near the bottom of the screen opens upward, so every
   expect(item.y + item.height).toBeLessThanOrEqual(page.viewportSize()!.height);
 });
 
-test("header: the privacy note and Your data menu open and close", async ({ page }) => {
+test("header: the privacy note and session menu open and close", async ({ page }) => {
   await page.goto("/#demo");
   await expect(page.getByRole("heading", { name: "Start list" })).toBeVisible();
   const lock = page.getByRole("button", { name: /^Local only/ });
@@ -726,11 +726,11 @@ test("header: the privacy note and Your data menu open and close", async ({ page
   await expect(note).toBeHidden();
   await expect(lock).toBeFocused();
 
-  if (!isMobile(page)) await expect(page.getByRole("button", { name: "Your data · this tab only" })).toBeVisible();
-  await openMenu(page, "Your data");
+  if (!isMobile(page)) await expect(page.getByRole("button", { name: "Temporary session" })).toBeVisible();
+  await openMenu(page, "session");
   await page.getByLabel("Remember on this device").check();
   expect(await page.evaluate(() => localStorage.length)).toBeGreaterThan(0);
   await page.getByRole("contentinfo").click(); // a click outside closes it
   await expect(page.getByLabel("Remember on this device")).toBeHidden();
-  if (!isMobile(page)) await expect(page.getByRole("button", { name: "Your data · remembered" })).toBeVisible();
+  if (!isMobile(page)) await expect(page.getByRole("button", { name: "Saved on this device" })).toBeVisible();
 });
