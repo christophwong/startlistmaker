@@ -186,6 +186,7 @@ export function ScheduleCard({
         <div className="grid grid-cols-2 gap-3">
           <SelectField label="Sort within a block" name="sortBy" defaultValue={values.sortBy}>
             <option value="AP">AP</option>
+            <option value="PB">PB</option>
             <option value="DIVE_TIME">Dive time</option>
             <option value="NAME">Last name</option>
             <option value="REGISTRATION">Sign-up order</option>
@@ -193,6 +194,9 @@ export function ScheduleCard({
           <SelectField label="Direction" name="sortDir" defaultValue={values.sortDir}>
             <option value="ASC">Low to high</option>
             <option value="DESC">High to low</option>
+            <option value="VALLEY">High-low-high</option>
+            <option value="HILL">Low-high-low</option>
+            <option value="ALTERNATE">Alternating high, low</option>
           </SelectField>
         </div>
         <Field

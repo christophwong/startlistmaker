@@ -42,21 +42,53 @@ const byDiveTime = (a: EngineStart, b: EngineStart, dir: number) =>
         ? -1
         : dir * (a.diveTimeSec - b.diveTimeSec);
 
+/** Unknown PBs always sort after known ones. */
+const byPb = (a: EngineStart, b: EngineStart, dir: number) =>
+  (a.pb ?? null) === (b.pb ?? null)
+    ? 0
+    : a.pb == null
+      ? 1
+      : b.pb == null
+        ? -1
+        : dir * (a.pb - b.pb);
+
+/**
+ * Rearranges a group sorted from first-placed to last-placed into a shape.
+ * Ends first: [60 50 40 30 20] → [60 40 20 30 50]. Alternate: → [60 20 50 30 40].
+ */
+function shape(sorted: EngineStart[], alternate: boolean): EngineStart[] {
+  if (alternate) {
+    const out: EngineStart[] = [];
+    for (let lo = 0, hi = sorted.length - 1; lo <= hi; lo++, hi--) {
+      out.push(sorted[lo]);
+      if (lo < hi) out.push(sorted[hi]);
+    }
+    return out;
+  }
+  const front: EngineStart[] = [];
+  const back: EngineStart[] = [];
+  sorted.forEach((s, i) => (i % 2 ? back.unshift(s) : front.push(s)));
+  return [...front, ...back];
+}
+
 /**
  * Orders starts by the competition rules (DESIGN.md §4.1): discipline block,
  * then gender (optional), then the sort key with its direction. AP ties go by
- * dive time in pool (short first), then by name.
+ * dive time in pool (short first), then by name. VALLEY, HILL and ALTERNATE
+ * reshape each block and gender group after sorting.
  */
 export function sortStarts(
   starts: EngineStart[],
   settings: StartListSettings,
 ): EngineStart[] {
-  const dir = settings.sortDir === "DESC" ? -1 : 1;
+  const dir = settings.sortDir === "ASC" || settings.sortDir === "HILL" ? 1 : -1;
   const pool = settings.type === "POOL";
   const key = (a: EngineStart, b: EngineStart): number => {
     switch (settings.sortBy) {
       case "AP":
         return dir * (a.ap - b.ap) || (pool ? byDiveTime(a, b, 1) : 0);
+      case "PB":
+        return byPb(a, b, dir) || dir * (a.ap - b.ap);
       case "DIVE_TIME":
         return byDiveTime(a, b, dir) || dir * (a.ap - b.ap);
       case "NAME":
@@ -65,13 +97,28 @@ export function sortStarts(
         return dir * ((a.order ?? 0) - (b.order ?? 0));
     }
   };
-  return [...starts].sort(
+  // Starts without the sort value stay at the end of their group, outside the shape.
+  const missing = (s: EngineStart) =>
+    settings.sortBy === "PB" ? s.pb == null : settings.sortBy === "DIVE_TIME" && s.diveTimeSec === null;
+  const group = (s: EngineStart) => `${blockRank(s, settings)}:${genderRank(s, settings)}`;
+  const sorted = [...starts].sort(
     (a, b) =>
       blockRank(a, settings) - blockRank(b, settings) ||
       genderRank(a, settings) - genderRank(b, settings) ||
       key(a, b) ||
       byName(a, b),
   );
+  if (settings.sortDir === "ASC" || settings.sortDir === "DESC") return sorted;
+
+  const out: EngineStart[] = [];
+  for (let i = 0; i < sorted.length; ) {
+    let j = i + 1;
+    while (j < sorted.length && group(sorted[j]) === group(sorted[i])) j++;
+    const part = sorted.slice(i, j);
+    out.push(...shape(part.filter((s) => !missing(s)), settings.sortDir === "ALTERNATE"), ...part.filter(missing));
+    i = j;
+  }
+  return out;
 }
 
 /** Round-2 starts in the order their athletes appeared in round 1. */

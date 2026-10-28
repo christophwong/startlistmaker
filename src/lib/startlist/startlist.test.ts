@@ -97,6 +97,46 @@ describe("sortStarts", () => {
     expect(sortStarts(starts, { ...s, genderOrder: "M_FIRST" }).map((x) => x.id)).toEqual(["a", "b", "c", "e", "d"]);
   });
 
+  it("AP shapes within each block and gender group", () => {
+    const mk = (id: string, ap: number, discipline: "CWT" | "FIM" = "CWT", gender: Gender | null = null): EngineStart => ({
+      id, athleteId: id, startNumber: 1, discipline, ap, diveTimeSec: 60,
+      firstName: id, lastName: id, gender,
+    });
+    const starts = [mk("20", 20), mk("50", 50), mk("30", 30), mk("60", 60), mk("40", 40)];
+    const order = (sortDir: StartListSettings["sortDir"], list = starts, extra = {}) =>
+      sortStarts(list, { ...depthSettings, sortDir, ...extra }).map((x) => x.id);
+    expect(order("VALLEY")).toEqual(["60", "40", "20", "30", "50"]);
+    expect(order("HILL")).toEqual(["20", "40", "60", "50", "30"]);
+    expect(order("ALTERNATE")).toEqual(["60", "20", "50", "30", "40"]);
+
+    // Each discipline block and gender group gets its own shape.
+    const mixed = [
+      mk("c10", 10), mk("c30", 30), mk("c20", 20),
+      mk("f15", 15, "FIM"), mk("f35", 35, "FIM"), mk("f25", 25, "FIM"), mk("f45", 45, "FIM"),
+    ];
+    expect(order("VALLEY", mixed, { groupBy: "DISCIPLINE", blockOrder: ["CWT", "FIM", ...depthSettings.blockOrder] }))
+      .toEqual(["c30", "c10", "c20", "f45", "f25", "f15", "f35"]);
+    const gendered = [mk("w1", 10, "CWT", "F"), mk("w2", 20, "CWT", "F"), mk("w3", 30, "CWT", "F"), mk("m1", 40, "CWT", "M"), mk("m2", 50, "CWT", "M")];
+    expect(order("ALTERNATE", gendered, { genderOrder: "F_FIRST" })).toEqual(["w3", "w1", "w2", "m2", "m1"]);
+  });
+
+  it("PB sorts like AP, unknown PBs last in their group", () => {
+    const mk = (id: string, pb: number | null, ap = 30): EngineStart => ({
+      id, athleteId: id, startNumber: 1, discipline: "CWT", ap, pb, diveTimeSec: 60,
+      firstName: id, lastName: id,
+    });
+    const starts = [mk("none", null), mk("20", 20), mk("50", 50), mk("30", 30), mk("60", 60), mk("40", 40)];
+    const order = (sortDir: StartListSettings["sortDir"]) =>
+      sortStarts(starts, { ...depthSettings, sortBy: "PB", sortDir }).map((x) => x.id);
+    expect(order("ASC")).toEqual(["20", "30", "40", "50", "60", "none"]);
+    expect(order("DESC")).toEqual(["60", "50", "40", "30", "20", "none"]);
+    expect(order("VALLEY")).toEqual(["60", "40", "20", "30", "50", "none"]);
+    expect(order("HILL")).toEqual(["20", "40", "60", "50", "30", "none"]);
+    expect(order("ALTERNATE")).toEqual(["60", "20", "50", "30", "40", "none"]);
+    // Equal PBs go by AP in the same direction.
+    expect(sortStarts([mk("a", 40, 30), mk("b", 40, 35)], { ...depthSettings, sortBy: "PB", sortDir: "DESC" }).map((x) => x.id)).toEqual(["b", "a"]);
+  });
+
   it("NAME and REGISTRATION sort keys", () => {
     const mk = (id: string, last: string, order: number): EngineStart => ({
       id, athleteId: id, startNumber: 1, discipline: "CWT", ap: 30, diveTimeSec: 60,

@@ -49,8 +49,8 @@ const settings = z.object({
   groupBy: z.enum(["DISCIPLINE", "MIXED"]),
   blockOrder: list(discipline, 8),
   genderOrder: z.enum(["NONE", "F_FIRST", "M_FIRST"]),
-  sortBy: z.enum(["AP", "DIVE_TIME", "NAME", "REGISTRATION"]),
-  sortDir: z.enum(["ASC", "DESC"]),
+  sortBy: z.enum(["AP", "PB", "DIVE_TIME", "NAME", "REGISTRATION"]),
+  sortDir: z.enum(["ASC", "DESC", "VALLEY", "HILL", "ALTERNATE"]),
   timeFormat: z.enum(["24h", "12h"]),
   countryFormat: z.enum(["CODE", "NAME"]),
 });

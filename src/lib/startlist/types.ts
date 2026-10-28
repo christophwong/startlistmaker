@@ -18,6 +18,8 @@ export interface EngineStart {
   gender?: Gender | null;
   /** registration (form row) order, for the REGISTRATION sort key */
   order?: number;
+  /** personal best, same unit as `ap`, for the PB sort key; absent counts as unknown */
+  pb?: number | null;
 }
 
 /** An engine start plus the athlete details shown on the start list. */
@@ -27,7 +29,8 @@ export type EngineStartWithAthlete = EngineStart & {
   pb: number | null;
 };
 
-export type SortKey = "AP" | "DIVE_TIME" | "NAME" | "REGISTRATION";
+export type SortKey = "AP" | "PB" | "DIVE_TIME" | "NAME" | "REGISTRATION";
+export type SortDir = "ASC" | "DESC" | "VALLEY" | "HILL" | "ALTERNATE";
 
 export interface StartListSettings {
   type: CompetitionType;
@@ -63,7 +66,12 @@ export interface StartListSettings {
   /** Within a block, women or men first. */
   genderOrder: "NONE" | "F_FIRST" | "M_FIRST";
   sortBy: SortKey;
-  sortDir: "ASC" | "DESC";
+  /**
+   * ASC / DESC: low to high / high to low. Shapes, within each block and
+   * gender group: VALLEY high-low-high, HILL low-high-low, ALTERNATE
+   * high, low, next high, next low…
+   */
+  sortDir: SortDir;
 }
 
 export type EntryInput =
