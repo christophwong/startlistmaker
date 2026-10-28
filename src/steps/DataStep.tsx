@@ -1,16 +1,15 @@
 import { Fragment, useMemo, useState, type ComponentProps, type ReactNode } from "react";
 import { DayBadge } from "~/components/day-tabs";
-import { ArrowIcon, SortIcon, TrashIcon } from "~/components/icons";
+import { ArrowIcon, TrashIcon } from "~/components/icons";
 import { Alert, Button, cx } from "~/components/ui";
 import { disciplinesFor, isTimedDiscipline, normalizeDiscipline, type CompetitionType } from "~/lib/disciplines";
 import { checkRows, onList, type CellKey, type RegRow, type RegStart, type RowCheck } from "~/lib/registrations";
 import type { Action, AppState } from "~/state/store";
-import { REPLACE_ORDER } from "./ListStep";
 
 /**
  * Editable registrations: fix what the import couldn't read, fill in gaps,
- * add or leave out athletes. Starts are derived from these rows, so a
- * regenerate (or "Append unscheduled") picks the changes up.
+ * add or leave out athletes. Starts are derived from these rows, so fixes
+ * show on the list at once; new and newly fixed starts wait in its tray.
  *
  * Laid out as a spreadsheet: borderless inputs in a gridded table, problem
  * cells tinted with a corner marker, and the messages in a Notes column.
@@ -235,10 +234,6 @@ export function DataStep({ state, dispatch }: { state: AppState; dispatch(a: Act
     starts[n - 1] = { ...starts[n - 1], ...patch };
     update(row.id, { starts });
   };
-  const generate = () => {
-    if (state.entries.length && state.manualOrder && !confirm(REPLACE_ORDER)) return;
-    dispatch({ type: "generate" });
-  };
   // New rows go at the end: bring the new one into view and start typing in it.
   const addRow = () => {
     const id = `n${state.nextId}`;
@@ -263,32 +258,17 @@ export function DataStep({ state, dispatch }: { state: AppState; dispatch(a: Act
     <div className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="min-w-0 flex-1 basis-80">
-          <h2 className="flex items-center gap-2 text-2xl font-bold tracking-tight sm:text-[28px]">
+          <h2 className="flex items-center gap-2 text-lg font-bold tracking-tight">
             Athletes {day && <DayBadge day={day} />}
           </h2>
           <p className="mt-1 text-muted">
-            Fix the red cells: those starts stay off the list until they're fixed. Amber cells are only warnings. The Notes
-            column says what's wrong.
+            Every change shows on the start list. Red cells keep a start off the list until they're fixed; fixed and new
+            athletes wait under “not on the list” there. Amber cells are only warnings. The Notes column says what's wrong.
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          {state.entries.length > 0 && (
-            <Button variant="secondary" onClick={() => dispatch({ type: "step", step: "list" })}>
-              Back to start list
-            </Button>
-          )}
-          <Button onClick={generate} disabled={startCount === 0}>
-            {state.entries.length ? (
-              <>
-                <SortIcon /> Re-sort list
-              </>
-            ) : (
-              <>
-                Generate start list <ArrowIcon />
-              </>
-            )}
-          </Button>
-        </div>
+        <Button variant="secondary" onClick={() => dispatch({ type: "step", step: "list" })}>
+          Start list <ArrowIcon />
+        </Button>
       </div>
 
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">

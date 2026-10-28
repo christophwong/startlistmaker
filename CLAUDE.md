@@ -25,7 +25,9 @@ The stack is Vite, TypeScript, Tailwind v4 and React 19. `~/` maps to `src/`.
 
 - **`src/lib/`** holds pure domain logic. `startlist/` is the engine (sort, generate, schedule, validate, edits) and `import/` covers CSV/XLSX/paste → mapped columns → parsed rows. `registrations.ts` has the editable athlete rows and per-cell validation. `export/` builds the shared table for print, CSV and XLSX. PDFs come only from the browser's Print / Save as PDF (the jsPDF download was dropped because its fonts garbled names outside Latin-1).
 - **`src/state/`**: `store.ts` holds one reducer with all app state, `persist.ts` covers session/local storage and project files (zod/mini validated), and `derived.ts` has the `useStartList` hook.
-- **`src/steps/`** has one component per step (Upload → Columns → Athletes → Start list → Print & export), plus `OfficialsStep.tsx`, the lazy-loaded judge & safety names screen under Print & export. **`src/components/`** holds the shared UI (callback-driven).
+- **`src/steps/`** has the home page (`StartStep`) and one component per workspace tab (Start list, Athletes, Print & export), plus `OfficialsStep.tsx`, the lazy-loaded judge & safety names screen under Print & export. Upload goes straight to a built start list: `lib/import/infer.ts` matches discipline columns by their values, athletes with errors wait in the Not-on-the-list tray, and Columns is a lazy side panel (`components/columns-drawer.tsx`). **`src/components/`** holds the shared UI (callback-driven).
+- **Undo.** List-changing actions push a snapshot onto `history` in the reducer (`UNDOABLE` in `store.ts`) and set a `notice` shown by the toast; neither is saved. Use Undo instead of `confirm()` for order changes.
+- **Every automatic guess needs a manual fallback** (column matching, pool/depth, event name, order): keep it visible and correctable by hand.
 - **`src/lib/export/`** also has the sheet presets (`table.ts`: athlete, judge, safety, results) and `crew.ts` (judge and safety names, keyed by OT-group slot so they stay put when divers are reordered).
 - **`src/samples/`** holds the anonymized demo CSVs, bundled as `?raw` and loaded on demand.
 

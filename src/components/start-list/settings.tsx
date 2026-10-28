@@ -1,19 +1,41 @@
-import { useState, type FormEvent } from "react";
-import { ArrowIcon } from "~/components/icons";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { ArrowIcon, SortIcon } from "~/components/icons";
 import { Button, Field, RadioGroup, Segmented, SelectField, SideCard } from "~/components/ui";
 import { DISCIPLINE_NAMES, disciplinesFor, type Discipline } from "~/lib/disciplines";
 import type { StartListSettings } from "~/lib/startlist";
 import { toTimeInput, type TimeFormat } from "~/lib/time";
-import type { FieldErrors } from "~/lib/validation";
+import { fieldErrors, settingsSchema, type FieldErrors } from "~/lib/validation";
 
 export type SettingsValues = StartListSettings & { timeFormat: TimeFormat };
+
+/**
+ * Settings that decide the order (generateEntries reads them). The rest only
+ * set times (schedule() reads them), so they apply as they're typed.
+ */
+export const ORDER_KEYS = [
+  "groupBy",
+  "blockOrder",
+  "genderOrder",
+  "sortBy",
+  "sortDir",
+  "scheduleMode",
+  "round2Order",
+  "minRecoveryMin",
+  "roundBreakMin",
+  "halftimeBreakMin",
+] as const satisfies readonly (keyof SettingsValues)[];
+
+const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 
 interface Props {
   values: SettingsValues;
   maxStarts: number;
-  errors: FieldErrors;
-  /** Form fields match settingsSchema in lib/validation.ts. */
-  onSubmit(form: FormData, regenerate: boolean): void;
+  /** Timing changed: times move, the order stays. */
+  onTiming(settings: SettingsValues): void;
+  /** Re-sort list with these settings (the order ones included). */
+  onResort(settings: SettingsValues): void;
+  /** Highlight Re-sort list: the order was changed by hand. */
+  manualOrder: boolean;
 }
 
 /** The current type's disciplines in block order, with ↑↓ to rearrange. */
@@ -70,12 +92,15 @@ const MORE_FIELDS = ["staIntervalMin", "staLanes", "roundToMin", "minRecoveryMin
 /**
  * The Schedule card: the settings people change most (first OT, zones,
  * spacing, order, half-time break), then "More settings" for the rest.
+ * Timing applies as it's typed; order settings wait for Re-sort list, which
+ * can be undone. Remount it (key) when the order settings change elsewhere.
  */
 export function ScheduleCard({
   values,
   maxStarts,
-  errors,
-  onSubmit,
+  onTiming,
+  onResort,
+  manualOrder,
   moreOpen,
   onMoreToggle,
 }: Props & { moreOpen: boolean; onMoreToggle(open: boolean): void }) {
@@ -83,17 +108,41 @@ export function ScheduleCard({
   const [spacing, setSpacing] = useState(values.spacingMode);
   const [groupBy, setGroupBy] = useState(values.groupBy);
   const [blockOrder, setBlockOrder] = useState(values.blockOrder);
+  const [errors, setErrors] = useState<FieldErrors>({});
+  // Order settings changed here but not applied yet.
+  const [pending, setPending] = useState(false);
+  const form = useRef<HTMLFormElement>(null);
+
+  const read = (): SettingsValues | null => {
+    const result = settingsSchema.safeParse(Object.fromEntries(new FormData(form.current!)));
+    setErrors(result.success ? {} : fieldErrors(result.error));
+    return result.success ? { ...result.data, type: values.type } : null;
+  };
+  const changed = () => {
+    const next = read();
+    if (!next) return;
+    const timing = { ...next, ...Object.fromEntries(ORDER_KEYS.map((k) => [k, values[k]])) } as SettingsValues;
+    if (!same(timing, values)) onTiming(timing);
+    setPending(ORDER_KEYS.some((k) => !same(next[k], values[k])));
+  };
+  // The discipline order is moved with buttons, not inputs: check it when it changes.
+  const firstOrder = useRef(blockOrder);
+  useEffect(() => {
+    if (blockOrder !== firstOrder.current) changed();
+  }, [blockOrder]);
   const submit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const submitter = (e.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null;
-    onSubmit(new FormData(e.currentTarget), submitter?.value === "regenerate");
+    const next = read();
+    if (!next) return;
+    setPending(false);
+    onResort(next);
   };
   const hidden = (name: keyof SettingsValues) => <input type="hidden" name={name} value={String(values[name])} />;
   const moreError = MORE_FIELDS.some((f) => errors[f]);
 
   return (
     <SideCard title="Schedule">
-      <form onSubmit={submit} className="space-y-4">
+      <form ref={form} onSubmit={submit} onChange={changed} className="space-y-4">
         <div className="grid grid-cols-2 gap-3">
           <Field label="First OT" name="startTime" type="time" defaultValue={toTimeInput(values.startTime)} error={errors.startTime} />
           <Field
@@ -277,13 +326,14 @@ export function ScheduleCard({
         </details>
 
         <div className="grid gap-2">
-          <Button type="submit" value="regenerate">
-            Save and re-sort list
+          <Button type="submit" variant={pending || manualOrder ? "primary" : "secondary"}>
+            <SortIcon /> Re-sort list
           </Button>
-          <Button type="submit" value="save" variant="secondary">
-            Save, keep the order
-          </Button>
-          <p className="text-xs text-muted">Re-sorting replaces moves and breaks you made by hand. Keeping the order only updates the times.</p>
+          <p className="text-xs text-muted">
+            {pending
+              ? "Re-sort to apply the new order settings. Moves and breaks made by hand are replaced; Undo brings them back."
+              : "Times change as you type. Order settings apply when you re-sort, and Undo takes it back."}
+          </p>
         </div>
       </form>
     </SideCard>

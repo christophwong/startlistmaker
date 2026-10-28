@@ -9,8 +9,7 @@ import { expect, test, type Page } from "@playwright/test";
 
 const isMobile = (page: Page) => (page.viewportSize()?.width ?? 1280) < 768;
 
-// The header keeps Help, the theme and "Your data" in menus on a phone, and
-// the stepper lists the steps under "All steps" there.
+// The header keeps Help, the theme and "Your data" in a menu on a phone.
 async function openMenu(page: Page, desktop: "Your data" | null) {
   if (isMobile(page)) await page.getByRole("button", { name: "Menu" }).click();
   else if (desktop) await page.getByRole("button", { name: /^Your data/ }).click();
@@ -22,11 +21,15 @@ async function clearAllData(page: Page) {
   await page.getByRole("button", { name: "Clear all data" }).click();
 }
 
-async function goToStep(page: Page, name: RegExp) {
-  const steps = page.getByRole("navigation", { name: "Steps" });
-  if (isMobile(page)) await steps.getByRole("button", { name: "All steps" }).click();
-  await steps.getByRole("button", { name }).click();
+async function goToTab(page: Page, name: "Start list" | "Athletes" | "Print & export") {
+  await page.getByRole("navigation", { name: "Workspace" }).getByRole("button", { name, exact: true }).click();
 }
+
+const paste = async (page: Page, cells: string) => {
+  await page.getByRole("button", { name: "Paste from Sheets" }).click();
+  await page.getByLabel("Pasted cells").fill(cells);
+  await page.getByRole("button", { name: "Read pasted data" }).click();
+};
 
 test.beforeEach(async ({ page, baseURL }) => {
   const external: string[] = [];
@@ -67,7 +70,7 @@ test("demo: sample depth list → finalize → CSV download; PDF is through Prin
   await expect(page.getByText(/This is a demo with made-up athletes/)).toBeVisible();
   await expect(page.getByText(/^\d+ starts · \d+ disciplines · first OT/)).toBeVisible();
 
-  await page.getByRole("button", { name: "Print & export", exact: true }).click();
+  await goToTab(page, "Print & export");
   await expect(page.getByText("Sample Depth Challenge · Day 1")).toBeVisible();
   await expect(page.locator(".print-area tbody tr").first()).toBeVisible();
 
@@ -85,7 +88,7 @@ test("demo: sample depth list → finalize → CSV download; PDF is through Prin
 
 test("judge and results sheets: blank forms from the same list, with their own downloads", async ({ page }) => {
   await page.goto("/#demo-pool");
-  await page.getByRole("button", { name: "Print & export", exact: true }).click();
+  await goToTab(page, "Print & export");
   const sheet = page.locator(".print-area");
   const names = async () => sheet.locator("tbody td:first-child").allTextContents();
   const athleteNames = await names();
@@ -114,7 +117,7 @@ test("judge and results sheets: blank forms from the same list, with their own d
 
 test("safety sheet: set names by selecting starts, then print the schedule", async ({ page, isMobile }) => {
   await page.goto("/#demo-pool");
-  await page.getByRole("button", { name: "Print & export", exact: true }).click();
+  await goToTab(page, "Print & export");
   await page.getByText("Safety", { exact: true }).click();
   await page.getByRole("button", { name: /Set judge & safety names/ }).click();
   await expect(page.getByRole("heading", { name: /Judge & safety names/ })).toBeVisible();
@@ -128,11 +131,12 @@ test("safety sheet: set names by selecting starts, then print the schedule", asy
   await bar.getByLabel("Safety").fill("Robin");
   await bar.getByLabel("Deck").fill("Kai");
   await bar.getByRole("button", { name: "Apply" }).click();
-  await expect(page.getByRole("status")).toHaveText(new RegExp(`Names set on ${picked} starts`));
+  const applied = page.getByRole("status").filter({ hasText: /Names set on/ });
+  await expect(applied).toHaveText(new RegExp(`Names set on ${picked} starts`));
 
   // Undo takes it back; apply again.
   await page.getByRole("button", { name: "Undo" }).click();
-  await expect(page.getByRole("status")).toHaveCount(0);
+  await expect(applied).toHaveCount(0);
   await bar.getByLabel("Safety").fill("Robin");
   await bar.getByRole("button", { name: "Apply" }).click();
 
@@ -158,7 +162,7 @@ test("safety sheet: set names by selecting starts, then print the schedule", asy
   expect(fs.readFileSync(await file.path(), "utf8")).toContain("STA WARM UP · 8:15");
 });
 
-test("a two-day form: both days on Columns, a tab per day after it", async ({ page }) => {
+test("a two-day form: a list per day, both days read in Columns", async ({ page }) => {
   await page.goto("/#demo");
   const tabs = page.getByRole("tablist", { name: "Competition day" });
   const day1 = tabs.getByRole("tab", { name: /Day 1/ });
@@ -167,34 +171,32 @@ test("a two-day form: both days on Columns, a tab per day after it", async ({ pa
   const firstOt = page.getByRole("tabpanel").getByText(/^\d+:\d\d$/).first();
   const day1Ot = await firstOt.textContent();
 
-  // Day 2 has its own list, settings and date; Day 1's come back unchanged.
+  // Day 2 has its own list, settings and date (edited in the header); Day 1's come back unchanged.
   await day2.click();
   await expect(day2).toHaveAttribute("aria-selected", "true");
   await expect(page.getByRole("heading", { name: /Start list.*Day 2/ })).toBeVisible();
-  if (isMobile(page)) await page.getByRole("button", { name: "Settings" }).click();
-  await page.getByRole("button", { name: "Edit details" }).click();
   await expect(page.getByLabel("Date of Day 2")).toHaveValue("2026-09-06");
-  if (isMobile(page)) await page.getByRole("button", { name: "Close settings" }).click();
   await day1.focus();
   await page.keyboard.press("ArrowRight");
   await expect(day1).toHaveAttribute("aria-selected", "true");
   await expect(firstOt).toHaveText(day1Ot!);
 
-  // Columns reads both days at once: no day picker.
-  await goToStep(page, /Columns/);
-  await expect(page.getByText("Build the list for")).toHaveCount(0);
-  await expect(page.getByText(/start list for each day/)).toBeVisible();
-  await expect(tabs).toHaveCount(0);
+  // Columns, a panel over the list, reads both days at once.
+  await page.getByRole("button", { name: /^Columns/ }).click();
+  const columns = page.getByRole("dialog", { name: "Columns" });
+  await expect(columns.getByText(/start list for each day/)).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(columns).toBeHidden();
 
   // Athletes: one day's start columns at a time.
-  await page.getByRole("button", { name: "Continue to athletes" }).click();
+  await goToTab(page, "Athletes");
   await expect(page.getByRole("columnheader", { name: "Day 1" })).toBeVisible();
   await day2.click();
   await expect(page.getByRole("columnheader", { name: "Day 2" })).toBeVisible();
   await expect(page.getByRole("columnheader", { name: "Day 1" })).toHaveCount(0);
 
   // Print & export names the day on the sheet.
-  await goToStep(page, /Print & export/);
+  await goToTab(page, "Print & export");
   await expect(page.locator(".print-area").getByText("Sample Depth Challenge · Day 2")).toBeVisible();
 });
 
@@ -205,29 +207,38 @@ test("#demo-pool link opens the pool sample with lanes", async ({ page }) => {
   await expect(page.getByText("BREAK", { exact: true }).filter({ visible: true }).first()).toBeVisible();
 });
 
-test("upload → fix a row → generate; reorder and sort", async ({ page }) => {
+test("upload goes straight to the start list; an athlete added by hand waits in the tray; sort with Undo", async ({ page }) => {
   await page.goto("/");
   await page.getByLabel("Google Forms export file").setInputFiles("tests/fixtures/ecac-depth-day1.csv");
-  await expect(page.getByRole("heading", { name: "Match the columns" })).toBeVisible();
-  // The form has no emergency-contact question: said once, not on all 18 rows.
-  await expect(page.getByText("All 18 athletes: No emergency contact.")).toBeVisible();
-  await expect(page.getByText("No emergency contact.", { exact: true })).toHaveCount(0);
-  await page.getByRole("button", { name: "Continue to athletes" }).click();
-  await expect(page.getByRole("heading", { name: "Athletes" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Start list" })).toBeVisible();
+  await expect(page.getByText(/^18 starts · \d+ disciplines · first OT/)).toBeVisible();
+  await expect(page.getByText(/^Read 18 rows: 18 athletes/)).toBeVisible();
+  // Depth from the disciplines; the missing emergency-contact question is said once, not on all 18 rows.
+  await expect(page.getByText(/18 athletes · Depth \(from /)).toBeVisible();
+  await expect(page.getByText("All athletes: no emergency contact")).toBeVisible();
+  await expect(page.getByLabel("Event name")).not.toHaveValue("");
 
-  // Add an athlete by hand.
+  // Add an athlete by hand: not on the list until placed.
+  await goToTab(page, "Athletes");
   await page.getByRole("button", { name: "+ Add athlete" }).click();
   const scope = page.locator("table tbody tr").filter({ has: page.locator('input[aria-label="First name"]') }).last();
   await expect(scope.getByLabel("First name")).toBeFocused();
-  await expect(page.getByText("1 to fix")).toBeVisible();
   await scope.getByLabel("First name").fill("Test");
   await scope.getByLabel("Last name").fill("Diver");
   await scope.getByLabel("Email, Test Diver").fill("test.diver@example.com");
   await scope.getByLabel(/Start 1 discipline/).selectOption("CWT");
   await scope.getByLabel(/Start 1 AP/).fill("33");
 
-  await page.getByRole("button", { name: /Generate start list/ }).click();
-  await expect(page.getByRole("heading", { name: "Start list" })).toBeVisible();
+  await page.getByRole("button", { name: "1 not on the list" }).click();
+  const tray = page.locator("#not-on-list");
+  await expect(tray.getByText("Ready to go on the list.")).toBeVisible();
+  await tray.getByRole("button", { name: "Add to list" }).click();
+  await expect(page.getByText(/^Test Diver added at #\d+, OT \d+:\d\d\.$/)).toBeVisible();
+  await expect(tray).toHaveCount(0);
+  await expect(page.getByText(/^19 starts/)).toBeVisible();
+  await page.getByRole("button", { name: "Undo" }).click();
+  await expect(page.getByText(/^18 of 19 starts on the list/)).toBeVisible();
+  await tray.getByRole("button", { name: "Add to list" }).click();
   await expect(page.getByText("Test Diver").filter({ visible: true }).first()).toBeVisible();
 
   // Move the first start down one place (on a phone, from the start's move menu).
@@ -236,85 +247,79 @@ test("upload → fix a row → generate; reorder and sort", async ({ page }) => 
   await firstMove.click();
 
   if (!isMobile(page)) {
-    // Sort by name (after a manual move, this asks first), then reverse it.
-    page.once("dialog", (d) => d.accept());
-    const header = page.getByRole("button", { name: /^Athlete/ });
+    // Sort by name after a manual move: no question first, Undo after.
+    const header = page.getByRole("button", { name: "Athlete", exact: true });
+    const names = () => page.locator("tbody tr[draggable=true] td:nth-child(4)").allInnerTexts();
+    const moved = await names();
     await header.click();
     await expect(page.getByRole("columnheader", { name: /Athlete/ })).toHaveAttribute("aria-sort", "ascending");
-    const names = () => page.locator("tbody tr[draggable=true] td:nth-child(4)").allInnerTexts();
     const asc = await names();
     await header.click();
     await expect(page.getByRole("columnheader", { name: /Athlete/ })).toHaveAttribute("aria-sort", "descending");
     expect(await names()).toEqual([...asc].reverse());
+    await page.getByRole("button", { name: "Undo" }).click();
+    await page.getByRole("button", { name: "Undo" }).click();
+    expect(await names()).toEqual(moved);
   }
 });
 
-test("revisiting Columns keeps athlete edits; a changed import asks before replacing them", async ({ page }) => {
+test("Columns: a changed column re-reads the file and rebuilds the list, keeping athlete edits", async ({ page }) => {
   await page.goto("/");
   await page.getByLabel("Google Forms export file").setInputFiles("tests/fixtures/ecac-depth-day1.csv");
-  await page.getByRole("button", { name: "Continue to athletes" }).click();
+  await goToTab(page, "Athletes");
   await page.getByRole("button", { name: "+ Add athlete" }).click();
-  const added = page.getByLabel("First name").filter({ visible: true }).last();
-  await added.fill("Kept");
+  await page.getByLabel("First name").filter({ visible: true }).last().fill("Kept");
   const kept = () => page.locator('input[aria-label="First name"]:visible[value="Kept"]');
   await expect(kept()).toHaveCount(1);
 
-  // Same columns: Continue goes straight back, edits intact, no question.
-  await goToStep(page, /^2 Columns$/);
-  await page.getByRole("button", { name: "Continue to athletes" }).click();
-  await expect(page.getByRole("heading", { name: "Athletes" })).toBeVisible();
+  await page.getByRole("button", { name: /^Columns/ }).click();
+  const columns = page.getByRole("dialog", { name: "Columns" });
+  await columns.getByLabel("Use Country as").selectOption("");
+  await page.keyboard.press("Escape");
+  await expect(columns).toBeHidden();
   await expect(kept()).toHaveCount(1);
-
-  // Changed columns: asks first; cancelling stays on Columns.
-  await goToStep(page, /^2 Columns$/);
-  await page.getByLabel("Use Country as").selectOption("");
-  const messages: string[] = [];
-  page.once("dialog", (d) => (messages.push(d.message()), d.dismiss()));
-  await page.getByRole("button", { name: "Continue to athletes" }).click();
-  expect(messages).toEqual(["Re-read the file? Your changes to 1 athlete will be replaced."]);
-  await expect(page.getByRole("heading", { name: "Match the columns" })).toBeVisible();
-
-  page.once("dialog", (d) => d.accept());
-  await page.getByRole("button", { name: "Continue to athletes" }).click();
-  await expect(page.getByRole("heading", { name: "Athletes" })).toBeVisible();
-  await expect(kept()).toHaveCount(0);
+  await goToTab(page, "Start list");
+  await expect(page.getByText(/^18 starts/)).toBeVisible();
+  // Undo puts the column back.
+  await page.getByRole("button", { name: "Undo" }).click();
+  await page.getByRole("button", { name: /^Columns/ }).click();
+  await expect(columns.getByLabel("Use Country as")).toHaveValue("country");
 });
 
-test("paste from Google Sheets", async ({ page }) => {
+test("paste from Google Sheets: the list is built straight away", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: "Paste from Sheets" }).click();
-  await page.getByLabel("Pasted cells").fill(
-    "Name\tGender\tDiscipline\tAnnounced Performance (AP)\tDive Time\nAna Lima\tFemale\tCWT\t30\t1:10\nBo Chen\tMale\tFIM\t40\t1:30\n",
-  );
-  await page.getByRole("button", { name: "Read pasted data" }).click();
-  await page.getByRole("button", { name: "Continue to athletes" }).click();
-  await page.getByRole("button", { name: /Generate start list/ }).click();
+  await paste(page, "Name\tGender\tDiscipline\tAnnounced Performance (AP)\tDive Time\nAna Lima\tFemale\tCWT\t30\t1:10\nBo Chen\tMale\tFIM\t40\t1:30\n");
   await expect(page.getByText(/^2 starts · \d+ discipline/)).toBeVisible();
 });
 
-test("Columns: rows that need fixing are shown first, with a link to the row on Athletes", async ({ page }) => {
+test("a row with a problem waits in the tray, and is fixed and added from there", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: "Paste from Sheets" }).click();
-  await page.getByLabel("Pasted cells").fill(
-    "Name\tGender\tDiscipline\tAnnounced Performance (AP)\nAna Lima\tFemale\tCWT\t30\nBo Chen\tMale\tFIM\t\nCy Park\tMale\tCWT\t25\n",
-  );
-  await page.getByRole("button", { name: "Read pasted data" }).click();
-  await expect(page.getByLabel("Use Name as")).toHaveValue("fullName");
-  const filter = page.getByLabel(/Only rows with problems/);
-  await expect(filter).toBeChecked();
-  await expect(page.getByText(/Row 3/)).toBeVisible();
-  await expect(page.getByText(/Row 2/)).toHaveCount(0);
-  await filter.uncheck();
-  await expect(page.getByText(/Row 2 · Ana Lima/)).toBeVisible();
+  await paste(page, "Name\tGender\tDiscipline\tAnnounced Performance (AP)\nAna Lima\tFemale\tCWT\t30\nBo Chen\tMale\tFIM\t\nCy Park\tMale\tCWT\t25\n");
+  await expect(page.getByText(/^2 starts/)).toBeVisible();
+  const tray = page.locator("#not-on-list");
+  await expect(tray.getByRole("heading", { name: "1 athlete isn't on the list yet" })).toBeVisible();
+  await expect(tray.getByText(/AP is missing/)).toBeVisible();
+  const add = tray.getByRole("button", { name: "Add to list" });
+  await expect(add).toBeDisabled();
+  await tray.getByLabel(/AP for Bo Chen/).fill("40");
+  await add.click();
+  await expect(page.getByText(/^3 starts/)).toBeVisible();
+  await expect(tray).toHaveCount(0);
+});
 
-  await page.getByRole("button", { name: "Fix it on Athletes" }).click();
-  await expect(page.getByRole("heading", { name: "Athletes" })).toBeVisible();
-  await expect(page.locator('[data-row="r3"] :focus')).toHaveCount(1);
+test("a required column the file doesn't name is asked for above the list", async ({ page }) => {
+  await page.goto("/");
+  await paste(page, "Name\tGender\tDiscipline\tTarget\nAna Lima\tFemale\tCWT\t30\nBo Chen\tMale\tFIM\t40\n");
+  await expect(page.getByRole("heading", { name: "Which column has this?" })).toBeVisible();
+  // Each column is offered with its first answers.
+  await page.getByRole("combobox", { name: "AP" }).selectOption({ label: "Target — 30, 40" });
+  await page.getByRole("button", { name: "Build the start list" }).click();
+  await expect(page.getByText(/^2 starts/)).toBeVisible();
 });
 
 test("Excel export, and a saved project reopens where it left off", async ({ page }) => {
   await page.goto("/#demo-pool");
-  await page.getByRole("button", { name: "Print & export", exact: true }).click();
+  await goToTab(page, "Print & export");
 
   const xlsx = page.waitForEvent("download");
   await page.getByRole("button", { name: "Download Excel" }).click();
@@ -322,8 +327,9 @@ test("Excel export, and a saved project reopens where it left off", async ({ pag
   expect(x.suggestedFilename()).toBe("Sample-Pool-Classic.xlsx");
   expect(fs.readFileSync(await x.path()).subarray(0, 2).toString()).toBe("PK"); // a zip
 
+  // Save project is in the header on every tab too; this is the one beside the exports.
   const json = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Save project" }).click();
+  await page.locator("main").getByRole("button", { name: "Save project" }).click();
   const projectPath = await (await json).path();
 
   await clearAllData(page);
@@ -336,14 +342,13 @@ test("Excel export, and a saved project reopens where it left off", async ({ pag
   await expect(page.getByText(/^41 starts · \d+ discipline/)).toBeVisible();
 
   // The Excel reader runs under the CSP too (it unzips without a worker; worker-src is 'none').
-  await goToStep(page, /^1 Upload$/);
+  await page.getByRole("button", { name: "Start List Maker" }).click();
   await page.getByLabel("Google Forms export file").setInputFiles({
     name: "start-list.xlsx",
     mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     buffer: fs.readFileSync(await x.path()),
   });
-  await expect(page.getByRole("heading", { name: "Match the columns" })).toBeVisible();
-  await expect(page.getByText(/start-list\.xlsx · \d+ rows/)).toBeVisible();
+  await expect(page.getByTitle("start-list.xlsx")).toBeVisible();
 });
 
 /** A PNG drawn in the page, so no binary fixtures are needed. */
@@ -363,7 +368,7 @@ async function png(page: Page, width: number, height: number, color: string) {
 
 test("logos: header and sponsors on the sheet and in a saved project", async ({ page }) => {
   await page.goto("/#demo");
-  await page.getByRole("button", { name: "Print & export", exact: true }).click();
+  await goToTab(page, "Print & export");
 
   const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="300" height="100"><rect width="300" height="100" fill="#1e40af"/></svg>';
   await page.locator("label", { hasText: "+ Header logo" }).locator("input").setInputFiles([
@@ -395,7 +400,7 @@ test("logos: header and sponsors on the sheet and in a saved project", async ({ 
 
   // A saved project brings the logos back, in order.
   const json = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Save project" }).click();
+  await page.locator("main").getByRole("button", { name: "Save project" }).click();
   const projectPath = await (await json).path();
   await clearAllData(page);
   // This time through "Open a project" (the upload box takes projects too, above).
@@ -404,7 +409,7 @@ test("logos: header and sponsors on the sheet and in a saved project", async ({ 
     mimeType: "application/json",
     buffer: fs.readFileSync(projectPath),
   });
-  await page.getByRole("button", { name: "Print & export", exact: true }).click();
+  await goToTab(page, "Print & export");
   await expect(page.getByLabel("Size of sponsor-b.png")).toHaveValue("L");
   await expect(page.getByRole("button", { name: "Move sponsor-b.png left" })).toBeDisabled();
   await expect(sheet.locator("header img")).toHaveCount(2);
@@ -461,11 +466,11 @@ test("start list: Remove this start takes one start off; Put back on Athletes re
   // Pool athletes have two starts: the other one stays on the list.
   await expect(page.locator("[data-start]").filter({ hasText: name }).filter({ visible: true })).toHaveCount(1);
 
-  await goToStep(page, /Athletes/);
+  await goToTab(page, "Athletes");
   await expect(page.getByText(/^Start [12] is off the list\./)).toHaveCount(1);
   await page.getByRole("button", { name: "Put back" }).click();
   await expect(page.getByText(/is off the list\./)).toHaveCount(0);
-  await page.getByRole("button", { name: "Back to start list" }).click();
+  await goToTab(page, "Start list");
   await expect(summary).toHaveText(new RegExp(`^${before} starts`));
 });
 
@@ -479,10 +484,7 @@ test("demo picker: pool with one start per athlete", async ({ page }) => {
   await picker.getByText("1 start", { exact: true }).click();
   await picker.getByRole("button", { name: "Open the demo" }).click();
   await expect(page.getByRole("heading", { name: "Start list", exact: true })).toBeVisible();
-  // The event card is in the Settings dialog on a phone.
-  if (isMobile(page)) await page.getByRole("button", { name: "Settings" }).click();
-  await expect(page.getByText("Sample Pool Classic").first()).toBeVisible();
-  if (isMobile(page)) await page.getByRole("button", { name: "Close settings" }).click();
+  await expect(page.getByLabel("Event name")).toHaveValue("Sample Pool Classic");
   await expect(page.getByText(/^\d+ starts · \d+ disciplines/)).toBeVisible();
   // Pool is grouped by discipline: a header before each block.
   await expect(page.getByText(/^\d+ starts · \d+:\d\d–\d+:\d\d$/).first()).toBeVisible();

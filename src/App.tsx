@@ -1,29 +1,34 @@
-import { lazy, Suspense, useEffect, useReducer, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { DAY_PANEL_ID, DayTabs, dayTabId } from "~/components/day-tabs";
 import { HelpDialog } from "~/components/help";
 import { ChevronIcon, HelpIcon, LockIcon, MoonIcon, MoreIcon, SunIcon, TrashIcon } from "~/components/icons";
+import { NOT_ON_LIST_ID } from "~/components/not-on-list";
 import { Popover } from "~/components/popover";
-import { LogoMark, PrivacyText, Stepper } from "~/components/shell";
+import { LogoMark, PrivacyText } from "~/components/shell";
+import { Toast } from "~/components/toast";
 import { Button, buttonClass, cx } from "~/components/ui";
+import { EventHeader, ImportBar, WorkspaceTabs } from "~/components/workspace";
+import { downloadText } from "~/lib/export/files";
+import { fileBase } from "~/lib/export/table";
 import { loadSample, type SampleKind } from "~/samples";
-import { clearStorage, getRemember, loadState, saveState, setRemember } from "~/state/persist";
+import { clearStorage, getRemember, loadState, saveState, setRemember, toProjectJson } from "~/state/persist";
 import { formatEventDate } from "~/lib/format";
 import { dayList, initialState, reachable, reducer, startsOf, type Step } from "~/state/store";
 import { DataStep } from "~/steps/DataStep";
 import { FinalStep } from "~/steps/FinalStep";
 import { ListStep } from "~/steps/ListStep";
-import { MapStep } from "~/steps/MapStep";
 import { StartStep } from "~/steps/StartStep";
 import { applyTheme, getTheme } from "~/theme";
 
 // Only organizers who print judge or safety sheets open it, so it stays out of the main chunk.
 const OfficialsStep = lazy(() => import("~/steps/OfficialsStep").then((m) => ({ default: m.OfficialsStep })));
+// Opened only when the columns need a look, so it stays out of the main chunk too.
+const ColumnsDrawer = lazy(() => import("~/components/columns-drawer").then((m) => ({ default: m.ColumnsDrawer })));
 
-const STEPS: [Step, string][] = [
-  ["start", "Upload"],
-  ["map", "Columns"],
-  ["data", "Athletes"],
+/** None of them is a gate: the list is built on upload, and fixes happen from it. */
+const TABS: [Step, string][] = [
   ["list", "Start list"],
+  ["data", "Athletes"],
   ["final", "Print & export"],
 ];
 
@@ -32,6 +37,9 @@ export default function App() {
   const [remember, setRememberState] = useState(getRemember);
   const [theme, setTheme] = useState(getTheme);
   const [help, setHelp] = useState(false);
+  const [columns, setColumns] = useState(false);
+  // A column matched by its values is pointed out until Columns has been opened once for this file.
+  const [columnsSeen, setColumnsSeen] = useState<string | null>(null);
   const mainRef = useRef<HTMLElement>(null);
 
   useEffect(() => saveState(state, remember), [state, remember]);
@@ -73,8 +81,28 @@ export default function App() {
     dispatch({ type: "reset" });
   };
   const hasData = !!state.source || state.registrations.length > 0;
+  const workspace = state.step !== "start";
   const showDayTabs =
     state.twoDay && (state.step === "data" || state.step === "list" || state.step === "final" || state.step === "officials");
+  const openColumns = () => {
+    setColumns(true);
+    setColumnsSeen(state.source?.filename ?? null);
+  };
+  // "N not on the list": the tray is at the top of the start list.
+  const showWaiting = () => {
+    dispatch({ type: "step", step: "list" });
+    setTimeout(() => {
+      const tray = document.getElementById(NOT_ON_LIST_ID);
+      tray?.scrollIntoView({ block: "center", behavior: "smooth" });
+      tray?.focus({ preventScroll: true });
+    }, 50);
+  };
+  const saveProject = () => {
+    const name = state.event.name || state.source?.filename.replace(/\.[^.]+$/, "") || "start-list";
+    downloadText(`${fileBase(name)}.startlist.json`, toProjectJson(state), "application/json");
+  };
+  const undo = useCallback(() => dispatch({ type: "undo" }), []);
+  const dismiss = useCallback(() => dispatch({ type: "dismiss" }), []);
   const toggleTheme = () => {
     const next = theme === "dark" ? "light" : "dark";
     applyTheme(next, true);
@@ -147,6 +175,11 @@ export default function App() {
               Help
             </Button>
             {hasData && (
+              <Button variant="ghost" size="sm" onClick={saveProject} title="Everything (athletes, settings, order, logos) in a file, to reopen later">
+                Save project
+              </Button>
+            )}
+            {hasData && (
               <Popover
                 className={buttonClass("ghost", "sm")}
                 label={
@@ -193,6 +226,18 @@ export default function App() {
                     <ThemeIcon /> {themeLabel}
                   </button>
                   {hasData && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        close();
+                        saveProject();
+                      }}
+                      className="flex min-h-11 w-full items-center gap-2 rounded-lg px-2 font-medium hover:bg-sunken"
+                    >
+                      Save project
+                    </button>
+                  )}
+                  {hasData && (
                     <div className="mt-1 border-t border-line-soft px-2 pt-3">
                       <p className="mb-2 text-xs font-semibold tracking-wide text-muted uppercase">Your data</p>
                       {dataItems(close)}
@@ -206,12 +251,24 @@ export default function App() {
       </header>
 
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
-        <Stepper
-          // The judge and safety names screen is part of Print & export.
-          current={state.step === "officials" ? "final" : state.step}
-          onStep={(step) => dispatch({ type: "step", step })}
-          steps={STEPS.map(([step, label]) => ({ step, label, enabled: reachable(state, step) }))}
-        />
+        {workspace && (
+          <>
+            <WorkspaceTabs
+              // The judge and safety names screen is part of Print & export.
+              current={state.step === "officials" ? "final" : state.step}
+              onStep={(step) => dispatch({ type: "step", step })}
+              tabs={TABS.map(([step, label]) => ({ step, label, enabled: reachable(state, step) }))}
+            />
+            <EventHeader state={state} dispatch={dispatch} />
+            <ImportBar
+              state={state}
+              columnsDot={state.inferred.length > 0 && columnsSeen !== state.source?.filename}
+              onColumns={openColumns}
+              onNotOnList={showWaiting}
+            />
+            <div className="mt-5" />
+          </>
+        )}
 
         {showDayTabs && (
           <DayTabs
@@ -231,10 +288,9 @@ export default function App() {
           {...(showDayTabs && { id: DAY_PANEL_ID, role: "tabpanel", "aria-labelledby": dayTabId(state.day) })}
         >
           {state.step === "start" && <StartStep dispatch={dispatch} onHelp={() => setHelp(true)} />}
-          {state.step === "map" && state.source && <MapStep state={state} dispatch={dispatch} />}
           {/* Keyed by day: a day's sort column and open panels aren't the other day's. */}
           {state.step === "data" && <DataStep key={state.day} state={state} dispatch={dispatch} />}
-          {state.step === "list" && <ListStep key={state.day} state={state} dispatch={dispatch} />}
+          {state.step === "list" && <ListStep key={state.day} state={state} dispatch={dispatch} onColumns={openColumns} />}
           {state.step === "final" && <FinalStep key={state.day} state={state} dispatch={dispatch} />}
           {state.step === "officials" && (
             <Suspense fallback={<p className="text-muted">Loading…</p>}>
@@ -244,6 +300,12 @@ export default function App() {
         </main>
 
         <HelpDialog open={help} onClose={() => setHelp(false)} />
+        {columns && state.source && (
+          <Suspense fallback={null}>
+            <ColumnsDrawer state={state} dispatch={dispatch} open onClose={() => setColumns(false)} />
+          </Suspense>
+        )}
+        <Toast notice={state.notice} onUndo={undo} onDismiss={dismiss} />
 
         <footer className="no-print mt-16 border-t border-line pt-4 text-xs text-muted">
           Start List Maker · for AIDA-style freediving competitions · runs entirely in your browser

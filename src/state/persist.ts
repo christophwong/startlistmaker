@@ -2,6 +2,7 @@ import * as z from "zod/mini";
 import { DEPTH_DISCIPLINES, POOL_DISCIPLINES } from "~/lib/disciplines";
 import { emptyCrew, MAX_NAME } from "~/lib/export/crew";
 import { LOGO_SRC, MAX_LOGO_PX, MAX_LOGO_SRC, MAX_LOGOS, MAX_LOGOS_TOTAL } from "~/lib/export/logos";
+import { FIELD_KEYS, type FieldKey } from "~/lib/import/columns";
 import { MAX_ROWS } from "~/lib/import/file";
 import { THEME_KEY } from "~/theme";
 import { formDays, importKey, initialState, upgradeOneDaySave, type AppState } from "./store";
@@ -88,8 +89,10 @@ const crew = z.object({
   shape: z.nullable(z.object({ groups: int(0, MAX_ROWS * 2), lanes: int(1, 10) })),
 });
 
+const fieldKey = z.enum(FIELD_KEYS as [FieldKey, ...FieldKey[]]);
+
 const stateSchema = z.object({
-  step: z.enum(["start", "map", "data", "list", "final", "officials"]),
+  step: z.enum(["start", "data", "list", "final", "officials"]),
   demo: z.boolean(),
   source: z.nullable(
     z.object({
@@ -100,6 +103,7 @@ const stateSchema = z.object({
     }),
   ),
   mapping: z.record(z.string(), int(0, 199)),
+  inferred: list(fieldKey, FIELD_KEYS.length),
   twoDay: z.boolean(),
   day,
   otherDay: z.nullable(z.object({ settings, entries, manualOrder: z.boolean(), date: str(20), crew })),
@@ -123,6 +127,7 @@ const stateSchema = z.object({
   importedKey: z.nullable(str(20000)),
   editedRows: list(str(40), MAX_ROWS * 2),
   event: z.object({ name: str(), date: str(20), location: str(), notes: str(2000) }),
+  nameFromFile: z.boolean(),
   settings,
   entries,
   crew,
@@ -145,6 +150,8 @@ export function parseState(value: unknown): AppState | null {
   const merged = {
     ...initialState,
     ...v,
+    // Saved when Columns was a step of its own: the start list shows the same.
+    step: (v.step as string) === "map" ? "list" : v.step ?? initialState.step,
     event: { ...initialState.event, ...v.event },
     settings: { ...initialState.settings, ...v.settings },
     print: { ...initialState.print, ...v.print },
@@ -155,7 +162,8 @@ export function parseState(value: unknown): AppState | null {
   if (v.importedKey === undefined && merged.registrations.length) merged.importedKey = importKey(merged);
   const result = stateSchema.safeParse(merged);
   if (!result.success) return null;
-  const state = result.data as AppState;
+  // Undo history and the last notice belong to the session that made them.
+  const state = { ...result.data, history: [], notice: null } as AppState;
   // Saved when a two-day form was built one day at a time: open it with both days.
   if (v.twoDay !== undefined || !formDays(state.source)) return state;
   if (!state.registrations.length) {
@@ -167,7 +175,7 @@ export function parseState(value: unknown): AppState | null {
   }
   const use = (value as { use?: unknown }).use === 2 ? 2 : 1;
   const upgraded = stateSchema.safeParse(upgradeOneDaySave(state, use));
-  return upgraded.success ? (upgraded.data as AppState) : null;
+  return upgraded.success ? ({ ...upgraded.data, history: [], notice: null } as AppState) : null;
 }
 
 function storage(kind: "local" | "session"): Storage | null {
@@ -215,7 +223,7 @@ export function loadState(): AppState | null {
 
 export function saveState(state: AppState, remember: boolean) {
   try {
-    const json = state.step === "start" && !state.source && !state.registrations.length ? null : JSON.stringify(state);
+    const json = state.step === "start" && !state.source && !state.registrations.length ? null : JSON.stringify(stored(state));
     for (const kind of ["session", "local"] as const) {
       const s = storage(kind);
       if (!s) continue;
@@ -240,8 +248,11 @@ export function clearStorage() {
   }
 }
 
+/** What's kept: everything but the undo history and the toast. */
+const stored = ({ history: _h, notice: _n, ...rest }: AppState) => rest;
+
 export function toProjectJson(state: AppState): string {
-  return JSON.stringify({ app: PROJECT_APP, version: PROJECT_VERSION, savedAt: new Date().toISOString(), state }, null, 1);
+  return JSON.stringify({ app: PROJECT_APP, version: PROJECT_VERSION, savedAt: new Date().toISOString(), state: stored(state) }, null, 1);
 }
 
 export class ProjectError extends Error {}
@@ -261,5 +272,5 @@ export function fromProjectJson(text: string): AppState {
   const state = parseState(d.state);
   if (!state) throw new ProjectError("The project file is damaged or incomplete.");
   const hasList = state.entries.length || state.otherDay?.entries.length;
-  return { ...state, step: hasList ? "list" : state.registrations.length ? "data" : "start" };
+  return { ...state, step: hasList || state.source ? "list" : state.registrations.length ? "data" : "start" };
 }

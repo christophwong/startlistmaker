@@ -27,6 +27,48 @@ export interface StartListActions {
   removeBreak(entryId: string): void;
   /** This start only: the athlete's other start / other day stays. Put back on Athletes. */
   removeStart(startId: string): void;
+  /** AP typed in its cell; the start keeps its place until a re-sort. */
+  editAp(startId: string, ap: string): void;
+}
+
+/** The AP cell: click to type a new AP, Enter to keep it, Escape to leave it. */
+function ApCell({ start, moved, onEdit }: { start: EngineStartWithAthlete; moved: boolean; onEdit(ap: string): void }) {
+  const [editing, setEditing] = useState(false);
+  const shown = formatPerformance(start.discipline, start.ap);
+  const plain = formatPerformance(start.discipline, start.ap, { unit: false });
+  if (editing) {
+    const commit = (value: string) => {
+      setEditing(false);
+      if (value.trim() && value.trim() !== plain) onEdit(value.trim());
+    };
+    return (
+      <input
+        defaultValue={plain}
+        autoFocus
+        aria-label={`AP for ${fullName(start)}`}
+        className="h-8 w-16 rounded-md border-0 bg-field px-1.5 text-right text-sm ring-2 ring-accent"
+        onBlur={(e) => commit(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") commit(e.currentTarget.value);
+          if (e.key === "Escape") setEditing(false);
+        }}
+      />
+    );
+  }
+  return (
+    <span className="inline-flex flex-col items-end">
+      <button
+        type="button"
+        onClick={() => setEditing(true)}
+        title="Click to change the AP"
+        aria-label={`AP ${shown} for ${fullName(start)}, change`}
+        className="-mr-1.5 min-h-8 cursor-text rounded-md px-1.5 font-semibold hover:bg-surface hover:ring-1 hover:ring-line-strong"
+      >
+        {shown}
+      </button>
+      {moved && <span className="text-[11px] leading-none font-normal text-warn-fg">Re-sort to move</span>}
+    </span>
+  );
 }
 
 export interface SortState {
@@ -340,9 +382,12 @@ export function StartListRows({
   showBlocks,
   sort,
   breakErrors = {},
+  apEdited,
   actions,
   busy,
 }: Shared & {
+  /** Starts whose AP was typed on the list since the last sort: "Re-sort to move". */
+  apEdited?: ReadonlySet<string>;
   /** The table (md and up) rather than a card per start. */
   wide: boolean;
   rows: EditorRow[];
@@ -582,7 +627,9 @@ export function StartListRows({
                 <td className="px-1.5 py-1.5">
                   <DisciplineChip discipline={r.start.discipline} />
                 </td>
-                <td className="px-1.5 py-1.5 text-right font-semibold">{formatPerformance(r.start.discipline, r.start.ap)}</td>
+                <td className="px-1.5 py-1 text-right">
+                  <ApCell start={r.start} moved={!!apEdited?.has(r.start.id)} onEdit={(ap) => actions.editAp(r.start.id, ap)} />
+                </td>
                 <td className="px-1.5 py-1.5 text-right text-ink-2">{formatDuration(r.start.diveTimeSec)}</td>
                 <td className="px-1.5 py-1.5 text-right text-ink-2">{fmt(r.checkIn)}</td>
                 {showLane && <td className="px-1.5 py-1.5 text-center">{r.lane}</td>}

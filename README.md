@@ -15,7 +15,7 @@ Start List Maker turns competition registrations into a printable AIDA-style sta
 
 ## How to use it
 
-In Google Forms, open **Responses → ⋮ → Download responses (.csv)**, or copy the cells from the linked Google Sheet. Upload or paste them on the home page, then follow the steps in the app. To see a finished start list with made-up athletes, open **Depth demo** or **Pool demo**.
+In Google Forms, open **Responses → ⋮ → Download responses (.csv)**, or copy the cells from the linked Google Sheet. Upload or paste them on the home page and the start list is built straight away; athletes with a problem wait above it to be fixed. To see a finished start list with made-up athletes, open **Depth demo** or **Pool demo**.
 
 **Required per start:** name (full, or first + last), discipline, AP.\
 **Optional:** gender, country, personal best, announced dive time.

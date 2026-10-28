@@ -6,12 +6,13 @@ import { parseCsv } from "~/lib/import/file";
 import { schedule } from "~/lib/startlist";
 import { fromProjectJson, parseState, ProjectError, toProjectJson } from "./persist";
 import { loadSample } from "~/samples";
-import { checkRow, emptyRow, rowsFromImport } from "~/lib/registrations";
+import { checkRow, emptyRow, rowsFromImport, type RegRow } from "~/lib/registrations";
 import {
   dayList,
   dayMapping,
   formDays,
   initialState,
+  missingColumns,
   parsedRows,
   reachable,
   reducer,
@@ -111,20 +112,20 @@ describe("editing", () => {
     expect(s.settings).toMatchObject({ type: "POOL", startTime: 600, lanes: 3, sortDir: "ASC" });
   });
 
-  it("Continue on Columns keeps edits unless the import changed (QA F1)", () => {
-    const r = base.registrations[0];
+  it("a column change re-reads the file but keeps rows edited by hand (QA F1)", () => {
+    const [r, other] = base.registrations;
     const fixed = run([{ type: "updateRow", id: r.id, patch: { firstName: "Fixed" } }, { type: "addRow" }], base);
-    expect(fixed.editedRows).toEqual([r.id, fixed.registrations.at(-1)!.id]);
-
-    const back = run([{ type: "step", step: "map" }, { type: "confirmMapping" }], fixed);
-    expect(back.step).toBe("data");
-    expect(back.registrations).toBe(fixed.registrations);
+    const added = fixed.registrations.at(-1)!;
+    expect(fixed.editedRows).toEqual([r.id, added.id]);
 
     const { country: _, ...noCountry } = fixed.mapping;
-    const reread = run([{ type: "mapping", mapping: noCountry }, { type: "confirmMapping" }], fixed);
-    expect(reread.registrations.some((x) => x.firstName === "Fixed")).toBe(false);
-    expect(reread).toMatchObject({ editedRows: [] });
+    const reread = run([{ type: "mapping", mapping: noCountry }], fixed);
     expect(reread.importedKey).not.toBe(fixed.importedKey);
+    // Edited and added rows as they were; the others read again, now without a country.
+    expect(reread.registrations.find((x) => x.id === r.id)).toEqual(fixed.registrations.find((x) => x.id === r.id));
+    expect(reread.registrations.at(-1)).toEqual(added);
+    expect(reread.registrations.find((x) => x.id === other.id)!.country).toBe("");
+    expect(reread.step).toBe(fixed.step);
   });
 
   it("Remove this start: off the list, and back in the same place when it's put back", () => {
@@ -161,8 +162,119 @@ describe("editing", () => {
     const s = run([{ type: "blank" }]);
     expect(s.step).toBe("data");
     expect(s.registrations).toHaveLength(1);
-    expect(reachable(s, "list")).toBe(false);
-    expect(reachable(s, "data")).toBe(true);
+    // The Start list tab offers to build the list once there are starts.
+    expect(reachable(s, "list")).toBe(true);
+    expect(reachable(s, "final")).toBe(false);
+  });
+});
+
+describe("upload straight to a start list", () => {
+  const table = sample("depth-2day.csv");
+  // The real ECAC form's typo: these headers aren't recognised, the values are.
+  const typo = { ...table, headers: table.headers.map((h) => h.replace("Discipline", "Dicipline")) };
+  const listed = (s: AppState) => s.entries.filter((e) => e.kind === "START").length;
+
+  it("builds both days' lists on load, discipline columns matched by their values", () => {
+    const s = run([{ type: "load", filename: "7_5 & 7_6 Announcements_ Emerald City Challenge Depth (Responses).csv", table: typo }]);
+    expect(s).toMatchObject({ step: "list", twoDay: true, inferred: ["s1Discipline", "s2Discipline"] });
+    expect(s.settings.type).toBe("DEPTH");
+    expect(listed(s)).toBe(startsOf(s).length);
+    expect(s.otherDay!.entries.length).toBe(startsOf({ ...s, day: 2 }).length);
+    expect(s.event.name).toBe("Emerald City Challenge Depth");
+    expect(s.nameFromFile).toBe(true);
+    expect(s.notice).toMatchObject({ undo: false, text: expect.stringMatching(/^Read \d+ rows: 18 athletes, 2 days\. Start lists built\.$/) });
+  });
+
+  it("asks for a required column it can't find, then builds once it's chosen", () => {
+    const headers = ["Name", "Which one?", "AP"];
+    const loaded = run([{ type: "load", filename: "x.csv", table: { headers, rows: [["Ana Lima", "deep", "30"], ["Bo Chen", "deeper", "40"]] } }]);
+    expect(missingColumns(loaded)).toEqual([{ key: "s1Discipline", label: "Discipline" }]);
+    expect(loaded).toMatchObject({ step: "list", registrations: [], entries: [] });
+    const fixed = { headers, rows: [["Ana Lima", "CWT", "30"], ["Bo Chen", "FIM", "40"]] };
+    const picked = run([{ type: "load", filename: "x.csv", table: fixed }]);
+    // (here the values are disciplines, so it's matched without asking)
+    expect(listed(picked)).toBe(2);
+    const answered = run([{ type: "mapping", mapping: { ...loaded.mapping, s1Discipline: 1 } }], loaded);
+    expect(answered.registrations).toHaveLength(2);
+    expect(answered.notice?.text).toMatch(/Start list built/);
+  });
+
+  it("an event name typed by the user is kept across uploads", () => {
+    const named = run([{ type: "event", patch: { name: "Club Cup" } }]);
+    expect(run([{ type: "load", filename: "Other Event (Responses).csv", table }], named).event.name).toBe("Club Cup");
+    const fromFile = run([{ type: "load", filename: "First Event (Responses).csv", table }]);
+    expect(run([{ type: "load", filename: "Second Event (Responses).csv", table }], fromFile).event.name).toBe("Second Event");
+  });
+
+  it("a fixed athlete from the tray goes where the sort puts them, with Undo", () => {
+    const base = run([{ type: "load", filename: "d.csv", table }]);
+    const broken = base.registrations.find((r) => !startsOf(base).some((s) => s.athleteId === r.id) && r.starts[0].ap);
+    const row = broken ?? base.registrations[0];
+    const fixedRow = { ...row, starts: [{ ...row.starts[0], discipline: "FIM", ap: row.starts[0].ap || "18" }, row.starts[1]] as RegRow["starts"] };
+    const fixed = run([{ type: "updateRow", id: row.id, patch: { starts: fixedRow.starts, dayOff: [false, false] } }], base);
+    const placed = run([{ type: "place", rowId: row.id }], fixed);
+    expect(placed.entries.some((e) => e.kind === "START" && e.startId === `${row.id}-s1`)).toBe(true);
+    expect(placed.notice).toMatchObject({ undo: true, text: expect.stringMatching(/added at #\d+, OT \d+:\d\d\./) });
+    expect(placed.manualOrder).toBe(false);
+
+    const undone = run([{ type: "undo" }], placed);
+    expect(undone.entries).toEqual(fixed.entries);
+    expect(undone.notice).toMatchObject({ text: "Undone." });
+  });
+
+  it("on a list ordered by hand, a placed athlete goes at the end", () => {
+    const base = run([{ type: "load", filename: "d.csv", table }]);
+    const moved = run([{ type: "entries", edit: (l) => [...l].reverse() }], base);
+    const row = { ...emptyRow("x"), id: "n99" };
+    const withRow = { ...moved, registrations: [...moved.registrations, { ...row, firstName: "Late", lastName: "Entry", starts: [{ discipline: "CWT", ap: "60", pb: "", diveTime: "" }, row.starts[1]] as RegRow["starts"] }] };
+    const placed = run([{ type: "place", rowId: "n99" }], withRow);
+    expect(placed.entries.at(-1)).toMatchObject({ kind: "START", startId: "n99-s1" });
+  });
+
+  it("leave off takes the athlete off the shown day only", () => {
+    const base = run([{ type: "load", filename: "d.csv", table }]);
+    const r = base.registrations[0];
+    const off = run([{ type: "leaveOff", rowId: r.id }], base);
+    expect(off.registrations[0].dayOff).toEqual([true, false]);
+    expect(off.notice?.text).toMatch(/off the Day 1 list/);
+  });
+
+  it("an AP typed on the list keeps the start's place until a re-sort", () => {
+    const base = run([{ type: "load", filename: "d.csv", table }]);
+    const first = base.entries.find((e) => e.kind === "START")!;
+    const startId = first.kind === "START" ? first.startId : "";
+    const edited = run([{ type: "editAp", startId, ap: "3" }], base);
+    expect(edited.entries).toBe(base.entries);
+    expect(edited.manualOrder).toBe(true);
+    expect(startsOf(edited).find((s) => s.id === startId)!.ap).toBe(3);
+    const resorted = run([{ type: "generate" }], edited);
+    const order = resorted.entries.flatMap((e) => (e.kind === "START" ? [e.startId] : []));
+    expect(order.at(-1)).toBe(startId);
+    expect(run([{ type: "undo" }], resorted).entries).toBe(base.entries);
+  });
+
+  it("undo goes back one change at a time, and any other edit ends it", () => {
+    const base = run([{ type: "load", filename: "d.csv", table }]);
+    const sorted = run([{ type: "sortColumn", column: "name", dir: "ASC" }, { type: "sortColumn", column: "name", dir: "DESC" }], base);
+    expect(sorted.history).toHaveLength(2);
+    const once = run([{ type: "undo" }], sorted);
+    expect(once.notice).toEqual({ text: "Undone.", undo: true });
+    expect(run([{ type: "undo" }], once).entries).toBe(base.entries);
+    // Typing in Athletes after a sort: the sort can't be undone any more.
+    const typed = run([{ type: "updateRow", id: base.registrations[0].id, patch: { country: "NZL" } }], sorted);
+    expect(typed).toMatchObject({ history: [], notice: null });
+    // Looking at another tab doesn't.
+    expect(run([{ type: "step", step: "final" }], sorted).history).toHaveLength(2);
+  });
+
+  it("history and notices aren't saved", () => {
+    const base = run([{ type: "load", filename: "d.csv", table }, { type: "sortColumn", column: "name", dir: "ASC" }]);
+    const json = JSON.parse(toProjectJson(base));
+    expect(json.state.history).toBeUndefined();
+    expect(json.state.notice).toBeUndefined();
+    expect(fromProjectJson(toProjectJson(base))).toMatchObject({ history: [], notice: null, step: "list" });
+    // A save from when Columns was a step opens on the start list.
+    expect(parseState({ ...json.state, step: "map" })?.step).toBe("list");
   });
 });
 

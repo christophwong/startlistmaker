@@ -1,26 +1,19 @@
-import { useState, type ReactNode } from "react";
-import { DayBadge, DayChip } from "~/components/day-tabs";
+import { useState } from "react";
+import { DayBadge } from "~/components/day-tabs";
 import { ArrowIcon } from "~/components/icons";
-import { Alert, Badge, cx, SideCard } from "~/components/ui";
-import { formatPerformance } from "~/lib/disciplines";
+import { Alert, cx, SideCard } from "~/components/ui";
 import { FIELDS, type FieldKey, type Mapping } from "~/lib/import/columns";
-import { noEntry, type ParsedRow } from "~/lib/import/rows";
+import type { ParsedRow } from "~/lib/import/rows";
 import type { Day } from "~/lib/registrations";
 
-/** Column mapping and the parsed rows on the Columns step. */
+/** How the file's columns are read, and what that gives, in the Columns panel. */
 
-export type RowStatus = "ready" | "error" | "skipped";
+type RowStatus = "ready" | "error" | "skipped";
 
-export const rowStatus = (p: ParsedRow): RowStatus => (p.draft ? "ready" : p.errors.length ? "error" : "skipped");
-
-const statusBadge: Record<RowStatus, ReactNode> = {
-  ready: <Badge tone="emerald">Ready</Badge>,
-  error: <Badge tone="red">Needs fixing</Badge>,
-  skipped: <Badge>Skipped</Badge>,
-};
+const rowStatus = (p: ParsedRow): RowStatus => (p.draft ? "ready" : p.errors.length ? "error" : "skipped");
 
 /** "Start 2 – AP" → "Day 2 – AP" for forms with one section per day. */
-export const relabel = (label: string, days: [string, string] | null) =>
+const relabel = (label: string, days: [string, string] | null) =>
   days ? label.replace(/^Start ([12])/, (_, n: string) => days[Number(n) - 1]) : label;
 
 /** Start-2 fields are hidden when the file and competition have one start. */
@@ -53,11 +46,14 @@ export function MappingTable({
   fields,
   required,
   showUnusedFirst,
+  inferred,
   onChange,
 }: {
   headers: string[];
   rows: string[][];
   mapping: Mapping;
+  /** Fields whose column was found by its values (the header wasn't recognised). */
+  inferred?: readonly FieldKey[];
   fields: readonly { key: FieldKey; label: string }[];
   /** Fields every row needs (labelled "Required" under the select). */
   required: ReadonlySet<FieldKey>;
@@ -124,7 +120,13 @@ export function MappingTable({
                   </optgroup>
                 ))}
               </select>
-              {c.key && required.has(c.key) && <span className="mt-0.5 block text-xs text-muted">Required</span>}
+              {c.key && inferred?.includes(c.key) ? (
+                <span className="mt-1 inline-block rounded-full bg-accent-soft px-2 py-px text-xs font-medium text-accent">
+                  Matched by its values
+                </span>
+              ) : (
+                c.key && required.has(c.key) && <span className="mt-0.5 block text-xs text-muted">Required</span>
+              )}
             </label>
             <span className="hidden truncate text-sm text-ink-2 tabular-nums sm:block" title={firstValue(c.i)}>
               {firstValue(c.i) || <span className="text-muted">—</span>}
@@ -147,7 +149,7 @@ export function MappingTable({
 }
 
 /** Row errors grouped by message ("18 rows: Start 1: AP is missing."). */
-export function errorGroups(rows: ParsedRow[]): { message: string; count: number }[] {
+function errorGroups(rows: ParsedRow[]): { message: string; count: number }[] {
   const counts = new Map<string, number>();
   for (const r of rows) {
     for (const e of r.errors) {
@@ -206,239 +208,11 @@ export function ResultCard({ rows, common, day }: { rows: ParsedRow[]; common: s
           {warned > 0 && (
             <p className="text-warn-fg">
               <strong className="tabular-nums">{plural(warned, "row")}</strong> {warned === 1 ? "has" : "have"} warnings. Warnings don't keep
-              anyone off the list.
+              anyone off the list; Athletes shows them.
             </p>
           )}
         </div>
       )}
     </SideCard>
-  );
-}
-
-function RowCard({
-  rowNumber,
-  status,
-  draft,
-  onFix,
-  children,
-}: {
-  rowNumber: number;
-  status: RowStatus;
-  draft?: ParsedRow["draft"];
-  onFix?: (rowNumber: number) => void;
-  children: ReactNode;
-}) {
-  return (
-    <li className="flex flex-col gap-2 rounded-xl bg-surface p-3 text-sm ring-1 ring-line sm:flex-row sm:items-start sm:gap-3">
-      <span className="shrink-0 sm:w-24">{statusBadge[status]}</span>
-      <div className="min-w-0 flex-1">
-        <p className="font-semibold">
-          <span className="tabular-nums">Row {rowNumber}</span>
-          {draft && (
-            <>
-              {" "}
-              · {draft.firstName} {draft.lastName}{" "}
-              <span className="font-normal text-muted">{[draft.gender, draft.country].filter(Boolean).join(" · ")}</span>
-            </>
-          )}
-        </p>
-        {children}
-      </div>
-      {status === "error" && onFix && (
-        <button type="button" onClick={() => onFix(rowNumber)} className="shrink-0 text-left font-semibold text-accent hover:underline">
-          Fix it on Athletes
-        </button>
-      )}
-    </li>
-  );
-}
-
-function Messages({ errors, warnings }: { errors: string[]; warnings: string[] }) {
-  if (!errors.length && !warnings.length) return null;
-  return (
-    <ul className="mt-1 list-disc space-y-0.5 pl-4">
-      {errors.map((e) => (
-        <li key={e} className="text-err-fg">
-          {e}
-        </li>
-      ))}
-      {warnings.map((w) => (
-        <li key={w} className="text-warn-fg">
-          {w}
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-/** Rows with an error, or a warning of their own (not one every athlete shares). */
-export function importProblems(rows: ParsedRow[], common: string[]): Set<number> {
-  return new Set(rows.filter((r) => rowStatus(r) === "error" || r.warnings.some((w) => !common.includes(w))).map((r) => r.rowNumber));
-}
-
-/** The same for a two-day form; "No Day 2 entry" is not a problem (the athlete isn't diving that day). */
-export function dayProblems(days: [ParsedRow[], ParsedRow[]], labels: [string, string], common: string[]): Set<number> {
-  const own = (p: ParsedRow | undefined, d: number) => (p?.warnings ?? []).some((w) => !common.includes(w) && w !== noEntry(labels[d]));
-  return new Set(
-    dayRows(days)
-      .filter((r) => r.status === "error" || r.pair.some(own))
-      .map((r) => r.rowNumber),
-  );
-}
-
-/**
- * The rows, at first only the ones with problems. With none, the list is
- * folded away ("Show all rows"), since every card would just say Ready.
- */
-export function RowsSection({
-  total,
-  problems,
-  children,
-}: {
-  total: number;
-  problems: number;
-  /** `onlyProblems`: show just the rows with problems. */
-  children(onlyProblems: boolean): ReactNode;
-}) {
-  const [filtered, setFiltered] = useState(true);
-  return (
-    <section aria-label="Rows" className="space-y-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="text-lg font-bold tracking-tight">Rows</h3>
-        {problems > 0 ? (
-          <label className="flex min-h-10 items-center gap-2 text-sm">
-            <input type="checkbox" checked={filtered} onChange={(e) => setFiltered(e.target.checked)} className="accent-accent" />
-            Only rows with problems ({problems} of {total})
-          </label>
-        ) : (
-          <p className="text-sm text-muted">
-            No row has a problem.{" "}
-            <button type="button" className="font-semibold text-accent hover:underline" aria-expanded={!filtered} onClick={() => setFiltered(!filtered)}>
-              {filtered ? `Show all ${total} rows` : "Hide them"}
-            </button>
-          </p>
-        )}
-      </div>
-      {(problems > 0 || !filtered) && children(problems > 0 && filtered)}
-    </section>
-  );
-}
-
-/**
- * A two-day form's rows, each read once per day: one card per row with a
- * line per day. Messages both days share (name, gender, contact) are said
- * once; warnings every athlete has (`common`) are left to the summary.
- */
-export function DayRowList({
-  days,
-  labels,
-  common,
-  only,
-  onFix,
-}: {
-  days: [ParsedRow[], ParsedRow[]];
-  labels: [string, string];
-  common: string[];
-  /** Show only these rows (by row number). */
-  only?: Set<number>;
-  onFix?: (rowNumber: number) => void;
-}) {
-  return (
-    <ul className="space-y-2">
-      {dayRows(days)
-        .filter((r) => !only || only.has(r.rowNumber))
-        .map(({ rowNumber, pair, status }) => {
-          const draft = pair[0]?.draft ?? pair[1]?.draft;
-          const shared = (pair[0]?.warnings ?? []).filter((w) => pair[1]?.warnings.includes(w) && !common.includes(w));
-          return (
-            <RowCard key={rowNumber} rowNumber={rowNumber} status={status} draft={draft} onFix={onFix}>
-              <ul className="mt-1 space-y-1">
-                {pair.map((p, d) => {
-                  const day = (d + 1) as Day;
-                  const notEntered = !p || p.warnings.includes(noEntry(labels[d]));
-                  const own = (p?.warnings ?? []).filter((w) => !shared.includes(w) && !common.includes(w) && w !== noEntry(labels[d]));
-                  return (
-                    <li key={d} className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                      <DayBadge day={day} className="!text-xs" />
-                      {notEntered ? (
-                        <span className="text-muted">Not entered</span>
-                      ) : (
-                        p.draft?.starts.map((s) => (
-                          <span key={s.startNumber} className="text-ink-2">
-                            <DayChip day={day}>{s.discipline}</DayChip> {formatPerformance(s.discipline, s.ap)}
-                          </span>
-                        ))
-                      )}
-                      {p?.errors.map((e) => (
-                        <span key={e} className="text-err-fg">
-                          {e}
-                        </span>
-                      ))}
-                      {own.map((w) => (
-                        <span key={w} className="text-warn-fg">
-                          {w}
-                        </span>
-                      ))}
-                    </li>
-                  );
-                })}
-              </ul>
-              <Messages errors={[]} warnings={shared} />
-            </RowCard>
-          );
-        })}
-    </ul>
-  );
-}
-
-/** A two-day form's rows paired by row number, with one status for both days. */
-export function dayRows(days: [ParsedRow[], ParsedRow[]]) {
-  const byRow = new Map<number, (ParsedRow | undefined)[]>();
-  days.forEach((parsed, d) =>
-    parsed.forEach((p) => {
-      const pair = byRow.get(p.rowNumber) ?? [undefined, undefined];
-      pair[d] = p;
-      byRow.set(p.rowNumber, pair);
-    }),
-  );
-  return [...byRow].map(([rowNumber, pair]) => {
-    const statuses = pair.map((p) => (p ? rowStatus(p) : "skipped"));
-    const status: RowStatus = statuses.includes("error") ? "error" : statuses.includes("ready") ? "ready" : "skipped";
-    return { rowNumber, pair, status };
-  });
-}
-
-export function ImportRowList({
-  rows,
-  common = [],
-  only,
-  onFix,
-}: {
-  rows: ParsedRow[];
-  common?: string[];
-  /** Show only these rows (by row number). */
-  only?: Set<number>;
-  onFix?: (rowNumber: number) => void;
-}) {
-  return (
-    <ul className="space-y-2">
-      {rows
-        .filter((r) => !only || only.has(r.rowNumber))
-        .map((r) => ({ ...r, status: rowStatus(r), warnings: r.warnings.filter((w) => !common.includes(w)) }))
-        .map((r) => (
-          <RowCard key={r.rowNumber} rowNumber={r.rowNumber} status={r.status} draft={r.draft} onFix={onFix}>
-            {r.draft && r.draft.starts.length > 0 && (
-              <p className="mt-0.5 flex flex-wrap gap-x-3 text-ink-2">
-                {r.draft.starts.map((s) => (
-                  <span key={s.startNumber}>
-                    <Badge tone="brand">{s.discipline}</Badge> {formatPerformance(s.discipline, s.ap)}
-                  </span>
-                ))}
-              </p>
-            )}
-            <Messages errors={r.errors} warnings={r.warnings} />
-          </RowCard>
-        ))}
-    </ul>
   );
 }

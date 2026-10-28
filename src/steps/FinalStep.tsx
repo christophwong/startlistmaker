@@ -3,7 +3,7 @@ import { DayBadge } from "~/components/day-tabs";
 import { ArrowIcon } from "~/components/icons";
 import { LogosEditor } from "~/components/logos-editor";
 import { PrintSheet } from "~/components/start-list/print-sheet";
-import { Alert, Button, Segmented, SideCard } from "~/components/ui";
+import { Alert, Button, Field, Segmented, SideCard } from "~/components/ui";
 import { crewAt, crewOutOfDate, hasNames } from "~/lib/export/crew";
 import { downloadBlob, downloadText, SHEETS, toXlsx, type SheetTitle } from "~/lib/export/files";
 import { fileBase, toCsv, type SheetKind } from "~/lib/export/table";
@@ -17,6 +17,36 @@ function Toggle({ label, checked, onChange }: { label: string; checked: boolean;
       <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="size-4 accent-accent" />
       {label}
     </label>
+  );
+}
+
+/**
+ * The sheet's title lines come from the event header above (name, date,
+ * location, edited in place there). A missing one is said here, next to the
+ * preview, since it's easy to print without; the note is set here.
+ */
+function SheetDetails({ state, dispatch }: { state: AppState; dispatch(a: Action): void }) {
+  const { event } = state;
+  const gaps = [!event.name && "name", !event.date && "date", !event.location && "location"].filter(Boolean);
+  return (
+    <SideCard title="Sheet details">
+      <div className="space-y-3">
+        {gaps.length > 0 && (
+          <p className="rounded-lg bg-warn-bg px-2.5 py-1.5 text-xs text-warn-fg">
+            No event {gaps.join(" or ")} yet: the sheet prints without {gaps.length === 1 ? "it" : "them"}. Add {gaps.length === 1 ? "it" : "them"} at the top of the page.
+          </p>
+        )}
+        {state.twoDay && <p className="text-xs text-muted">The sheet adds the day to the name: “· Day {state.day}”.</p>}
+        <Field
+          label="Note on the sheet"
+          name="sheetNotes"
+          value={event.notes}
+          maxLength={300}
+          placeholder="optional"
+          onChange={(e) => dispatch({ type: "event", patch: { notes: e.target.value } })}
+        />
+      </div>
+    </SideCard>
   );
 }
 
@@ -65,10 +95,10 @@ export function FinalStep({ state, dispatch }: { state: AppState; dispatch(a: Ac
       <div className="no-print space-y-4">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div className="min-w-0 flex-1 basis-80">
-            <h2 className="flex items-center gap-2 text-2xl font-bold tracking-tight sm:text-[28px]">
+            <h2 className="flex items-center gap-2 text-lg font-bold tracking-tight">
               Print & export {state.twoDay && <DayBadge day={state.day} />}
             </h2>
-            <p className="mt-1 text-muted">
+            <p className="text-sm text-muted">
               Check the sheet, then print it or download it.{" "}
               <span className="tabular-nums">
                 {starts} start{starts === 1 ? "" : "s"}
@@ -76,9 +106,6 @@ export function FinalStep({ state, dispatch }: { state: AppState; dispatch(a: Ac
               .
             </p>
           </div>
-          <Button variant="secondary" onClick={() => dispatch({ type: "step", step: "list" })}>
-            <ArrowIcon dir="left" /> Back to start list
-          </Button>
         </div>
 
         {crewSheet && crewOutOfDate(state.crew, rows) && (
@@ -89,7 +116,10 @@ export function FinalStep({ state, dispatch }: { state: AppState; dispatch(a: Ac
         )}
         {problems.length > 0 && (
           <Alert tone="warning">
-            {problems.length} warning{problems.length === 1 ? "" : "s"} on the start list. See the Start list step for details.
+            {problems.length} warning{problems.length === 1 ? "" : "s"} on the start list.{" "}
+            <button type="button" className="font-semibold underline underline-offset-2" onClick={() => dispatch({ type: "step", step: "list" })}>
+              See them on the start list
+            </button>
             <ul className="mt-1 list-disc pl-5">
               {problems.map((i, n) => (
                 <li key={n}>{i.message}</li>
@@ -106,6 +136,7 @@ export function FinalStep({ state, dispatch }: { state: AppState; dispatch(a: Ac
           aria-label="Export and sheet options"
           className="no-print space-y-4 md:grid md:grid-cols-2 md:items-start md:gap-4 md:space-y-0 lg:block lg:space-y-4"
         >
+          <SheetDetails state={state} dispatch={dispatch} />
           <SideCard title="Sheet">
             <Segmented
               label="Sheet to print or download"

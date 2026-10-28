@@ -3,7 +3,7 @@ import { Modal } from "~/components/modal";
 import { SampleDownloads } from "~/components/sample-downloads";
 import { FIELDS } from "~/lib/import/columns";
 
-/** The full how-to; opened from the header on any step, or from "How it works" on the Upload step. */
+/** The full how-to; opened from the header on any tab, or from "How it works" on the home page. */
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -21,19 +21,23 @@ export function HelpDialog({ open, onClose }: { open: boolean; onClose(): void }
         <ol className="list-decimal space-y-1 pl-5">
           <li>
             <strong>Upload:</strong> choose or drop your Google Forms export, paste it from Google Sheets, open a saved project,
-            or enter athletes by hand.
+            or enter athletes by hand. The start list is built straight away, and pool or depth is worked out from the
+            disciplines in the file. If no column holds the name, discipline or AP, you're asked which one does.
           </li>
           <li>
-            <strong>Columns:</strong> check which column holds what, and fix any match the app got wrong under “Use as”.
+            <strong>Start list:</strong> name the event and set its date and location at the top. Athletes with a problem (a
+            missing AP, say) wait above the list: fix it there and “Add to list”. Set the first OT, interval or dive time +
+            buffer, lanes or zones, and breaks; times change as you type, and order settings apply on “Re-sort list”. Drag rows
+            or sort by a column; click an AP to change it. A start's ⋯ menu (Move on a phone) moves it to a position, adds a
+            break after it, or removes this start only. Most changes can be taken back with Undo.
           </li>
           <li>
-            <strong>Athletes:</strong> fix the data in the spreadsheet. Red cells keep a start off the list, and amber ones are
-            only warnings.
+            <strong>Athletes:</strong> the full spreadsheet of what the file gave. Red cells keep a start off the list, and
+            amber ones are only warnings. “Put back” returns a start that was removed from the list.
           </li>
           <li>
-            <strong>Start list:</strong> set the event, first OT, interval or dive time + buffer, lanes or zones, breaks and
-            order. Drag rows or sort by a column. A start's ⋯ menu (Move on a phone) moves it to a position, adds a break after
-            it, or removes this start only. “Put back” on the Athletes step returns it to its place.
+            <strong>Columns</strong> (above the list) shows which column of the file holds what. Change one under “Use as” and
+            the list is rebuilt; your edits to athletes are kept.
           </li>
           <li>
             <strong>Print & export:</strong> add logos if you like (competition and AIDA beside the title, sponsors after the list),
@@ -48,8 +52,8 @@ export function HelpDialog({ open, onClose }: { open: boolean; onClose(): void }
 
       <Section title="Getting your Google Forms export">
         <p>
-          <strong>Google Forms:</strong> open Responses → ⋮ → Download responses (.csv), then choose that file on the Upload
-          step. Excel files (.xlsx) work too.
+          <strong>Google Forms:</strong> open Responses → ⋮ → Download responses (.csv), then choose that file on the home
+          page. Excel files (.xlsx) work too.
         </p>
         <p>
           <strong>Google Sheets:</strong> in the form's linked sheet, select everything (Ctrl/⌘ + A), copy, and use “Paste
@@ -60,7 +64,8 @@ export function HelpDialog({ open, onClose }: { open: boolean; onClose(): void }
       <Section title="What your file needs">
         <p>
           One row per athlete. Columns are matched by their question titles (for example “Start 1 - Discipline” or
-          “Discipline | Day 1”), and you can fix the matching on the Columns step. Only name, discipline and AP are required.
+          “Discipline | Day 1”). A discipline column with an unusual title is found by its answers (CWT, FIM, STA…). You can
+          fix the matching under Columns. Only name, discipline and AP are required.
         </p>
         <ul className="grid grid-cols-1 gap-x-4 sm:grid-cols-2">
           {FIELDS.map((f) => (
@@ -76,8 +81,8 @@ export function HelpDialog({ open, onClose }: { open: boolean; onClose(): void }
 
       <Section title="Saving your work">
         <p>
-          <strong>Save project</strong> on the Print & export step downloads a .json file with everything: athletes,
-          settings, the order and logos. To carry on later, use “Open a project” on the Upload step.
+          <strong>Save project</strong> (in the header, and on Print & export) downloads a .json file with everything:
+          athletes, settings, the order and logos. To carry on later, use “Open a project” on the home page.
         </p>
         <p>
           Your work is kept in this tab until you close it. In the “Your data” menu, check “Remember on this device” to keep it
