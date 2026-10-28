@@ -13,7 +13,7 @@ const chip: Record<Discipline, string> = {
   DNF: "bg-dnf-bg text-dnf-fg",
 };
 
-/** A discipline code on its own tint, in monospace (start list rows and block headers). */
+/** A discipline code on its own tint, in monospace (start list rows). */
 export function DisciplineChip({ discipline, className }: { discipline: Discipline; className?: string }) {
   return (
     <span className={cx("inline-flex rounded-md px-1.5 py-0.5 font-mono text-xs font-bold", chip[discipline], className)}>

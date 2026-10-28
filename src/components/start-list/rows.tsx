@@ -3,7 +3,7 @@ import { DisciplineChip } from "~/components/discipline-chip";
 import { ArrowIcon, ChevronIcon, ClockIcon, GripIcon, MoreIcon, MoveIcon, TrashIcon, WarningIcon } from "~/components/icons";
 import { Popover } from "~/components/popover";
 import { cx } from "~/components/ui";
-import { DISCIPLINE_NAMES, formatPerformance, type Discipline } from "~/lib/disciplines";
+import { formatPerformance } from "~/lib/disciplines";
 import type { ColumnKey, EngineStartWithAthlete, Issue, ScheduledRow, StartListSettings } from "~/lib/startlist";
 import { formatClock, formatDuration, toTimeInput, type TimeFormat } from "~/lib/time";
 import type { FieldErrors } from "~/lib/validation";
@@ -348,30 +348,6 @@ export function IssueBanner({ issues, extra }: { issues: Issue[]; extra?: (issue
   );
 }
 
-interface Block {
-  discipline: Discipline;
-  count: number;
-  first: number;
-  last: number;
-}
-
-/** Runs of starts with the same discipline (breaks don't end a run), keyed by the run's first row. */
-function disciplineBlocks(rows: EditorRow[]): Map<number, Block> {
-  const blocks = new Map<number, Block>();
-  let current: Block | null = null;
-  rows.forEach((r, i) => {
-    if (r.kind !== "START") return;
-    if (current?.discipline === r.start.discipline) {
-      current.count++;
-      current.last = r.ot;
-    } else {
-      current = { discipline: r.start.discipline, count: 1, first: r.ot, last: r.ot };
-      blocks.set(i, current);
-    }
-  });
-  return blocks;
-}
-
 export function StartListRows({
   wide,
   rows,
@@ -379,7 +355,6 @@ export function StartListRows({
   timeFormat: tf,
   showLane,
   laneLabel: laneName = "Lane",
-  showBlocks,
   sort,
   breakErrors = {},
   apEdited,
@@ -395,8 +370,6 @@ export function StartListRows({
   timeFormat: TimeFormat;
   showLane: boolean;
   laneLabel?: string;
-  /** A header row before each run of one discipline (when the list is grouped by discipline). */
-  showBlocks: boolean;
   sort?: SortState;
   /** Validation errors per break entry id. */
   breakErrors?: Record<string, FieldErrors>;
@@ -411,9 +384,6 @@ export function StartListRows({
   const startIds = rows.filter((r) => r.kind === "START").map((r) => r.entryId);
   const position = (r: StartRow) => startIds.indexOf(r.entryId) + 1;
   const moveToPosition = (entryId: string, p: number) => actions.moveTo(entryId, startIds[p - 1]);
-  const blocks = showBlocks ? disciplineBlocks(rows) : new Map<number, Block>();
-  const blockMeta = (b: Block) =>
-    `${b.count} start${b.count === 1 ? "" : "s"} · ${fmt(b.first)}${b.last !== b.first ? `–${fmt(b.last)}` : ""}`;
   const cols = showLane ? 12 : 11;
 
   // "Move to position…": the start whose position is being typed.
@@ -483,16 +453,9 @@ export function StartListRows({
       <ol className="space-y-2">
         {rows.map((r, i) => {
           if (r.kind === "BREAK") return <li key={r.entryId}>{breakBar(r, i)}</li>;
-          const block = blocks.get(i);
           const name = fullName(r.start);
           return (
-            <li key={r.entryId} className="space-y-2">
-              {block && (
-                <div className="flex items-center gap-2 px-0.5 pt-1.5">
-                  <DisciplineChip discipline={block.discipline} />
-                  <span className="text-[13px] text-muted tabular-nums">{blockMeta(block)}</span>
-                </div>
-              )}
+            <li key={r.entryId}>
               <div
                 data-start={r.start.id}
                 tabIndex={-1}
@@ -514,8 +477,7 @@ export function StartListRows({
                   <p className="text-[13px] text-muted">
                     {[showLane && `${laneName[0]}${r.lane}`, r.start.gender, r.start.country].filter(Boolean).join(" · ")}
                     {(showLane || r.start.gender || r.start.country) && " · "}
-                    {/* The block header names the discipline; without blocks, a chip does. */}
-                    {!showBlocks && <DisciplineChip discipline={r.start.discipline} className="mr-1 py-0 text-[11px]" />}
+                    <DisciplineChip discipline={r.start.discipline} className="mr-1 py-0 text-[11px]" />
                     AP <strong className="font-semibold text-ink">{formatPerformance(r.start.discipline, r.start.ap)}</strong>
                     {r.start.diveTimeSec !== null && ` · ${formatDuration(r.start.diveTimeSec)}`}
                   </p>
@@ -585,19 +547,7 @@ export function StartListRows({
                 </tr>
               );
             }
-            const block = blocks.get(i);
-            return [
-              block && (
-                <tr key={`${r.entryId}-block`} className="border-b border-line-soft">
-                  <td colSpan={cols} className="pt-3.5 pr-3 pb-2 pl-14">
-                    <span className="flex items-baseline gap-2.5">
-                      <DisciplineChip discipline={block.discipline} className="text-[13px]" />
-                      <span className="font-semibold">{DISCIPLINE_NAMES[block.discipline]}</span>
-                      <span className="text-[13px] text-muted tabular-nums">{blockMeta(block)}</span>
-                    </span>
-                  </td>
-                </tr>
-              ),
+            return (
               <tr
                 key={r.entryId}
                 {...dragProps(r)}
@@ -672,8 +622,8 @@ export function StartListRows({
                     </Popover>
                   </span>
                 </td>
-              </tr>,
-            ];
+              </tr>
+            );
           })}
         </tbody>
       </table>

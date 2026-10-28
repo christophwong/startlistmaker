@@ -510,8 +510,8 @@ test("demo picker: pool with one start per athlete", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Start list", exact: true })).toBeVisible();
   await expect(page.getByLabel("Event name")).toHaveValue("Sample Pool Classic");
   await expect(page.getByText(/^\d+ starts · \d+ disciplines/)).toBeVisible();
-  // Pool is grouped by discipline: a header before each block.
-  await expect(page.getByText(/^\d+ starts · \d+:\d\d–\d+:\d\d$/).first()).toBeVisible();
+  // Pool lists mix disciplines, so there are no discipline header rows; each row has its chip.
+  await expect(page.getByText(/^\d+ starts · \d+:\d\d–\d+:\d\d$/)).toHaveCount(0);
   await expect(page.getByText("BREAK", { exact: true }).filter({ visible: true })).toHaveCount(0);
 });
 

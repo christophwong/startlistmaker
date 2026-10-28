@@ -183,7 +183,6 @@ export function ListStep({ state, dispatch, onColumns }: { state: AppState; disp
               timeFormat={settings.timeFormat}
               showLane={showLaneColumn(settings)}
               laneLabel={laneLabel(settings)}
-              showBlocks={settings.groupBy === "DISCIPLINE" && (sorted.column === null || sorted.column === "discipline")}
               sort={{ ...sorted, onSort: (c) => sortBy(c) }}
               breakErrors={breakErrors}
               apEdited={apEdited}
