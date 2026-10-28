@@ -210,7 +210,7 @@ const putBack = (row: RegRow, n: 1 | 2): RegRow["startOff"] => {
 };
 
 const label = (key: CellKey, start: string) =>
-  key === "name" ? "Name" : key === "gender" ? "Gender" : key.replace(/^s(\d)\.(\w+)$/, (_, n, f) => `${start} ${n} ${f === "diveTime" ? "dive time" : f.toUpperCase()}`);
+  key === "name" ? "Name" : key === "gender" ? "Gender" : key === "country" ? "Country" : key.replace(/^s(\d)\.(\w+)$/, (_, n, f) => `${start} ${n} ${f === "diveTime" ? "dive time" : f.toUpperCase()}`);
 
 export function DataStep({ state, dispatch }: { state: AppState; dispatch(a: Action): void }) {
   const { registrations: rows, maxStarts } = state;
@@ -385,8 +385,8 @@ export function DataStep({ state, dispatch }: { state: AppState; dispatch(a: Act
                   <Cell check={check} k="gender">
                     <OptionInput check={check} k="gender" value={r.gender} options={["F", "M", "X"]} label={`Gender, ${name}`} onChange={(gender) => update(r.id, { gender })} />
                   </Cell>
-                  <Cell>
-                    <input className={inputClass} size={1} value={r.country} aria-label={`Country, ${name}`} onChange={(e) => update(r.id, { country: e.target.value })} />
+                  <Cell check={check} k="country">
+                    <TextInput check={check} k="country" value={r.country} aria-label={`Country, ${name}`} onChange={(e) => update(r.id, { country: e.target.value })} />
                   </Cell>
                   {startGroups.map((n, i) => (
                     <StartCells key={n} row={r} n={n} label={`${startWord} ${n}`} first={i === 0} check={check} type={type} onStart={updateStart(r)} />

@@ -40,6 +40,16 @@ describe("checkRow", () => {
     expect(w.starts).toHaveLength(1);
   });
 
+  it("gives the start the IOC code; an unknown country stays as typed with a warning", () => {
+    const known = checkRow(row({ country: "Canada" }), "DEPTH", 1);
+    expect(known.warnings).toEqual({});
+    expect(known.starts[0].country).toBe("CAN");
+
+    const unknown = checkRow(row({ country: "Tahiti " }), "DEPTH", 1);
+    expect(unknown.warnings.country).toMatch(/3-letter code/);
+    expect(unknown.starts[0].country).toBe("Tahiti");
+  });
+
   it("normalizes free-text disciplines and uses STA's AP as its dive time", () => {
     const c = checkRow(row({}, { discipline: "Static (STA)", ap: "4:30", pb: "", diveTime: "" }), "POOL", 1);
     expect(c.starts[0]).toMatchObject({ discipline: "STA", ap: 270, diveTimeSec: 270 });

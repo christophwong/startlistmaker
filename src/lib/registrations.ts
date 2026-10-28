@@ -1,3 +1,4 @@
+import { countryCode, countryForList } from "./countries";
 import {
   formatPerformance,
   isDiscipline,
@@ -51,6 +52,7 @@ export type Day = 1 | 2;
 export type CellKey =
   | "name"
   | "gender"
+  | "country"
   | `s${1 | 2}.${keyof RegStart}`;
 
 export interface RowCheck {
@@ -98,6 +100,10 @@ export function checkRow(row: RegRow, type: CompetitionType, maxStarts: 1 | 2, o
   if (!firstName && !lastName) errors.name = "Name is missing.";
   const gender = parseGender(row.gender);
   if (!gender) warnings.gender = row.gender.trim() ? `Gender "${row.gender}" isn't M, F or X.` : "Gender is missing.";
+  // The list shows IOC codes; an unknown country is shown as typed.
+  if (row.country.trim() && !countryCode(row.country)) {
+    warnings.country = `Country "${row.country.trim()}" isn't one the app knows. Type its 3-letter code (e.g. CAN).`;
+  }
 
   const other = type === "POOL" ? "depth" : "pool";
   const off: (1 | 2)[] = [];
@@ -152,7 +158,7 @@ export function checkRow(row: RegRow, type: CompetitionType, maxStarts: 1 | 2, o
       firstName,
       lastName,
       gender,
-      country: row.country.trim(),
+      country: countryForList(row.country),
       order,
     });
   }
