@@ -395,7 +395,8 @@ async function png(page: Page, width: number, height: number, color: string) {
 }
 
 test("logos: header and sponsors on the sheet and in a saved project", async ({ page }) => {
-  await page.goto("/#demo");
+  // Pool, for the yards → meters guide.
+  await page.goto("/#demo-pool");
   await goToTab(page, "Print & export");
 
   const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="300" height="100"><rect width="300" height="100" fill="#1e40af"/></svg>';
@@ -423,8 +424,35 @@ test("logos: header and sponsors on the sheet and in a saved project", async ({ 
   const widthOf = async (i: number) => Number(await sponsors.nth(i).getAttribute("width"));
   const before = await widthOf(1);
   await page.getByRole("button", { name: "Move sponsor-b.png left" }).click();
-  await page.getByLabel("Size of sponsor-b.png").selectOption("L");
+  await page.getByLabel("Size of sponsor-b.png").fill("150");
   expect(await widthOf(0)).toBeGreaterThan(before);
+
+  // Per sheet: the judge sheet has no sponsors by default; AIDA comes off it, a sponsor goes on.
+  await page.getByText("Judge", { exact: true }).click();
+  await expect(sheet.getByLabel("Sponsors")).toHaveCount(0);
+
+  // The yards → meters guide, beside the title on the judge sheet only.
+  await page.getByLabel("Yards → meters guide").check();
+  const guide = sheet.getByRole("table", { name: "Yards to meters" });
+  await expect(guide.locator("td").first()).toHaveText("25");
+  await expect(sheet.locator("header").getByRole("table", { name: "Yards to meters" })).toBeVisible();
+  await page.getByLabel("Up to").fill("100");
+  await expect(guide.locator("td")).toHaveText(["25", "22.86", "50", "45.72", "75", "68.58", "100", "91.44"]);
+  await page.getByRole("radio", { name: "After the list" }).check({ force: true });
+  await expect(sheet.locator("header").getByRole("table", { name: "Yards to meters" })).toHaveCount(0);
+  await expect(guide).toBeVisible();
+  await page.getByLabel("On judge sheet: aida.svg").uncheck();
+  await page.getByLabel("On judge sheet: sponsor-a.png").check();
+  await expect(sheet.locator("header img")).toHaveCount(1);
+  await expect(sheet.getByLabel("Sponsors").locator("img")).toHaveCount(1);
+  await page.getByText("Athlete", { exact: true }).click();
+  await expect(sheet.locator("header img")).toHaveCount(2);
+  await expect(guide).toHaveCount(0);
+
+  // Under the title: a row of its own above the list.
+  await page.getByLabel("Place of sponsor-a.png").selectOption("TOP");
+  await expect(sheet.getByLabel("Logos under the title").locator("img")).toHaveCount(1);
+  await page.getByLabel("Place of sponsor-a.png").selectOption("SPONSORS");
 
   // A saved project brings the logos back, in order.
   const json = page.waitForEvent("download");
@@ -438,10 +466,22 @@ test("logos: header and sponsors on the sheet and in a saved project", async ({ 
     buffer: fs.readFileSync(projectPath),
   });
   await goToTab(page, "Print & export");
-  await expect(page.getByLabel("Size of sponsor-b.png")).toHaveValue("L");
+  await expect(page.getByLabel("Size of sponsor-b.png")).toHaveValue("150");
   await expect(page.getByRole("button", { name: "Move sponsor-b.png left" })).toBeDisabled();
   await expect(sheet.locator("header img")).toHaveCount(2);
   await expect(sponsors).toHaveCount(2);
+
+  // Remove asks first, since it takes the logo off every sheet; cancelling keeps it.
+  let message = "";
+  page.once("dialog", (d) => ((message = d.message()), d.dismiss()));
+  await page.getByRole("button", { name: "Remove sponsor-b.png" }).click();
+  expect(message).toBe(
+    "Remove sponsor-b.png? It comes off every sheet (Athlete, Results). To leave it off only the athlete sheet, untick “On athlete sheet” instead.",
+  );
+  await expect(sponsors).toHaveCount(2);
+  page.once("dialog", (d) => d.accept());
+  await page.getByRole("button", { name: "Remove sponsor-b.png" }).click();
+  await expect(sponsors).toHaveCount(1);
 });
 
 test("drag a start onto another row to move it", async ({ page }) => {
@@ -561,6 +601,25 @@ test("countries show as IOC codes, or full names from More settings, on the list
 
   await goToTab(page, "Print & export");
   await expect(page.locator(".print-area tbody").getByText("Canada", { exact: true }).first()).toBeVisible();
+});
+
+test("first dynamic lane: a one-lane dynamic prints in lane 2 on every sheet", async ({ page }) => {
+  await page.goto("/#demo-pool");
+  if (isMobile(page)) await page.getByRole("button", { name: "Settings", exact: true }).click();
+  await page.getByLabel("Lanes", { exact: true }).fill("1");
+  await page.getByText("More settings", { exact: true }).click();
+  await page.getByLabel("First dynamic lane").fill("2");
+  if (isMobile(page)) await page.keyboard.press("Escape");
+
+  await goToTab(page, "Print & export");
+  const sheet = page.locator(".print-area");
+  const laneOf = (disc: string) => sheet.locator("tbody tr", { hasText: disc }).first().locator("td").last();
+  await expect(laneOf("DYN")).toHaveText("2");
+  await page.getByText("Judge", { exact: true }).click();
+  const judgeLane = sheet.locator("thead th").filter({ hasText: /^Lane$/ });
+  await expect(judgeLane).toHaveCount(1);
+  const col = await sheet.locator("thead th").allInnerTexts().then((h) => h.indexOf("Lane"));
+  await expect(sheet.locator("tbody tr", { hasText: "DYN" }).first().locator("td").nth(col)).toHaveText("2");
 });
 
 test("an error while drawing shows a way out: save the project, reload, report", async ({ page }) => {

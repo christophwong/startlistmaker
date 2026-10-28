@@ -153,12 +153,14 @@ export function schedule<S extends EngineStart>(
       openBreaks.length = 0;
     }
     const { ot, lane, group } = cursor.addStart(start);
+    const first = cursor.segmentOf(start) === "STA" ? settings.staFirstLane : settings.firstLane;
     rows.push({
       kind: "START",
       index,
       start,
       group,
       lane,
+      laneNo: lane + first - 1,
       ot,
       wt: ot - WARMUP_BEFORE_OT,
       checkIn: ot - CHECKIN_BEFORE_OT,

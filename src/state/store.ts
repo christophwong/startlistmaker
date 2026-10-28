@@ -3,6 +3,7 @@ import type { CompetitionType } from "~/lib/disciplines";
 import type { Logo } from "~/lib/export/logos";
 import { emptyCrew, type Crew } from "~/lib/export/crew";
 import type { SheetColumns, SheetKind } from "~/lib/export/table";
+import { DEFAULT_YARD_GUIDE, type YardGuide } from "~/lib/export/yards";
 import { autoMap, dayLabels, hasStart2, missingRequired, selectStart, type FieldKey, type Mapping } from "~/lib/import/columns";
 import { detectCompetitionType, detectMaxStarts } from "~/lib/import/detect";
 import type { NamedSheet, SheetTable } from "~/lib/import/file";
@@ -71,6 +72,8 @@ export interface PrintOptions {
   pageBreakAtBreaks: boolean;
   /** Renamed and hidden columns, per sheet. */
   columns: Partial<Record<SheetKind, SheetColumns>>;
+  /** Yards → meters guide for judges (pool only). */
+  yardGuide: YardGuide;
 }
 
 export interface Source {
@@ -158,7 +161,7 @@ export const initialState: AppState = {
   crew: emptyCrew(),
   nextId: 1,
   manualOrder: false,
-  print: { sheet: "ATHLETES", showWarmup: true, showCheckIn: true, showStartNumber: false, pageBreakAtBreaks: false, columns: {} },
+  print: { sheet: "ATHLETES", showWarmup: true, showCheckIn: true, showStartNumber: false, pageBreakAtBreaks: false, columns: {}, yardGuide: DEFAULT_YARD_GUIDE },
   logos: [],
   history: [],
   notice: null,
@@ -195,7 +198,7 @@ export type Action =
   /** `newId` is free for a new section row. */
   | { type: "crew"; edit: (crew: Crew, newId: string) => Crew }
   | { type: "addLogos"; logos: Omit<Logo, "id">[] }
-  | { type: "updateLogo"; id: string; patch: Partial<Pick<Logo, "place" | "size">> }
+  | { type: "updateLogo"; id: string; patch: Partial<Pick<Logo, "place" | "scale" | "sheets">> }
   | { type: "moveLogo"; id: string; by: -1 | 1 }
   | { type: "removeLogo"; id: string }
   | { type: "step"; step: Step }

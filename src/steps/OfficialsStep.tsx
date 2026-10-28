@@ -10,6 +10,7 @@ import {
   crewNames,
   crewOutOfDate,
   defaultSections,
+  lanesInUse,
   setCrew,
   shapeOf,
   type Crew,
@@ -133,7 +134,7 @@ export function OfficialsStep({ state, dispatch }: { state: AppState; dispatch(a
     const match = (r: StartRow) =>
       (!next.parts.size || next.parts.has(part.get(r.entryId)!)) &&
       (!next.disciplines.size || next.disciplines.has(r.start.discipline)) &&
-      (!next.zones.size || next.zones.has(r.lane));
+      (!next.zones.size || next.zones.has(r.laneNo));
     setSelected(new Set(any ? starts.filter(match).map((r) => r.entryId) : []));
   };
 
@@ -260,7 +261,7 @@ export function OfficialsStep({ state, dispatch }: { state: AppState; dispatch(a
               {d}
             </Chip>
           ))}
-          {Array.from({ length: shape.lanes }, (_, i) => i + 1).map((l) => (
+          {lanesInUse(rows).map((l) => (
             <Chip key={l} pressed={filters.zones.has(l)} onClick={() => select({ ...filters, zones: toggled(filters.zones, l) })}>
               {zone} {l}
             </Chip>
@@ -344,12 +345,12 @@ export function OfficialsStep({ state, dispatch }: { state: AppState; dispatch(a
                       checked={on}
                       onChange={() => {}}
                       onClick={(e) => toggleRow(r.entryId, e)}
-                      aria-label={`Select ${who}, ${fmt(r.ot)} ${zone} ${r.lane}`}
+                      aria-label={`Select ${who}, ${fmt(r.ot)} ${zone} ${r.laneNo}`}
                       className="size-4 accent-accent"
                     />
                   </td>
                   <td className={cx(grid, "px-2 font-semibold tabular-nums")}>{fmt(r.ot)}</td>
-                  <td className={cx(grid, "px-2 tabular-nums")}>{r.lane}</td>
+                  <td className={cx(grid, "px-2 tabular-nums")}>{r.laneNo}</td>
                   <td className={cx(grid, "px-2 whitespace-nowrap")}>{who}</td>
                   <td className={cx(grid, "px-2")}>
                     <DisciplineChip discipline={r.start.discipline} />
@@ -357,7 +358,7 @@ export function OfficialsStep({ state, dispatch }: { state: AppState; dispatch(a
                   <td className={cx(grid, "px-2 text-right tabular-nums")}>{formatPerformance(r.start.discipline, r.start.ap)}</td>
                   {FIELDS.map((f) => (
                     <td key={f.key} className={cx(grid, "border-l p-0")}>
-                      <NameInput value={names[f.key]} label={`${f.label}, ${fmt(r.ot)} ${zone} ${r.lane}`} onSave={(v) => saveCell(r, f.key, v)} />
+                      <NameInput value={names[f.key]} label={`${f.label}, ${fmt(r.ot)} ${zone} ${r.laneNo}`} onSave={(v) => saveCell(r, f.key, v)} />
                     </td>
                   ))}
                 </tr>,
@@ -391,7 +392,7 @@ export function OfficialsStep({ state, dispatch }: { state: AppState; dispatch(a
                       {r.start.firstName} {r.start.lastName}
                     </span>
                     <span className="text-sm tabular-nums">
-                      {fmt(r.ot)} · {zone} {r.lane}
+                      {fmt(r.ot)} · {zone} {r.laneNo}
                     </span>
                   </span>
                   <span className="block text-sm text-muted">

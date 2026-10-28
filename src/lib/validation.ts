@@ -62,6 +62,8 @@ export const settingsSchema = z.object({
   roundToMin: int(1, 30, "Rounding"),
   lanes: int(1, 10, "Lanes"),
   staLanes: int(1, 10, "STA lanes"),
+  firstLane: int(1, 10, "First lane"),
+  staFirstLane: int(1, 10, "First STA zone"),
   scheduleMode: z.enum(["ROUNDS", "SINGLE"]),
   round2Order: z.enum(["SORTED", "ROUND1_ORDER"]),
   minRecoveryMin: int(0, 600, "Minimum recovery"),

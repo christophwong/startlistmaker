@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import { describe, expect, it } from "vitest";
 import { emptyCrew, setCrew } from "~/lib/export/crew";
-import { MAX_LOGO_SRC, type Logo } from "~/lib/export/logos";
+import { defaultSheets, MAX_LOGO_SRC, type Logo } from "~/lib/export/logos";
 import { parseCsv } from "~/lib/import/file";
 import { schedule } from "~/lib/startlist";
 import { fromProjectJson, parseState, ProjectError, toProjectJson } from "./persist";
@@ -453,7 +453,8 @@ const logo = (place: Logo["place"], name = "logo.png"): Omit<Logo, "id"> => ({
   width: 200,
   height: 100,
   place,
-  size: "M",
+  scale: 100,
+  sheets: defaultSheets(place),
 });
 
 describe("logos", () => {
@@ -480,8 +481,16 @@ describe("logos", () => {
     const comp = base.logos.find((l) => l.name === "comp")!;
     const s = run([{ type: "updateLogo", id: comp.id, patch: { place: "SPONSORS" } }], base);
     expect(names(s, "SPONSORS")).toEqual(["a", "b", "c", "comp"]);
-    const sized = run([{ type: "updateLogo", id: comp.id, patch: { size: "L" } }], base);
-    expect(sized.logos[0]).toMatchObject({ name: "comp", size: "L" });
+    const sized = run([{ type: "updateLogo", id: comp.id, patch: { scale: 150, sheets: ["ATHLETES"] } }], base);
+    expect(sized.logos[0]).toMatchObject({ name: "comp", scale: 150, sheets: ["ATHLETES"] });
+  });
+
+  it("opens logos saved with S/M/L sizes on the sheets they printed on then", () => {
+    const old = base.logos.map(({ scale: _, sheets: __, ...l }, i) => ({ ...l, size: (["S", "M", "L", "M", "M"] as const)[i] }));
+    const opened = parseState({ ...base, logos: old })!.logos;
+    expect(opened.map((l) => l.scale)).toEqual([65, 100, 135, 100, 100]);
+    expect(opened[0].sheets).toEqual(["ATHLETES", "JUDGES", "RESULTS"]);
+    expect(opened[1].sheets).toEqual(["ATHLETES", "RESULTS"]);
   });
 
   it("are kept when a new file is loaded, and cleared by reset", () => {

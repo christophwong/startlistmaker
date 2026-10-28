@@ -118,6 +118,13 @@ export function shapeOf(rows: ScheduledRow[]): CrewShape {
   return { groups, lanes };
 }
 
+/** The lane (zone) numbers printed on the list, in order: a column each on the safety sheet. */
+export function lanesInUse(rows: ScheduledRow[]): number[] {
+  const used = new Set<number>();
+  for (const r of rows) if (r.kind === "START") used.add(r.laneNo);
+  return [...used].sort((a, b) => a - b);
+}
+
 /** True when names were set on a list with a different number of OT groups or zones. */
 export const crewOutOfDate = (crew: Crew, rows: ScheduledRow[]) => {
   if (!crew.shape || !hasNames(crew)) return false;
@@ -131,13 +138,13 @@ export const crewOutOfDate = (crew: Crew, rows: ScheduledRow[]) => {
  * as on the ECAC safety schedule.
  */
 export function unusedZones(rows: ScheduledRow[], crew: Crew): Map<number, Set<number>> {
-  const { lanes } = shapeOf(rows);
+  const zones = lanesInUse(rows);
   const sectionAt = new Set(crew.sections.map((s) => s.beforeGroup));
   const out = new Map<number, Set<number>>();
   let stretch: number[] = [];
   let used = new Set<number>();
   const close = () => {
-    const unused = new Set(Array.from({ length: lanes }, (_, i) => i + 1).filter((l) => !used.has(l)));
+    const unused = new Set(zones.filter((l) => !used.has(l)));
     for (const g of stretch) out.set(g, unused);
     stretch = [];
     used = new Set();
@@ -151,7 +158,7 @@ export function unusedZones(rows: ScheduledRow[], crew: Crew): Map<number, Set<n
     if (r.group !== last && sectionAt.has(r.group)) close();
     last = r.group;
     if (!stretch.includes(r.group)) stretch.push(r.group);
-    used.add(r.lane);
+    used.add(r.laneNo);
   }
   close();
   return out;

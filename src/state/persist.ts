@@ -1,7 +1,18 @@
 import * as z from "zod/mini";
 import { DEPTH_DISCIPLINES, POOL_DISCIPLINES } from "~/lib/disciplines";
 import { emptyCrew, MAX_NAME } from "~/lib/export/crew";
-import { LOGO_SRC, MAX_LOGO_PX, MAX_LOGO_SRC, MAX_LOGOS, MAX_LOGOS_TOTAL } from "~/lib/export/logos";
+import {
+  defaultSheets,
+  LEGACY_SCALE,
+  LOGO_SRC,
+  MAX_LOGO_PX,
+  MAX_LOGO_SRC,
+  MAX_LOGOS,
+  MAX_LOGOS_TOTAL,
+  MAX_SCALE,
+  MIN_SCALE,
+  type Logo,
+} from "~/lib/export/logos";
 import { downloadText } from "~/lib/export/files";
 import { fileBase, MAX_HEADER } from "~/lib/export/table";
 import { FIELD_KEYS, type FieldKey } from "~/lib/import/columns";
@@ -26,6 +37,7 @@ const str = (max = 500) => z.string().check(z.maxLength(max));
 const int = (min: number, max: number) => z.int().check(z.minimum(min), z.maximum(max));
 const list = <T extends z.core.SomeType>(item: T, max: number) => z.array(item).check(z.maxLength(max));
 const discipline = z.enum([...POOL_DISCIPLINES, ...DEPTH_DISCIPLINES]);
+const sheetKind = z.enum(["ATHLETES", "JUDGES", "SAFETY", "RESULTS"]);
 const table = z.object({
   headers: list(str(), 200),
   rows: list(list(str(5000), 200), MAX_ROWS),
@@ -41,6 +53,8 @@ const settings = z.object({
   roundToMin: int(1, 30),
   lanes: int(1, 10),
   staLanes: int(1, 10),
+  firstLane: int(1, 10),
+  staFirstLane: int(1, 10),
   scheduleMode: z.enum(["ROUNDS", "SINGLE"]),
   round2Order: z.enum(["SORTED", "ROUND1_ORDER"]),
   minRecoveryMin: int(0, 600),
@@ -75,8 +89,9 @@ const logos = list(
     src: z.string().check(z.maxLength(MAX_LOGO_SRC), z.regex(LOGO_SRC)),
     width: int(1, MAX_LOGO_PX),
     height: int(1, MAX_LOGO_PX),
-    place: z.enum(["HEADER_LEFT", "HEADER_RIGHT", "SPONSORS"]),
-    size: z.enum(["S", "M", "L"]),
+    place: z.enum(["HEADER_LEFT", "HEADER_RIGHT", "TOP", "SPONSORS"]),
+    scale: int(MIN_SCALE, MAX_SCALE),
+    sheets: list(sheetKind, 4),
   }),
   MAX_LOGOS,
 ).check(z.refine((l) => l.reduce((sum, x) => sum + x.src.length, 0) <= MAX_LOGOS_TOTAL));
@@ -143,15 +158,33 @@ const stateSchema = z.object({
   nextId: int(1, Number.MAX_SAFE_INTEGER),
   manualOrder: z.boolean(),
   print: z.object({
-    sheet: z.enum(["ATHLETES", "JUDGES", "SAFETY", "RESULTS"]),
+    sheet: sheetKind,
     showWarmup: z.boolean(),
     showCheckIn: z.boolean(),
     showStartNumber: z.boolean(),
     pageBreakAtBreaks: z.boolean(),
     columns: z.object({ ATHLETES: sheetColumns, JUDGES: sheetColumns, SAFETY: sheetColumns, RESULTS: sheetColumns }),
+    yardGuide: z.object({
+      sheets: list(sheetKind, 4),
+      place: z.enum(["HEADER", "AFTER"]),
+      lengthYd: int(10, 100),
+      upToYd: z.nullable(int(10, 5000)),
+    }),
   }),
   logos,
 });
+
+/** A logo saved with an S/M/L size and no sheets prints as it did then. */
+function upgradeLogo(raw: unknown): unknown {
+  if (!raw || typeof raw !== "object") return raw;
+  const { size, ...logo } = raw as Partial<Logo> & { size?: unknown };
+  const legacy = typeof size === "string" && size in LEGACY_SCALE ? LEGACY_SCALE[size as keyof typeof LEGACY_SCALE] : 100;
+  return {
+    ...logo,
+    scale: logo.scale ?? legacy,
+    sheets: logo.sheets ?? (logo.place ? defaultSheets(logo.place) : undefined),
+  };
+}
 
 /** Fills fields added in later versions with defaults, then validates. */
 export function parseState(value: unknown): AppState | null {
@@ -165,11 +198,12 @@ export function parseState(value: unknown): AppState | null {
     event: { ...initialState.event, ...v.event },
     settings: { ...initialState.settings, ...v.settings },
     print: { ...initialState.print, ...v.print },
-    // Saved before judge and safety names, or before country format (codes then).
+    logos: Array.isArray(v.logos) ? v.logos.map(upgradeLogo) : (v.logos ?? initialState.logos),
+    // Saved before judge and safety names, or before later settings (country format, first lanes).
     otherDay: v.otherDay
       ? {
           ...v.otherDay,
-          settings: { ...v.otherDay.settings, countryFormat: v.otherDay.settings?.countryFormat ?? initialState.settings.countryFormat },
+          settings: { ...initialState.settings, ...v.otherDay.settings },
           crew: v.otherDay.crew ?? emptyCrew(),
         }
       : null,

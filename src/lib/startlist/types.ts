@@ -49,6 +49,13 @@ export interface StartListSettings {
   /** parallel starts per OT (1–10): lanes for dynamic, zones / lines otherwise */
   lanes: number;
   staLanes: number;
+  /**
+   * Number of the first lane (zone) in use, for dynamic / depth and for
+   * pool STA: 2 puts a one-lane dynamic in lane 2. Printed only; times and
+   * order don't depend on it.
+   */
+  firstLane: number;
+  staFirstLane: number;
   scheduleMode: "ROUNDS" | "SINGLE";
   round2Order: "SORTED" | "ROUND1_ORDER";
   minRecoveryMin: number;
@@ -85,7 +92,10 @@ export interface ScheduledStart<S extends EngineStart = EngineStart> {
   index: number;
   start: S;
   group: number;
+  /** Position in the OT group, 1-based (judge and safety names are kept by it). */
   lane: number;
+  /** The lane (zone) number printed: `lane` counted from the first lane. */
+  laneNo: number;
   ot: number;
   wt: number;
   checkIn: number;

@@ -2,7 +2,7 @@ import Papa from "papaparse";
 import { formatPerformance } from "../disciplines";
 import type { EngineStartWithAthlete, ScheduledRow } from "../startlist/types";
 import { formatClock, formatDuration, type TimeFormat } from "../time";
-import { crewAt, emptyCrew, shapeOf, unusedZones, type Crew } from "./crew";
+import { crewAt, emptyCrew, lanesInUse, unusedZones, type Crew } from "./crew";
 
 /**
  * The finished start list as plain cells, shared by the print view, CSV and
@@ -92,7 +92,7 @@ function columns(o: ExportOptions, rows: ScheduledRow[]): Column[] {
   const ap: Column = { id: "ap", header: "AP", cell: (r) => formatPerformance(r.start.discipline, r.start.ap, { unit: false }) };
   const ot: Column = { id: "ot", header: "OT", cell: (r) => fmt(r.ot) };
   const wt: Column = { id: "wt", header: "WT", cell: (r) => fmt(r.wt) };
-  const lane: Column[] = o.showLane ? [{ id: "lane", header: o.laneLabel, cell: (r) => String(r.lane) }] : [];
+  const lane: Column[] = o.showLane ? [{ id: "lane", header: o.laneLabel, cell: (r) => String(r.laneNo) }] : [];
   // "RESULT" → id "result".
   const blank = (...headers: string[]): Column[] => headers.map((header) => ({ id: header.toLowerCase(), header }));
 
@@ -116,12 +116,14 @@ function columns(o: ExportOptions, rows: ScheduledRow[]): Column[] {
     // As on the ECAC safety schedule: the start's safety diver goes in its own zone's column.
     case "SAFETY": {
       const unused = unusedZones(rows, crew);
-      const zones = Array.from({ length: shapeOf(rows).lanes }, (_, i): Column => ({
-        id: `zone${i + 1}`,
-        header: `${o.laneLabel} ${i + 1}`,
-        cell: (r) => (r.lane === i + 1 ? names(r).safety : ""),
-        greyed: (r) => unused.get(r.group)?.has(i + 1) ?? false,
-      }));
+      const zones = lanesInUse(rows).map(
+        (no): Column => ({
+          id: `zone${no}`,
+          header: `${o.laneLabel} ${no}`,
+          cell: (r) => (r.laneNo === no ? names(r).safety : ""),
+          greyed: (r) => unused.get(r.group)?.has(no) ?? false,
+        }),
+      );
       return [
         name,
         gender("Sex"),
@@ -129,7 +131,7 @@ function columns(o: ExportOptions, rows: ScheduledRow[]): Column[] {
         ap,
         ot,
         wt,
-        { id: "lane", header: o.laneLabel, cell: (r) => String(r.lane) },
+        { id: "lane", header: o.laneLabel, cell: (r) => String(r.laneNo) },
         { id: "deck", header: "Deck", cell: (r) => names(r).deck },
         { id: "warmUp", header: "Warm Up", cell: (r) => names(r).warmUp },
         ...zones,

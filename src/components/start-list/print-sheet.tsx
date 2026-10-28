@@ -1,9 +1,50 @@
-import { Fragment } from "react";
+import { Fragment, type ReactNode } from "react";
 import type { CompetitionType } from "~/lib/disciplines";
 import { legend, titleLines, WIDE_BLANK } from "~/lib/export/files";
-import { logoBox, logosAt, type Logo } from "~/lib/export/logos";
+import { logoBox, logosOn, type Logo } from "~/lib/export/logos";
 import type { ExportTable } from "~/lib/export/table";
+import type { GuidePlace } from "~/lib/export/yards";
 import { cx } from "../ui";
+
+export interface SheetGuide {
+  place: GuidePlace;
+  rows: { yd: number; m: string }[];
+}
+
+/**
+ * The yards → meters guide as Yards | Meters column pairs, filled down then
+ * across, like the table judges used to paste onto the sheet.
+ */
+function YardTable({ rows, pairs }: { rows: SheetGuide["rows"]; pairs: number }) {
+  const depth = Math.ceil(rows.length / pairs);
+  const columns = Array.from({ length: Math.ceil(rows.length / depth) }, (_, c) => rows.slice(c * depth, (c + 1) * depth));
+  return (
+    <table aria-label="Yards to meters" className="border-collapse text-center tabular-nums [&_td]:border [&_td]:border-slate-300 [&_td]:px-1.5 [&_th]:border [&_th]:border-slate-300 [&_th]:px-1.5">
+      <thead>
+        <tr className="bg-slate-100">
+          {columns.map((_, c) => (
+            <Fragment key={c}>
+              <th className="font-medium">Yards</th>
+              <th className="font-semibold">Meters</th>
+            </Fragment>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {Array.from({ length: depth }, (_, r) => (
+          <tr key={r}>
+            {columns.map((col, c) => (
+              <Fragment key={c}>
+                <td>{col[r]?.yd ?? ""}</td>
+                <td className="font-semibold">{col[r]?.m ?? ""}</td>
+              </Fragment>
+            ))}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
 
 /** CSS px per pt. */
 const PX = 4 / 3;
@@ -18,12 +59,13 @@ function LogoImg({ logo }: { logo: Logo }) {
   return <img src={logo.src} alt="" width={Math.round(box.w * PX)} height={Math.round(box.h * PX)} />;
 }
 
-function LogoSide({ logos, end }: { logos: Logo[]; end?: boolean }) {
+function LogoSide({ logos, end, children }: { logos: Logo[]; end?: boolean; children?: ReactNode }) {
   return (
     <div className={cx("flex min-w-0 items-center gap-3", end && "justify-end")}>
       {logos.map((l) => (
         <LogoImg key={l.id} logo={l} />
       ))}
+      {children}
     </div>
   );
 }
@@ -38,6 +80,7 @@ export function PrintSheet({
   table,
   pageBreakAtBreaks,
   logos,
+  guide,
 }: {
   type: CompetitionType;
   name: string;
@@ -48,17 +91,21 @@ export function PrintSheet({
   table: ExportTable;
   pageBreakAtBreaks: boolean;
   logos: Logo[];
+  /** Yards → meters guide, when this sheet prints one. */
+  guide?: SheetGuide | null;
 }) {
   const [title, ...sub] = titleLines({ type, name, date, location, notes });
   // `!` beats the zebra stripe when the header repeats inside the body.
   const accent = type === "POOL" ? "!bg-[#2a5ea8]" : "!bg-[#3c7a2a]";
   const nameCol = table.ids.indexOf("name");
   const safety = table.sheet === "SAFETY";
-  // The safety schedule is a working sheet with no logos (as on the ECAC sheet).
-  const left = safety ? [] : logosAt(logos, "HEADER_LEFT");
-  const right = safety ? [] : logosAt(logos, "HEADER_RIGHT");
-  // Neither the judge sheet nor the safety schedule has a sponsor strip.
-  const sponsors = table.sheet === "JUDGES" || safety ? [] : logosAt(logos, "SPONSORS");
+  // Each logo prints on the sheets ticked for it (by default none on the safety schedule, no sponsors on the judge sheet).
+  const left = logosOn(logos, "HEADER_LEFT", table.sheet);
+  const right = logosOn(logos, "HEADER_RIGHT", table.sheet);
+  const top = logosOn(logos, "TOP", table.sheet);
+  const sponsors = logosOn(logos, "SPONSORS", table.sheet);
+  const headerGuide = guide?.place === "HEADER" ? guide : null;
+  const sides = left.length > 0 || right.length > 0 || !!headerGuide;
   // A section row puts its time under WT, as on the ECAC safety schedule.
   const wtCol = table.ids.indexOf("wt");
   // Forms with blank columns get taller rows to write in.
@@ -95,22 +142,37 @@ export function PrintSheet({
     // The safety schedule prints landscape (a named page in app.css), since it has a column per zone.
     <div className={cx("bg-white text-black", safety && "print-landscape")}>
       {/* Equal sides keep the title centred with a logo on one side only. */}
+      {/* The title takes the width it needs (up to 60 %), so a one-line subtitle doesn't wrap beside big logos.
+          Logos shrink to fit their side; the yards guide can't, so its side is at least as wide as the table. */}
       <header
         className={cx(
           "mb-4 text-center",
-          (left.length > 0 || right.length > 0) && "grid grid-cols-[minmax(0,1fr)_minmax(0,2fr)_minmax(0,1fr)] items-center gap-3",
+          sides && "grid grid-cols-[minmax(min-content,1fr)_fit-content(60%)_minmax(min-content,1fr)] items-center gap-3",
         )}
       >
-        {left.length > 0 || right.length > 0 ? (
+        {sides ? (
           <>
             <LogoSide logos={left} />
             {titleBlock}
-            <LogoSide logos={right} end />
+            <LogoSide logos={right} end>
+              {headerGuide && (
+                <div className="text-[10px] leading-tight">
+                  <YardTable rows={headerGuide.rows} pairs={Math.min(3, Math.ceil(headerGuide.rows.length / 7))} />
+                </div>
+              )}
+            </LogoSide>
           </>
         ) : (
           titleBlock
         )}
       </header>
+      {top.length > 0 && (
+        <div aria-label="Logos under the title" className="mb-4 flex flex-wrap items-center justify-center gap-6">
+          {top.map((l) => (
+            <LogoImg key={l.id} logo={l} />
+          ))}
+        </div>
+      )}
 
       {/* Focusable so a keyboard can scroll the preview sideways on a phone. */}
       <div tabIndex={0} role="region" aria-label="Sheet preview" className="overflow-x-auto focus-visible:outline-2">
@@ -168,6 +230,11 @@ export function PrintSheet({
       </div>
       <p className="mt-3 text-xs text-slate-500">{legend(table)}</p>
       {notes && <p className="mt-1 text-xs whitespace-pre-line text-slate-700">{notes}</p>}
+      {guide?.place === "AFTER" && (
+        <div className="mt-4 flex break-inside-avoid justify-center text-[11px]">
+          <YardTable rows={guide.rows} pairs={Math.min(6, Math.ceil(guide.rows.length / 5))} />
+        </div>
+      )}
       {sponsors.length > 0 && (
         <div aria-label="Sponsors" className="mt-6 flex break-inside-avoid flex-wrap items-center justify-center gap-6">
           {sponsors.map((l) => (

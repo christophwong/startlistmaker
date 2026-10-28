@@ -15,6 +15,7 @@ function start(group: number, lane: number, discipline: Discipline): ScheduledRo
     index: n,
     group,
     lane,
+    laneNo: lane,
     ot,
     wt: ot - 45,
     checkIn: ot - 60,
@@ -126,6 +127,22 @@ describe("safety sheet", () => {
     expect(toCsv(t)).toContain("DYN WARM UP LANE 1 · 8:35 · Andy & Sam");
     // Warm-up rows are for the safety sheet only.
     expect(exportTable(rows, { ...opts, crew }).rows.some((r) => r.kind === "SECTION")).toBe(false);
+  });
+
+  it("gives the safety sheet a column per lane number in use, with names in the printed lane", () => {
+    // Dynamic after the break moved to lane 2 (first lane 2), STA still in zones 1–2.
+    const moved = rows.map((r) => (r.kind === "START" && r.group === 3 ? { ...r, laneNo: r.lane + 4 } : r));
+    const crew = setCrew(emptyCrew(), [{ group: 3, lane: 1 }], { safety: "Brett" }, shape);
+    const t = exportTable(moved, { ...opts, sheet: "SAFETY", crew });
+    expect(t.header.filter((h) => h.startsWith("Zone "))).toEqual(["Zone 1", "Zone 2", "Zone 3", "Zone 5", "Zone 6", "Zone 7"]);
+    const dyn = t.rows.find((r) => r.kind === "START" && r.group === 3);
+    const at = (h: string) => t.header.indexOf(h);
+    expect(dyn).toMatchObject({ kind: "START" });
+    if (dyn?.kind !== "START") return;
+    expect(dyn.cells[at("Zone")]).toBe("5");
+    expect(dyn.cells[at("Zone 5")]).toBe("Brett");
+    // After the break only zones 5–7 are used, so 1–3 are greyed.
+    expect([1, 2, 3, 5].map((z) => dyn.greyed![at(`Zone ${z}`)])).toEqual([true, true, true, false]);
   });
 
   it("the judge sheet's Judge column is writing space until names are set", () => {

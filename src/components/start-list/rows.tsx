@@ -82,8 +82,9 @@ interface Shared {
   busy?: boolean;
 }
 
-export const showLaneColumn = (s: Pick<StartListSettings, "type" | "lanes" | "staLanes">) =>
-  s.lanes > 1 || (s.type === "POOL" && s.staLanes > 1);
+/** Shown when there's more than one lane, or the lane isn't 1. */
+export const showLaneColumn = (s: Pick<StartListSettings, "type" | "lanes" | "staLanes" | "firstLane" | "staFirstLane">) =>
+  s.lanes > 1 || s.firstLane > 1 || (s.type === "POOL" && (s.staLanes > 1 || s.staFirstLane > 1));
 
 /** Pool static uses zones, dynamic uses lanes; depth has lines / zones. */
 export const laneLabel = (s: Pick<StartListSettings, "type">) => (s.type === "POOL" ? "Lane" : "Zone");
@@ -475,7 +476,7 @@ export function StartListRows({
                     {warnDot(r)}
                   </p>
                   <p className="text-[13px] text-muted">
-                    {[showLane && `${laneName[0]}${r.lane}`, r.start.gender, r.start.country].filter(Boolean).join(" · ")}
+                    {[showLane && `${laneName[0]}${r.laneNo}`, r.start.gender, r.start.country].filter(Boolean).join(" · ")}
                     {(showLane || r.start.gender || r.start.country) && " · "}
                     <DisciplineChip discipline={r.start.discipline} className="mr-1 py-0 text-[11px]" />
                     AP <strong className="font-semibold text-ink">{formatPerformance(r.start.discipline, r.start.ap)}</strong>
@@ -582,7 +583,7 @@ export function StartListRows({
                 </td>
                 <td className="px-1.5 py-1.5 text-right text-ink-2">{formatDuration(r.start.diveTimeSec)}</td>
                 <td className="px-1.5 py-1.5 text-right text-ink-2">{fmt(r.checkIn)}</td>
-                {showLane && <td className="px-1.5 py-1.5 text-center">{r.lane}</td>}
+                {showLane && <td className="px-1.5 py-1.5 text-center">{r.laneNo}</td>}
                 <td className={cx(pinnedActions, rowBg(r), "py-1 pr-2 pl-1")}>
                   <span className="flex justify-end">
                     <button

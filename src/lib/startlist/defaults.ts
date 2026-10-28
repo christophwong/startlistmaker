@@ -14,6 +14,8 @@ export const DEFAULT_SETTINGS: Omit<StartListSettings, "type"> = {
   roundToMin: 1,
   lanes: 1,
   staLanes: 2,
+  firstLane: 1,
+  staFirstLane: 1,
   scheduleMode: "ROUNDS",
   round2Order: "ROUND1_ORDER",
   minRecoveryMin: 120,

@@ -41,11 +41,14 @@ export function HelpDialog({ open, onClose }: { open: boolean; onClose(): void }
             the list is rebuilt; your edits to athletes are kept.
           </li>
           <li>
-            <strong>Print & export:</strong> add logos if you like (competition and AIDA beside the title, sponsors after the list),
-            then print or save as PDF, or download CSV or Excel. Under <strong>Sheet</strong>, the same list also prints as a
-            judge sheet or a results sheet (forms with blank columns judges fill in by hand on the day) and as a safety
-            schedule. Under <strong>On the sheet</strong>, untick a column to leave it off or type a new header; each sheet
-            keeps its own, and print, CSV and Excel all follow. <strong>Set judge & safety names</strong> fills in the judges, safety divers, deck and warm-up crew:
+            <strong>Print & export:</strong> add logos if you like (competition and AIDA beside the title, sponsors after the list
+            or under the title), each with its own size and the sheets it prints on, then print or save as PDF, or download CSV
+            or Excel. Under <strong>Sheet</strong>, the same list also prints as a judge sheet or a results sheet (forms with
+            blank columns judges fill in by hand on the day) and as a safety schedule. Under <strong>On the sheet</strong>,
+            untick a column to leave it off or type a new header; each sheet keeps its own, and print, CSV and Excel all follow.
+            For a pool measured in yards, tick <strong>Yards → meters guide</strong> to print a conversion table for judges.
+            The lane numbers printed start from <strong>First dynamic lane</strong> and <strong>First STA zone</strong> in More
+            settings. <strong>Set judge & safety names</strong> fills in the judges, safety divers, deck and warm-up crew:
             select starts (by break, discipline or zone), type the names once, and apply. Names stay with the zone and OT, not
             the diver.
           </li>

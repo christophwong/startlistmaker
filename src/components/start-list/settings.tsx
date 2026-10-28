@@ -88,7 +88,7 @@ function BlockOrder({
 }
 
 // Fields in "More settings" whose error should open it.
-const MORE_FIELDS = ["staIntervalMin", "staLanes", "roundToMin", "minRecoveryMin", "roundBreakMin"];
+const MORE_FIELDS = ["staIntervalMin", "staLanes", "firstLane", "staFirstLane", "roundToMin", "minRecoveryMin", "roundBreakMin"];
 
 /**
  * The Schedule card: the settings people change most (first OT, zones,
@@ -236,6 +236,31 @@ export function ScheduleCard({
                 {hidden("staLanes")}
               </>
             )}
+            <div className="grid grid-cols-2 gap-3">
+              <Field
+                label={pool ? "First dynamic lane" : "First zone"}
+                name="firstLane"
+                type="number"
+                min={1}
+                max={10}
+                defaultValue={values.firstLane}
+                error={errors.firstLane}
+                hint={pool ? "e.g. 2: dynamic in lane 2" : "number printed for zone 1"}
+              />
+              {pool ? (
+                <Field
+                  label="First STA zone"
+                  name="staFirstLane"
+                  type="number"
+                  min={1}
+                  max={10}
+                  defaultValue={values.staFirstLane}
+                  error={errors.staFirstLane}
+                />
+              ) : (
+                hidden("staFirstLane")
+              )}
+            </div>
             {spacing === "DIVE_TIME" ? (
               <SelectField label="Round OTs up to" name="roundToMin" defaultValue={values.roundToMin}>
                 <option value={1}>1 minute</option>

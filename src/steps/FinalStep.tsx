@@ -3,11 +3,13 @@ import { DayBadge } from "~/components/day-tabs";
 import { ArrowIcon } from "~/components/icons";
 import { LogosEditor } from "~/components/logos-editor";
 import { SheetColumnsEditor } from "~/components/sheet-columns";
-import { PrintSheet } from "~/components/start-list/print-sheet";
+import { PrintSheet, type SheetGuide } from "~/components/start-list/print-sheet";
 import { Alert, Button, Field, Segmented, SideCard } from "~/components/ui";
+import { YardGuideOptions } from "~/components/yard-guide";
 import { crewAt, crewOutOfDate, hasNames } from "~/lib/export/crew";
 import { downloadBlob, downloadText, SHEETS, toXlsx, type SheetTitle } from "~/lib/export/files";
 import { fileBase, toCsv, type SheetKind } from "~/lib/export/table";
+import { autoUpTo, guideRows, longestDynamicAp } from "~/lib/export/yards";
 import { useStartList } from "~/state/derived";
 import { toProjectJson } from "~/state/persist";
 import type { Action, AppState, PrintOptions } from "~/state/store";
@@ -90,6 +92,13 @@ export function FinalStep({ state, dispatch }: { state: AppState; dispatch(a: Ac
   const starts = table.rows.filter((r) => r.kind === "START").length;
   const named = rows.filter((r) => r.kind === "START" && Object.values(crewAt(state.crew, r)).some(Boolean)).length;
   const crewSheet = print.sheet === "JUDGES" || print.sheet === "SAFETY";
+  const pool = settings.type === "POOL";
+  const { yardGuide } = print;
+  const upTo = autoUpTo(longestDynamicAp(rows), yardGuide.lengthYd);
+  const guide: SheetGuide | null =
+    pool && yardGuide.sheets.includes(print.sheet)
+      ? { place: yardGuide.place, rows: guideRows(yardGuide.lengthYd, yardGuide.upToYd ?? upTo) }
+      : null;
 
   return (
     <div className="space-y-6">
@@ -202,16 +211,28 @@ export function FinalStep({ state, dispatch }: { state: AppState; dispatch(a: Ac
             <div className="mt-3 border-t border-line-soft pt-2">
               <Toggle label="New page after each break" checked={print.pageBreakAtBreaks} onChange={(v) => setPrint({ pageBreakAtBreaks: v })} />
             </div>
+            {pool && (
+              <div className="mt-2 border-t border-line-soft pt-2">
+                <YardGuideOptions guide={print.yardGuide} sheet={print.sheet} autoUpTo={upTo} onChange={(yardGuide) => setPrint({ yardGuide })} />
+              </div>
+            )}
           </SideCard>
           <SideCard title="Logos" className="md:col-span-2">
-            <LogosEditor logos={state.logos} dispatch={dispatch} />
+            <LogosEditor logos={state.logos} sheet={print.sheet} dispatch={dispatch} />
           </SideCard>
         </aside>
 
         {/* The preview is also what gets printed: a white page in both themes. */}
         <div className="min-w-0 overflow-x-auto rounded-xl bg-sunken p-1.5 ring-1 ring-line sm:p-6 print:overflow-visible print:rounded-none print:bg-transparent print:p-0 print:ring-0">
           <div className="print-area mx-auto rounded-lg bg-white p-3 shadow-md sm:rounded-none sm:p-8 print:p-0 print:shadow-none">
-            <PrintSheet {...event} type={settings.type} table={table} pageBreakAtBreaks={print.pageBreakAtBreaks} logos={state.logos} />
+            <PrintSheet
+              {...event}
+              type={settings.type}
+              table={table}
+              pageBreakAtBreaks={print.pageBreakAtBreaks}
+              logos={state.logos}
+              guide={guide}
+            />
           </div>
         </div>
       </div>

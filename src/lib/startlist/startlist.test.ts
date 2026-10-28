@@ -225,6 +225,18 @@ describe("schedule", () => {
     expect(rows.slice(6, 9).map((r) => r.lane)).toEqual([1, 2, 3]);
   });
 
+  it("numbers lanes from the first lane set, for STA and dynamic apart (ECAC 1 Nov: STA 1–3, dynamic in lane 2)", () => {
+    const round1 = poolStarts.filter((s) => s.startNumber === 1);
+    const entries: EntryInput[] = round1.map((s) => ({ kind: "START", startId: s.id }));
+    const settings = { ...poolSettings, staLanes: 3, lanes: 1, firstLane: 2 };
+    const before = startRows(schedule(entries, index(poolStarts), { ...poolSettings, staLanes: 3, lanes: 1 }));
+    const rows = startRows(schedule(entries, index(poolStarts), settings));
+    expect(rows.slice(0, 3).map((r) => r.laneNo)).toEqual([1, 2, 3]);
+    expect(rows.slice(6, 9).map((r) => r.laneNo)).toEqual([2, 2, 2]);
+    // Only the printed number changes: positions (crew slots), groups and OTs are the same.
+    expect(rows.map((r) => [r.lane, r.group, r.ot])).toEqual(before.map((r) => [r.lane, r.group, r.ot]));
+  });
+
   it("never puts STA and dynamic starts in the same group", () => {
     const entries: EntryInput[] = poolStarts
       .filter((s) => s.startNumber === 1)

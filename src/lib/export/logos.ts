@@ -1,12 +1,14 @@
+import type { SheetKind } from "./table";
+
 /**
  * Logos on the printed sheet: the competition and AIDA logos beside the
- * title on the first page, and a sponsor strip after the list on the last
- * page (as on the ECAC sheets). Sizes are in points, the unit of the
+ * title on the first page, an optional row under the title, and a sponsor
+ * strip after the list on the last page (as on the ECAC sheets). Each logo
+ * prints on the sheets ticked for it. Sizes are in points, the unit of the
  * printed page.
  */
 
-export type LogoPlace = "HEADER_LEFT" | "HEADER_RIGHT" | "SPONSORS";
-export type LogoSize = "S" | "M" | "L";
+export type LogoPlace = "HEADER_LEFT" | "HEADER_RIGHT" | "TOP" | "SPONSORS";
 
 export interface Logo {
   id: string;
@@ -18,7 +20,10 @@ export interface Logo {
   width: number;
   height: number;
   place: LogoPlace;
-  size: LogoSize;
+  /** Percent of the place's base height. */
+  scale: number;
+  /** The sheets it prints on. */
+  sheets: SheetKind[];
 }
 
 export const MAX_LOGOS = 12;
@@ -29,19 +34,26 @@ export const MAX_LOGO_SRC = 400_000;
 export const MAX_LOGOS_TOTAL = 2_000_000;
 export const LOGO_SRC = /^data:image\/(png|jpeg);base64,[A-Za-z0-9+/]+={0,2}$/;
 
+export const MIN_SCALE = 25;
+export const MAX_SCALE = 300;
+/** The S / M / L sizes saved before the size became a percentage (were ⅔, 1, 4⁄3; on the slider's 5 % steps). */
+export const LEGACY_SCALE = { S: 65, M: 100, L: 135 } as const;
+
 export const PLACE_LABELS: Record<LogoPlace, string> = {
   HEADER_LEFT: "Header, left",
   HEADER_RIGHT: "Header, right",
-  SPONSORS: "Sponsors",
+  TOP: "Under the title",
+  SPONSORS: "After the list",
 };
-export const SIZE_LABELS: Record<LogoSize, string> = { S: "Small", M: "Medium", L: "Large" };
 
-const HEIGHT_PT: Record<"HEADER" | "SPONSORS", Record<LogoSize, number>> = {
-  HEADER: { S: 48, M: 72, L: 96 },
-  SPONSORS: { S: 36, M: 54, L: 72 },
-};
-/** A very wide logo is capped at this many times its nominal height. */
-const MAX_ASPECT = 3.5;
+/** As before logos could be set per sheet: no logos on the safety schedule, no sponsors on the judge sheet. */
+export const defaultSheets = (place: LogoPlace): SheetKind[] =>
+  place === "SPONSORS" ? ["ATHLETES", "RESULTS"] : ["ATHLETES", "JUDGES", "RESULTS"];
+
+/** Height at 100 %, in points. */
+const BASE_PT: Record<LogoPlace, number> = { HEADER_LEFT: 72, HEADER_RIGHT: 72, TOP: 54, SPONSORS: 54 };
+/** A very wide logo is capped at this many times its height; a row of its own allows a banner. */
+const MAX_ASPECT: Record<LogoPlace, number> = { HEADER_LEFT: 3.5, HEADER_RIGHT: 3.5, TOP: 10, SPONSORS: 3.5 };
 
 export interface Box {
   w: number;
@@ -49,10 +61,15 @@ export interface Box {
 }
 
 /** The logo's printed size in points. */
-export function logoBox(logo: Pick<Logo, "width" | "height" | "place" | "size">): Box {
-  const h = HEIGHT_PT[logo.place === "SPONSORS" ? "SPONSORS" : "HEADER"][logo.size];
+export function logoBox(logo: Pick<Logo, "width" | "height" | "place" | "scale">): Box {
+  const h = (BASE_PT[logo.place] * logo.scale) / 100;
   const ratio = logo.width / logo.height;
-  return ratio > MAX_ASPECT ? { w: h * MAX_ASPECT, h: (h * MAX_ASPECT) / ratio } : { w: h * ratio, h };
+  const max = MAX_ASPECT[logo.place];
+  return ratio > max ? { w: h * max, h: (h * max) / ratio } : { w: h * ratio, h };
 }
 
 export const logosAt = (logos: Logo[], place: LogoPlace) => logos.filter((l) => l.place === place);
+
+/** The logos that print on `sheet`, in `place`. */
+export const logosOn = (logos: Logo[], place: LogoPlace, sheet: SheetKind) =>
+  logos.filter((l) => l.place === place && l.sheets.includes(sheet));
