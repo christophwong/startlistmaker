@@ -466,7 +466,10 @@ test("start list: row actions stay in view when the table scrolls sideways", asy
   // 1024: the settings column is beside a narrow list, and the pool lanes make the table overflow.
   await page.setViewportSize({ width: 1024, height: 800 });
   await page.goto("/#demo-pool");
-  const box = page.locator("table").locator("..");
+  // The start list's table, not the home page's example table shown while the sample loads.
+  const table = page.locator("table:has([data-start])");
+  await expect(table).toBeVisible();
+  const box = table.locator("..");
   const overflow = await box.evaluate((el) => el.scrollWidth - el.clientWidth);
   expect(overflow).toBeGreaterThan(0);
   const more = page.getByRole("button", { name: /^More actions for / }).first();
