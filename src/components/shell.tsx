@@ -19,16 +19,15 @@ export function LogoMark() {
 export function PrivacyText() {
   return (
     <div className="space-y-2 text-ink-2">
-      <p className="font-semibold text-ink">Nothing leaves this browser</p>
+      <p className="font-semibold text-ink">Athlete data stays in this browser</p>
       <p>
-        Files are read and start lists are built entirely on your device. There is no server, no account, no analytics,
-        and the page is set up so it cannot send data anywhere.
+        Files are read and start lists are built entirely on your device. Your start lists and athletes' details are
+        never uploaded, stored on a server or shared, and there's no account.
       </p>
       <p>
         While you work, your data is kept in this tab only and is gone when you close it, unless you choose “Remember on
         this device”. “Clear all data” removes it immediately.
       </p>
-      <p>To check: open your browser's developer tools → Network. Using the app makes no requests.</p>
     </div>
   );
 }

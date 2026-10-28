@@ -618,7 +618,7 @@ test("header: the privacy note and Your data menu open and close", async ({ page
   await page.goto("/#demo");
   await expect(page.getByRole("heading", { name: "Start list" })).toBeVisible();
   const lock = page.getByRole("button", { name: /^Local only/ });
-  const note = page.getByText("Nothing leaves this browser", { exact: true });
+  const note = page.getByText("Athlete data stays in this browser", { exact: true });
   await lock.click();
   await expect(note).toBeVisible();
   await page.keyboard.press("Escape");

@@ -156,12 +156,13 @@ export default function App() {
             <span className="truncate text-lg font-semibold tracking-tight">Start List Maker</span>
           </button>
 
-          <div className="hidden items-center gap-1 text-sm sm:flex">
+          <div className="hidden items-center gap-1 text-sm whitespace-nowrap sm:flex">
             <Popover
               className="mr-2 inline-flex min-h-8 items-center gap-1.5 rounded-full bg-ok-bg px-3 text-xs font-medium text-ok-fg ring-1 ring-inset ring-ok-line"
               label={
                 <>
-                  <LockIcon className="size-3.5" /> Local only · nothing leaves this browser
+                  <LockIcon className="size-3.5" /> Local only
+                  <span className="hidden lg:inline">· athlete data stays in this browser</span>
                 </>
               }
               panelClassName="w-80"
@@ -185,7 +186,7 @@ export default function App() {
                 label={
                   <>
                     Your data{" "}
-                    <span className="font-normal text-muted">· {remember ? "remembered" : "this tab only"}</span>
+                    <span className="hidden font-normal text-muted lg:inline">· {remember ? "remembered" : "this tab only"}</span>
                     <ChevronIcon dir="down" className="size-3.5" />
                   </>
                 }
@@ -197,7 +198,7 @@ export default function App() {
 
           <div className="flex items-center gap-1 sm:hidden">
             <Popover
-              ariaLabel="Local only: nothing leaves this browser"
+              ariaLabel="Local only: athlete data stays in this browser"
               className={cx(iconButton, "text-ok-fg")}
               label={<LockIcon />}
               panelClassName="w-80"

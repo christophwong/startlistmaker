@@ -93,9 +93,9 @@ export function HelpDialog({ open, onClose }: { open: boolean; onClose(): void }
 
       <Section title="Privacy">
         <p>
-          Files are read and start lists are built entirely on your device. There is no server, no account and no analytics,
-          and the page is set up so it cannot send data anywhere. To check, open your browser's developer tools → Network:
-          using the app makes no requests.
+          Files are read and start lists are built entirely on your device. Your start lists and athletes' details are
+          never uploaded, stored on a server or shared, and there's no account. Like most websites, the site may keep
+          basic visit data, such as pages loaded and browser type, to keep it running and secure.
         </p>
       </Section>
     </Modal>

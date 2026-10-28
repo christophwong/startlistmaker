@@ -2,7 +2,7 @@
 
 **Freediving start lists in minutes, straight from your Google Forms export.**
 
-Start List Maker turns competition registrations into a printable AIDA-style start list, with official tops (OT), warm-up and check-in times, lanes or zones, and breaks. It runs entirely in your browser: there's no account to create, and athlete data never leaves your device. You can confirm this in your browser's developer tools (the app makes no network requests), and your work stays in the current tab unless you turn on **Remember on this device**.
+Start List Maker turns competition registrations into a printable AIDA-style start list, with official tops (OT), warm-up and check-in times, lanes or zones, and breaks. It runs entirely in your browser: there's no account to create, and start lists and athlete data are never uploaded, stored on a server or shared. Your work stays in the current tab unless you turn on **Remember on this device**.
 
 ## Features
 
