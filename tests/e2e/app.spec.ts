@@ -1,6 +1,9 @@
 import fs from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
 
+// The visit counter's host (STATS_ORIGIN in vite.config.ts).
+const STATS_ORIGIN = "https://stats.startlistmaker.online";
+
 /**
  * Runs against the production build (vite preview) with the CSP in place.
  * Every test also checks that the page made no request outside its own
@@ -56,13 +59,28 @@ test.afterEach(async ({ page }) => {
 test("has a strict CSP and no inline scripts", async ({ page }) => {
   await page.goto("/");
   const csp = await page.locator('meta[http-equiv="Content-Security-Policy"]').getAttribute("content");
-  expect(csp).toContain("connect-src 'none'");
-  expect(csp).toContain("script-src 'self'");
+  expect(csp).toContain(`connect-src ${STATS_ORIGIN};`);
+  expect(csp).toContain("script-src 'self';");
   expect(await page.locator("script:not([src])").count()).toBe(0);
-  // fetch is blocked by the CSP: nothing can be sent anywhere. (The blocked
-  // request is the one console error the checks ignore.)
+  // fetch anywhere else is blocked by the CSP. (The blocked request is the
+  // one console error the checks ignore.)
   const blocked = await page.evaluate(() => fetch("https://example.com").then(() => false, () => true));
   expect(blocked).toBe(true);
+});
+
+test("visit counter: count.js from our origin, sends only the page to the stats host", async ({ page }) => {
+  await page.goto("/");
+  const src = await page.locator("script[data-goatcounter]").evaluate((s) => (s as HTMLScriptElement).src);
+  expect(new URL(src).origin).toBe(new URL(page.url()).origin);
+  await page.waitForFunction(() => typeof (window as { goatcounter?: { count?: unknown } }).goatcounter?.count === "function");
+  // On localhost count.js doesn't send (the beforeEach check would fail if it
+  // did), so check the URL it would send to instead.
+  const url = await page.evaluate(() => (window as unknown as { goatcounter: { url: () => string } }).goatcounter.url());
+  const sent = new URL(url);
+  expect(sent.origin + sent.pathname).toBe(`${STATS_ORIGIN}/count`);
+  // b is count.js's bot flag (set under Playwright, since navigator.webdriver is true).
+  expect([...sent.searchParams.keys()].sort()).toEqual(["b", "p", "rnd", "s", "t"]);
+  expect(sent.searchParams.get("p")).toBe("/");
 });
 
 test("demo: sample depth list → finalize → CSV download; PDF is through Print", async ({ page }) => {

@@ -5,17 +5,21 @@ import { defineConfig, type Plugin } from "vite";
 
 /**
  * Content Security Policy for the static site. GitHub Pages can't send
- * headers, so it's a <meta> tag. `connect-src 'none'` means the page can't
- * send data anywhere: samples are bundled, files are read locally.
+ * headers, so it's a <meta> tag. The only place the page can send anything is
+ * the visit counter (GoatCounter's count.js, served from our own origin):
+ * `connect-src` for its sendBeacon, `img-src` for its pixel fallback. Samples
+ * are bundled and files are read locally.
  * frame-ancestors can't be set from a meta tag (see docs/DESIGN.md).
  */
+export const STATS_ORIGIN = "https://stats.startlistmaker.online";
+
 export const CSP = [
   "default-src 'none'",
   "script-src 'self'",
   "style-src 'self'",
-  "img-src 'self' data: blob:",
+  `img-src 'self' data: blob: ${STATS_ORIGIN}`,
   "font-src 'self'",
-  "connect-src 'none'",
+  `connect-src ${STATS_ORIGIN}`,
   "worker-src 'none'",
   "manifest-src 'self'",
   "form-action 'none'",
