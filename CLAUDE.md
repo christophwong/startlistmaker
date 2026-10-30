@@ -12,13 +12,15 @@ npm run typecheck    # tsc (src + tests + configs)
 npm test             # Vitest unit tests
 npx vitest run src/lib/startlist/startlist.test.ts   # one file
 npm run test:e2e     # Playwright on the production build (vite preview :4173), desktop + mobile
+npx playwright test tests/e2e/app.spec.ts --project=desktop   # one spec, one project
+npm run shots        # tests/e2e/visual.spec.ts only: overflow check + screenshots to tmp/shots/{desktop,mobile}/<screen>-<theme>.png
 npm run build        # → dist/, what GitHub Pages serves
 node scripts/anonymize.mjs <real.csv> <out.csv> [seed] [--fix-typos]   # make a shareable sample
 node scripts/record-demo.mjs [out-dir] [--mobile]   # video of the main flow → tmp/demo-video/ (builds, serves :4174)
 node scripts/make-icons.mjs   # re-render public/ PNG icons and og.jpg (link preview) after changing favicon.svg
 ```
 
-There is no linter. Done means `npm run typecheck && npm test` pass, plus `npm run test:e2e` when UI, the build, or the CSP changes.
+There is no linter. Done means following "Verification" in `~/Developer/CLAUDE.md`; also run the full `npm run test:e2e` when the build or the CSP changes.
 
 ## Architecture
 
@@ -47,5 +49,6 @@ Key points that span files:
 
 - `src/**/*.test.ts` are unit tests. `tests/fixtures/ecac.ts` reproduces the real ECAC start sheets, and engine changes must keep those passing.
 - `tests/unit/anonymize.test.ts` runs the anonymizer script.
+- `tests/e2e/visual.spec.ts` lists the main screens (both themes). Add a screen there when you add a tab, dialog or major view.
 - `tests/e2e/a11y.spec.ts` runs axe (WCAG 2.1 AA) on every screen in both themes, desktop and mobile.
 - `tests/e2e/app.spec.ts` covers the CSP, demo, upload → fix → generate, sort, drag and drop, paste, exports, logos, project save/open, storage clearing, two-day forms, and the judge, results and safety sheets. Test images are drawn on a canvas in the page, so there are no binary fixtures.

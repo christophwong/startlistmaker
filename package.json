@@ -11,6 +11,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
+    "shots": "playwright test tests/e2e/visual.spec.ts",
     "anonymize": "node scripts/anonymize.mjs",
     "record-demo": "node scripts/record-demo.mjs"
   },
